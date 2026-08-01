@@ -4,6 +4,9 @@ import { resolve } from 'path';
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  // Relative base so the built site works under any GitHub Pages subpath
+  // (https://<user>.github.io/<repo>/) as well as at a custom domain root.
+  base: './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
