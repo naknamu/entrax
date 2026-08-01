@@ -457,8 +457,14 @@ export function downloadFile(data, filename, type = 'text/plain') {
  * @param {string} baseUrl - Base URL (optional, defaults to current origin)
  * @returns {string} Full exam URL
  */
-export function getExamLink(examId, baseUrl = window.location.origin) {
-  return `${baseUrl}/exam.html?examId=${examId}`;
+export function getExamLink(examId, baseUrl) {
+  // Resolve against the app's own directory so links work when the app is
+  // hosted under a subpath (e.g. GitHub Pages: https://user.github.io/<repo>/).
+  if (baseUrl) return `${baseUrl}/exam.html?examId=${examId}`;
+  if (typeof window !== 'undefined') {
+    return `${new URL('exam.html', window.location.href).href}?examId=${examId}`;
+  }
+  return `/exam.html?examId=${examId}`;
 }
 
 /**

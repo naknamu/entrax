@@ -13,7 +13,7 @@
 <body>
   <header class="header no-print">
     <div class="container header-inner">
-      <a href="/admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
+      <a href="admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -24,8 +24,8 @@
         Exam Platform
       </a>
       <nav class="nav" aria-label="Main navigation">
-        <a href="/admin-dashboard.html" class="nav-link">Dashboard</a>
-        <a href="/create-exam.html" class="nav-link active" aria-current="page">Create Exam</a>
+        <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="create-exam.html" class="nav-link active" aria-current="page">Create Exam</a>
         <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign Out</button>
       </nav>
     </div>
@@ -154,7 +154,7 @@
 
         <!-- Form Actions -->
         <footer class="flex justify-end gap-3 no-print mt-8">
-          <a href="/admin-dashboard.html" class="btn btn-outline">Cancel</a>
+          <a href="admin-dashboard.html" class="btn btn-outline">Cancel</a>
           <button type="button" class="btn btn-outline" id="save-draft-btn">Save as Draft</button>
           <button type="submit" class="btn btn-primary" id="submit-btn">
             <span class="btn-text">Publish Exam</span>
@@ -322,7 +322,7 @@
       if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
           await signOut(auth);
-          window.location.href = '/index.html';
+          window.location.href = 'index.html';
         });
       }
     }
@@ -333,7 +333,7 @@
     // Auth check
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = '/index.html';
+        window.location.href = 'index.html';
         return;
       }
       currentUser = user;
@@ -378,7 +378,7 @@
         const examDoc = await getDoc(doc(db, 'exams', id));
         if (!examDoc.exists()) {
           showAlert(alertContainer, 'Exam not found.', 'error');
-          setTimeout(() => window.location.href = '/admin-dashboard.html', 2000);
+          setTimeout(() => window.location.href = 'admin-dashboard.html', 2000);
           return;
         }
         const exam = examDoc.data();

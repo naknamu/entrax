@@ -14,7 +14,7 @@
 <body>
   <header class="header no-print">
     <div class="container header-inner">
-      <a href="/admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
+      <a href="admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -25,8 +25,8 @@
         Exam Platform
       </a>
       <nav class="nav" aria-label="Main navigation">
-        <a href="/admin-dashboard.html" class="nav-link">Dashboard</a>
-        <a href="/create-exam.html" class="nav-link">Create Exam</a>
+        <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="create-exam.html" class="nav-link">Create Exam</a>
         <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign Out</button>
       </nav>
     </div>
@@ -57,7 +57,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5"/><path d="M18 18h2a2 2 0 0 0 2-2v-5"/></svg>
             Print
           </button>
-          <a href="/create-exam.html?examId=" id="edit-exam-link" class="btn btn-outline">Edit Exam</a>
+          <a href="create-exam.html?examId=" id="edit-exam-link" class="btn btn-outline">Edit Exam</a>
           <button class="btn btn-outline copy-link-btn" id="copy-link-btn" aria-label="Copy exam link" title="Copy exam link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           </button>
@@ -226,23 +226,23 @@
     examId = urlParams.get('examId');
 
     if (!examId) {
-      window.location.href = '/admin-dashboard.html';
+      window.location.href = 'admin-dashboard.html';
     }
 
     // Auth check
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = '/index.html';
+        window.location.href = 'index.html';
         return;
       }
       currentUser = user;
-      editExamLink.href = `/create-exam.html?examId=${examId}`;
+      editExamLink.href = `create-exam.html?examId=${examId}`;
       
       // Copy exam link button
       const copyLinkBtn = document.getElementById('copy-link-btn');
       if (copyLinkBtn) {
         copyLinkBtn.addEventListener('click', () => {
-          const examLink = `${window.location.origin}/exam.html?examId=${examId}`;
+          const examLink = `${new URL('exam.html', window.location.href).href}?examId=${examId}`;
           navigator.clipboard.writeText(examLink).then(() => {
             // Show temporary feedback
             const originalHTML = copyLinkBtn.innerHTML;
@@ -256,7 +256,7 @@
             }, 2000);
           }).catch(() => {
             // Fallback for older browsers
-            prompt('Copy this link:', `${window.location.origin}/exam.html?examId=${examId}`);
+            prompt('Copy this link:', `${new URL('exam.html', window.location.href).href}?examId=${examId}`);
           });
         });
       }
@@ -267,7 +267,7 @@
     // Logout
     logoutBtn.addEventListener('click', async () => {
       await signOut(auth);
-      window.location.href = '/index.html';
+      window.location.href = 'index.html';
     });
 
     async function loadExamAndSubmissions() {
@@ -276,7 +276,7 @@
         const examDoc = await getDoc(doc(db, 'exams', examId));
         if (!examDoc.exists()) {
           showAlert(alertContainer, 'Exam not found.', 'error');
-          setTimeout(() => window.location.href = '/admin-dashboard.html', 2000);
+          setTimeout(() => window.location.href = 'admin-dashboard.html', 2000);
           return;
         }
         exam = { id: examDoc.id, ...examDoc.data() };
