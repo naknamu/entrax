@@ -1,0 +1,41 @@
+{
+  "name": "online-exam-platform",
+  "version": "1.0.0",
+  "description": "A complete, working online exam platform built with Vite, Firebase (Firestore + Auth). Modern UI/UX for academic testing.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 8080",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-test",
+    "setup:admin": "node tests/create-test-admin.cjs",
+    "test:all": "npm run emulators & sleep 10 && npm run setup:admin && npm run dev & sleep 5 && npm run test"
+  },
+  "keywords": [
+    "exam",
+    "quiz",
+    "test",
+    "firebase",
+    "education",
+    "vite"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "firebase-admin": "^12.7.0",
+    "firebase-tools": "^13.0.0",
+    "postcss-custom-properties": "^15.0.1",
+    "postcss-nested": "^7.0.2",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "mammoth": "^1.6.0"
+  }
+}

@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Exam - Exam Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="header no-print">
+    <div class="container header-inner">
+      <a href="/admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Exam Platform
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/admin-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/create-exam.html" class="nav-link active" aria-current="page">Create Exam</a>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <header class="page-header">
+        <h1 class="page-title" id="page-title">Create New Exam</h1>
+        <p class="page-subtitle" id="page-subtitle">Build your exam by adding questions below</p>
+      </header>
+
+      <div id="alert-container"></div>
+
+      <form id="exam-form" novalidate>
+        <!-- Exam Basic Info -->
+        <section class="card section-card" aria-labelledby="exam-info-heading">
+          <header class="card-header">
+            <h2 class="card-title" id="exam-info-heading">Exam Information</h2>
+          </header>
+          <div class="card-body">
+            <div class="grid grid-2 gap-4">
+              <div class="form-group">
+                <label class="label" for="title">Exam Title <span class="text-danger" aria-hidden="true">*</span></label>
+                <input type="text" id="title" name="title" class="input" placeholder="e.g., Midterm Exam - Mathematics" required maxlength="200">
+              </div>
+              <div class="form-group">
+                <label class="label" for="timeLimitMinutes">Time Limit (minutes) <span class="text-danger" aria-hidden="true">*</span></label>
+                <input type="number" id="timeLimitMinutes" name="timeLimitMinutes" class="input" placeholder="60" required min="1" max="480" value="60">
+              </div>
+            </div>
+            <div class="grid grid-2 gap-4 mt-4">
+              <div class="form-group">
+                <label class="label" for="passingPercent">Passing Percentage <span class="text-danger" aria-hidden="true">*</span></label>
+                <input type="number" id="passingPercent" name="passingPercent" class="input" placeholder="70" required min="0" max="100" value="70">
+              </div>
+              <div class="form-group">
+                <label class="label" for="showResultsToStudent">Show Results to Student</label>
+                <div class="checkbox-group">
+                  <input type="checkbox" id="showResultsToStudent" name="showResultsToStudent" checked>
+                  <label for="showResultsToStudent">Show score and correct answers immediately after submission</label>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="label" for="description">Description / Instructions</label>
+              <textarea id="description" name="description" class="input" rows="3" placeholder="Instructions for students..."></textarea>
+            </div>
+            <div class="grid grid-2 gap-4 mt-4">
+              <div class="form-group">
+                <label class="label" for="startDate">Available From (optional)</label>
+                <input type="datetime-local" id="startDate" name="startDate" class="input">
+              </div>
+              <div class="form-group">
+                <label class="label" for="endDate">Available Until (optional)</label>
+                <input type="datetime-local" id="endDate" name="endDate" class="input">
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="label" for="randomizeQuestions">Randomize Question Order</label>
+              <div class="checkbox-group">
+                <input type="checkbox" id="randomizeQuestions" name="randomizeQuestions">
+                <label for="randomizeQuestions">Randomize question order for each student</label>
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="label" for="allowPrevious">Allow Previous Navigation</label>
+              <div class="checkbox-group">
+                <input type="checkbox" id="allowPrevious" name="allowPrevious" checked>
+                <label for="allowPrevious">Allow students to navigate back to previous questions</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Import Questions -->
+        <section class="card section-card" aria-labelledby="import-heading">
+          <header class="card-header">
+            <h2 class="card-title" id="import-heading">Import Questions</h2>
+          </header>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="label" for="import-file">Upload Question File (.txt, .csv, .json, .docx)</label>
+              <input type="file" id="import-file" class="input" accept=".txt,.csv,.json,.docx" aria-describedby="import-help">
+              <div id="import-help" class="help-text">
+                Supported formats: <strong>Plain Text</strong> (see format below), <strong>CSV</strong> (columns: question,choiceA,choiceB,choiceC,choiceD,correctIndex,category), <strong>JSON</strong> (array of question objects), <strong>Word (.docx)</strong> (same structure as plain text)
+              </div>
+              <div id="import-status" class="help-text mt-1 hidden"></div>
+            </div>
+            <div class="form-group">
+              <label class="label">Or Paste Questions (Plain Text Format)</label>
+              <textarea id="import-text" class="input" rows="8" placeholder="Paste questions here..."></textarea>
+              <div class="help-text">
+                <strong>Format:</strong> Each question separated by blank line. First line = question text. Next 4 lines = choices A-D. Line starting with "Answer:" or "Correct:" = correct index (0-3). Optional line starting with "Category:" = category.
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn btn-outline" id="parse-text-btn">Parse Pasted Text</button>
+              <button type="button" class="btn btn-primary" id="import-file-btn">Import from File</button>
+              <button type="button" class="btn btn-ghost" id="debug-text-btn">Show Raw Text</button>
+            </div>
+            <div id="import-preview" class="mt-4 hidden">
+              <h4>Preview (click to add all)</h4>
+              <div id="import-preview-list"></div>
+              <button type="button" class="btn btn-primary mt-2" id="confirm-import-btn">Add All Questions</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Questions Section -->
+        <section class="card section-card" aria-labelledby="questions-heading">
+          <header class="card-header">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <h2 class="card-title" id="questions-heading">Questions</h2>
+              <button type="button" class="btn btn-primary" id="add-question-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Question
+              </button>
+            </div>
+          </header>
+          <div class="card-body">
+            <div id="questions-container"></div>
+            <p id="no-questions-msg" class="text-center text-muted py-8 hidden">No questions added yet. Click "Add Question" or import from file.</p>
+          </div>
+        </section>
+
+        <!-- Form Actions -->
+        <footer class="flex justify-end gap-3 no-print mt-8">
+          <a href="/admin-dashboard.html" class="btn btn-outline">Cancel</a>
+          <button type="button" class="btn btn-outline" id="save-draft-btn">Save as Draft</button>
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span class="btn-text">Publish Exam</span>
+            <span class="spinner hidden" id="submit-spinner"></span>
+          </button>
+        </footer>
+      </form>
+    </div>
+  </main>
+
+  <!-- Question Template (hidden, cloned via JS) -->
+  <template id="question-template">
+    <article class="question-block card mb-4" data-question-index="0">
+      <header class="card-header">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h3 class="card-title question-title">Question <span class="question-number">1</span></h3>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-outline category-badge hidden">No Category</span>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon delete-question-btn" title="Delete Question" aria-label="Delete question">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </header>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="label" for="question-text-0">Question Text <span class="text-danger" aria-hidden="true">*</span></label>
+            <textarea id="question-text-0" name="questions[0][text]" class="input" rows="2" placeholder="Enter your question here..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="label">Category / Tag (optional)</label>
+            <input type="text" name="questions[0][category]" class="input category-input" placeholder="e.g., Math, Reading, Science" list="categories-list">
+            <datalist id="categories-list"></datalist>
+          </div>
+          <fieldset class="form-group">
+            <legend class="label">Answer Choices <span class="text-danger" aria-hidden="true">*</span></legend>
+            <div class="choices-grid" id="choices-0">
+              <div class="choice-row" data-index="0">
+                <div class="radio-group">
+                  <input type="radio" name="questions[0][correctIndex]" value="0" id="choice-correct-0-0" required>
+                  <label for="choice-correct-0-0" class="radio-label">Correct</label>
+                </div>
+                <input type="text" name="questions[0][choices][0]" class="input choice-input" placeholder="Choice A" required maxlength="500">
+              </div>
+              <div class="choice-row" data-index="1">
+                <div class="radio-group">
+                  <input type="radio" name="questions[0][correctIndex]" value="1" id="choice-correct-0-1">
+                  <label for="choice-correct-0-1" class="radio-label">Correct</label>
+                </div>
+                <input type="text" name="questions[0][choices][1]" class="input choice-input" placeholder="Choice B" required maxlength="500">
+              </div>
+              <div class="choice-row" data-index="2">
+                <div class="radio-group">
+                  <input type="radio" name="questions[0][correctIndex]" value="2" id="choice-correct-0-2">
+                  <label for="choice-correct-0-2" class="radio-label">Correct</label>
+                </div>
+                <input type="text" name="questions[0][choices][2]" class="input choice-input" placeholder="Choice C" required maxlength="500">
+              </div>
+              <div class="choice-row" data-index="3">
+                <div class="radio-group">
+                  <input type="radio" name="questions[0][correctIndex]" value="3" id="choice-correct-0-3">
+                  <label for="choice-correct-0-3" class="radio-label">Correct</label>
+                </div>
+                <input type="text" name="questions[0][choices][3]" class="input choice-input" placeholder="Choice D" required maxlength="500">
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </article>
+    </template>
+
+  <!-- mammoth.js for .docx parsing (loaded globally) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script type="module">
+    import { auth, db } from '/src/firebase.js';
+    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+    import { showAlert, showConfirm, escapeHtml, generateId } from '/js/admin.js';
+
+    // DOM Elements
+    const form = document.getElementById('exam-form');
+    const questionsContainer = document.getElementById('questions-container');
+    const noQuestionsMsg = document.getElementById('no-questions-msg');
+    const addQuestionBtn = document.getElementById('add-question-btn');
+    const saveDraftBtn = document.getElementById('save-draft-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitSpinner = document.getElementById('submit-spinner');
+    const submitBtnText = submitBtn.querySelector('.btn-text');
+    const alertContainer = document.getElementById('alert-container');
+    const logoutBtn = document.getElementById('logout-btn');
+    const questionTemplate = document.getElementById('question-template');
+    
+    // Import elements
+    const importFile = document.getElementById('import-file');
+    const importFileBtn = document.getElementById('import-file-btn');
+    const importText = document.getElementById('import-text');
+    const parseTextBtn = document.getElementById('parse-text-btn');
+    const importPreview = document.getElementById('import-preview');
+    const importPreviewList = document.getElementById('import-preview-list');
+    const confirmImportBtn = document.getElementById('confirm-import-btn');
+
+    // State
+    let currentUser = null;
+    let examId = null;
+    let isEditing = false;
+    let questionCounter = 0;
+    let existingCategories = new Set();
+    let parsedQuestions = [];
+    let lastExtractedText = '';
+
+    // Get examId from URL if editing
+    const urlParams = new URLSearchParams(window.location.search);
+    examId = urlParams.get('examId');
+    isEditing = !!examId;
+
+    // Initialize event listeners immediately (not waiting for auth)
+    function initEventListeners() {
+      // Add question button
+      if (addQuestionBtn) {
+        addQuestionBtn.addEventListener('click', () => {
+          console.log('Add question clicked');
+          addQuestion();
+        });
+      }
+
+      // Import buttons
+      if (parseTextBtn) {
+        parseTextBtn.addEventListener('click', () => parsePastedText());
+      }
+      if (importFileBtn) {
+        importFileBtn.addEventListener('click', () => importFile.click());
+      }
+      if (importFile) {
+        importFile.addEventListener('change', handleFileImport);
+      }
+      if (confirmImportBtn) {
+        confirmImportBtn.addEventListener('click', confirmImport);
+      }
+      
+      // Debug: show raw text
+      const debugTextBtn = document.getElementById('debug-text-btn');
+      if (debugTextBtn) {
+        debugTextBtn.addEventListener('click', () => {
+          if (lastExtractedText) {
+            alert('Raw extracted text (first 5000 chars):\n\n' + lastExtractedText.substring(0, 5000));
+          } else {
+            showAlert(alertContainer, 'No file imported yet.', 'warning');
+          }
+        });
+      }
+
+      // Form submit
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          saveExam(false);
+        });
+      }
+
+      // Save draft
+      if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', () => saveExam(true));
+      }
+
+      // Logout
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await signOut(auth);
+          window.location.href = '/index.html';
+        });
+      }
+    }
+
+    // Call init immediately
+    initEventListeners();
+
+    // Auth check
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+        return;
+      }
+      currentUser = user;
+      if (isEditing) {
+        document.getElementById('page-title').textContent = 'Edit Exam';
+        document.getElementById('page-subtitle').textContent = 'Modify exam details and questions';
+        submitBtn.querySelector('.btn-text').textContent = 'Update Exam';
+        await loadExamForEdit(examId);
+      } else {
+        addQuestion(); // Add first question by default
+      }
+      loadExistingCategories();
+    });
+
+    // Load existing categories from exams
+    async function loadExistingCategories() {
+      try {
+        const examsQuery = query(collection(db, 'exams'), where('createdBy', '==', currentUser.uid));
+        const snapshot = await getDocs(examsQuery);
+        snapshot.docs.forEach(doc => {
+          const exam = doc.data();
+          exam.questions?.forEach(q => {
+            if (q.category) existingCategories.add(q.category);
+          });
+        });
+        updateCategoryDatalist();
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    }
+
+    function updateCategoryDatalist() {
+      const datalist = document.getElementById('categories-list');
+      if (datalist) {
+        datalist.innerHTML = Array.from(existingCategories).map(c => `<option value="${escapeHtml(c)}">`).join('');
+      }
+    }
+
+    // Load exam for editing
+    async function loadExamForEdit(id) {
+      try {
+        const examDoc = await getDoc(doc(db, 'exams', id));
+        if (!examDoc.exists()) {
+          showAlert(alertContainer, 'Exam not found.', 'error');
+          setTimeout(() => window.location.href = '/admin-dashboard.html', 2000);
+          return;
+        }
+        const exam = examDoc.data();
+        populateForm(exam);
+      } catch (error) {
+        console.error('Error loading exam:', error);
+        showAlert(alertContainer, 'Failed to load exam.', 'error');
+      }
+    }
+
+    function populateForm(exam) {
+      document.getElementById('title').value = exam.title || '';
+      document.getElementById('description').value = exam.description || '';
+      document.getElementById('timeLimitMinutes').value = exam.timeLimitMinutes || 60;
+      document.getElementById('passingPercent').value = exam.passingPercent || 70;
+      document.getElementById('showResultsToStudent').checked = exam.showResultsToStudent !== false;
+      document.getElementById('randomizeQuestions').checked = exam.randomizeQuestions === true;
+      document.getElementById('allowPrevious').checked = exam.allowPrevious !== false;
+      
+      if (exam.startDate) {
+        const dt = exam.startDate.toDate ? exam.startDate.toDate() : new Date(exam.startDate);
+        document.getElementById('startDate').value = dt.toISOString().slice(0, 16);
+      }
+      if (exam.endDate) {
+        const dt = exam.endDate.toDate ? exam.endDate.toDate() : new Date(exam.endDate);
+        document.getElementById('endDate').value = dt.toISOString().slice(0, 16);
+      }
+
+      // Load questions
+      questionsContainer.innerHTML = '';
+      questionCounter = 0;
+      (exam.questions || []).forEach((q, index) => {
+        addQuestion(q);
+      });
+      updateQuestionNumbers();
+      toggleNoQuestionsMsg();
+    }
+
+    // Add question block
+    function addQuestion(questionData = null) {
+      if (!questionTemplate) {
+        console.error('questionTemplate not found!');
+        return;
+      }
+      
+      const clone = questionTemplate.content.cloneNode(true);
+      const questionBlock = clone.querySelector('.question-block');
+      const currentIndex = questionCounter;
+
+      // Update all IDs and names to use current index
+      updateQuestionIndices(clone, currentIndex);
+
+      // Populate with data if editing
+      if (questionData) {
+        populateQuestionBlock(clone, currentIndex, questionData);
+      } else {
+        // Set first choice as correct by default for new questions
+        const firstRadio = clone.querySelector('input[type="radio"][value="0"]');
+        if (firstRadio) firstRadio.checked = true;
+      }
+
+      questionsContainer.appendChild(clone);
+      questionCounter++;
+      updateQuestionNumbers();
+      toggleNoQuestionsMsg();
+      attachQuestionListeners(questionBlock);
+    }
+
+    function updateQuestionIndices(clone, index) {
+      // Update question block data attribute
+      const block = clone.querySelector('.question-block');
+      if (block) block.dataset.questionIndex = index;
+
+      // Update question number display
+      const numberEl = clone.querySelector('.question-number');
+      if (numberEl) numberEl.textContent = index + 1;
+
+      // Update all name attributes and IDs
+      const inputs = clone.querySelectorAll('input, textarea, select');
+      inputs.forEach(input => {
+        // Update name attributes
+        if (input.name) {
+          input.name = input.name.replace(/questions\[\d+\]/, `questions[${index}]`);
+        }
+        // Update IDs
+        if (input.id) {
+          input.id = input.id.replace(/-\d+$/, `-${index}`);
+        }
+        // Update 'for' attributes on labels
+        if (input.tagName === 'LABEL' && input.htmlFor) {
+          input.htmlFor = input.htmlFor.replace(/-\d+$/, `-${index}`);
+        }
+      });
+
+      // Update radio button IDs and labels
+      const radios = clone.querySelectorAll('input[type="radio"]');
+      radios.forEach((radio, i) => {
+        const choiceIndex = radio.value;
+        radio.id = `choice-correct-${index}-${choiceIndex}`;
+        const label = clone.querySelector(`label[for="${radio.id}"]`);
+        if (label) label.htmlFor = radio.id;
+      });
+
+      // Update choice input IDs
+      const choiceInputs = clone.querySelectorAll('.choice-input');
+      choiceInputs.forEach((input, i) => {
+        input.id = `choice-text-${index}-${i}`;
+      });
+
+      // Update category input
+      const categoryInput = clone.querySelector('.category-input');
+      if (categoryInput) {
+        categoryInput.id = `category-${index}`;
+      }
+    }
+
+    function populateQuestionBlock(clone, index, question) {
+      // Question text
+      const textArea = clone.querySelector('textarea[name$="[text]"]');
+      if (textArea) textArea.value = question.text || '';
+
+      // Category
+      const categoryInput = clone.querySelector('input[name$="[category]"]');
+      if (categoryInput) categoryInput.value = question.category || '';
+
+      // Choices
+      const choices = question.choices || ['', '', '', ''];
+      const correctIndex = question.correctIndex ?? 0;
+      
+      choices.forEach((choice, i) => {
+        const choiceInput = clone.querySelector(`input[name$="[choices][${i}]"]`);
+        if (choiceInput) choiceInput.value = choice;
+        
+        const radio = clone.querySelector(`input[type="radio"][value="${i}"]`);
+        if (radio) radio.checked = (i === correctIndex);
+      });
+    }
+
+    function attachQuestionListeners(block) {
+      // Delete button
+      const deleteBtn = block.querySelector('.delete-question-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+          if (questionCounter <= 1) {
+            showAlert(alertContainer, 'An exam must have at least one question.', 'warning');
+            return;
+          }
+          showConfirm('Delete Question', 'Are you sure you want to delete this question?').then(confirmed => {
+            if (confirmed) {
+              block.remove();
+              questionCounter--;
+              updateQuestionNumbers();
+              toggleNoQuestionsMsg();
+            }
+          });
+        });
+      }
+
+      // Category input - update datalist on change
+      const categoryInput = block.querySelector('.category-input');
+      if (categoryInput) {
+        categoryInput.addEventListener('change', () => {
+          if (categoryInput.value.trim()) {
+            existingCategories.add(categoryInput.value.trim());
+            updateCategoryDatalist();
+          }
+        });
+      }
+    }
+
+    function updateQuestionNumbers() {
+      const blocks = questionsContainer.querySelectorAll('.question-block');
+      blocks.forEach((block, index) => {
+        block.dataset.questionIndex = index;
+        const numberEl = block.querySelector('.question-number');
+        if (numberEl) numberEl.textContent = index + 1;
+        
+        // Update all name attributes
+        const inputs = block.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+          if (input.name) {
+            input.name = input.name.replace(/questions\[\d+\]/, `questions[${index}]`);
+          }
+        });
+      });
+    }
+
+    function toggleNoQuestionsMsg() {
+      if (noQuestionsMsg) {
+        noQuestionsMsg.classList.toggle('hidden', questionCounter > 0);
+      }
+    }
+
+    // ============ IMPORT PARSING ============
+
+    function parsePastedText() {
+      const text = importText.value.trim();
+      if (!text) {
+        showAlert(alertContainer, 'Please paste some text first.', 'warning');
+        return;
+      }
+      // Clear file import status
+      const statusEl = document.getElementById('import-status');
+      if (statusEl) {
+        statusEl.classList.add('hidden');
+      }
+      // Clear previous debug text
+      lastExtractedText = '';
+      try {
+        parsedQuestions = parsePlainText(text);
+        showImportPreview();
+      } catch (error) {
+        console.error('Parse error:', error);
+        showAlert(alertContainer, 'Failed to parse text: ' + error.message, 'error');
+      }
+    }
+
+    function handleFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Show filename being processed
+      const statusEl = document.getElementById('import-status');
+      if (statusEl) {
+        statusEl.textContent = `Processing: ${file.name}...`;
+        statusEl.classList.remove('hidden');
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          let text = e.target.result;
+          if (file.name.endsWith('.csv')) {
+            parsedQuestions = parseCSV(text);
+          } else if (file.name.endsWith('.json')) {
+            parsedQuestions = parseJSON(text);
+          } else if (file.name.endsWith('.docx')) {
+            // Parse .docx using mammoth.js
+            const arrayBuffer = e.target.result;
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            text = result.value;
+            // Store for debug button
+            lastExtractedText = text;
+            parsedQuestions = parsePlainText(text);
+          } else {
+            // Store for debug button
+            lastExtractedText = text;
+            parsedQuestions = parsePlainText(text);
+          }
+          showImportPreview();
+          if (statusEl) {
+            statusEl.textContent = `Imported ${parsedQuestions.length} questions from ${file.name}`;
+            statusEl.classList.remove('hidden');
+          }
+          // Reset file input AFTER preview is shown
+          event.target.value = '';
+        } catch (error) {
+          console.error('Import error:', error);
+          showAlert(alertContainer, 'Failed to import file: ' + error.message, 'error');
+          if (statusEl) {
+            statusEl.textContent = `Error importing ${file.name}`;
+            statusEl.classList.remove('hidden');
+          }
+          event.target.value = '';
+        }
+      };
+      
+      if (file.name.endsWith('.docx')) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsText(file);
+      }
+    }
+
+    function parsePlainText(text) {
+      const questions = [];
+      
+      // Debug: log first 2000 chars of extracted text
+      console.log('=== Extracted text (first 2000 chars) ===');
+      console.log(text.substring(0, 2000));
+      console.log('=== End extracted text ===');
+      
+      // Try multiple splitting strategies
+      let blocks = [];
+      
+      // Strategy 1: Split by double newline (standard format with blank lines)
+      blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+      
+      // Strategy 2: Split by numbered questions (most common format)
+      // Handles: "1. ", "1) ", "1.", "1)", "Q1. ", "Q1) ", "Question 1: ", "Question 1. "
+      const numberedBlocks = text.split(/(?:\n|^)\s*(?:\d+|Q\d+)[\.\)]?\s*(?:\d*[\.:\)]\s*)?/i).filter(b => b.trim());
+      if (numberedBlocks.length > blocks.length) {
+        blocks = numberedBlocks;
+      }
+      
+      // Strategy 3: Split by "Question" keyword (various formats)
+      const questionBlocks = text.split(/(?:\n|^)\s*[Qq]uestion\s+\d+[\.:\)]?\s*/i).filter(b => b.trim());
+      if (questionBlocks.length > blocks.length) {
+        blocks = questionBlocks;
+      }
+      
+      // Strategy 4: Split by numbered list with parentheses: "1) ", "2) ", etc.
+      const parenBlocks = text.split(/(?:\n|^)\s*\d+\)\s*/).filter(b => b.trim());
+      if (parenBlocks.length > blocks.length) {
+        blocks = parenBlocks;
+      }
+      
+      // Strategy 5: Split by single newline followed by a digit (likely new numbered question)
+      const digitBlocks = text.split(/\n(?=\s*\d+[\.\)])/).filter(b => b.trim());
+      if (digitBlocks.length > blocks.length) {
+        blocks = digitBlocks;
+      }
+      
+      // NOTE: Removed Strategy 6 (split by capital letter) as it incorrectly splits at choice lines (A., B., C., D.)
+      
+      console.log(`Found ${blocks.length} potential question blocks`);
+      
+      // Validate blocks: filter out blocks that don't look like questions
+      // A valid question block should have at least 5 lines and the first line should look like a question
+      const validBlocks = blocks.filter(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length < 5) return false;
+        // First line should not be just a single letter (A, B, C, D) or "Answer:" or "Category:"
+        const firstLine = lines[0];
+        if (/^[A-D]\.?\s*$/i.test(firstLine)) return false; // Just "A" or "A."
+        if (/^(Answer|Correct|Category):/i.test(firstLine)) return false;
+        return true;
+      });
+      
+      if (validBlocks.length > 0) {
+        blocks = validBlocks;
+        console.log(`After validation: ${blocks.length} valid question blocks`);
+      }
+      
+      for (const block of blocks) {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length < 5) continue; // Need at least question + 4 choices
+        
+        // Handle case where first line might be a question number prefix (e.g., "1. What is...?")
+        let questionText = lines[0];
+        questionText = questionText.replace(/^\s*(?:\d+|Q\d+)[\.\)]?\s*/i, '').trim();
+        
+        // Skip if question text is empty after cleaning
+        if (!questionText) continue;
+        
+        // Extract choices - handle various formats: "A. Choice", "A) Choice", "Choice"
+        const rawChoices = lines.slice(1, 5);
+        const choices = rawChoices.map(choice => {
+          // Remove leading "A. ", "A) ", "a. ", "a) ", etc.
+          return choice.replace(/^\s*[A-Da-d][\.\)]\s*/, '').trim();
+        });
+        
+        // Skip if any choice is empty
+        if (!choices.every(c => c.length > 0)) continue;
+        
+        let correctIndex = 0;
+        let category = '';
+        
+        // Check remaining lines for Answer:/Correct:/Category:
+        for (let i = 5; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.match(/^(Answer|Correct):/i)) {
+            const match = line.match(/:(.*)/);
+            if (match) {
+              const val = match[1].trim();
+              const idx = parseInt(val);
+              if (!isNaN(idx) && idx >= 0 && idx <= 3) correctIndex = idx;
+              // Also support A/B/C/D
+              else if (/^[A-D]$/i.test(val)) correctIndex = val.toUpperCase().charCodeAt(0) - 65;
+            }
+          } else if (line.match(/^Category:/i)) {
+            const match = line.match(/:(.*)/);
+            if (match) category = match[1].trim();
+          }
+        }
+        
+        if (choices.length === 4) {
+          questions.push({
+            text: questionText,
+            choices,
+            correctIndex,
+            category: category || null
+          });
+        }
+      }
+      
+      console.log(`Successfully parsed ${questions.length} questions`);
+      return questions;
+    }
+
+    function parseCSV(text) {
+      const questions = [];
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      if (lines.length < 2) return questions;
+      
+      // Parse header
+      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+      const qIdx = headers.indexOf('question');
+      const aIdx = headers.indexOf('choicea');
+      const bIdx = headers.indexOf('choiceb');
+      const cIdx = headers.indexOf('choicec');
+      const dIdx = headers.indexOf('choiced');
+      const correctIdx = headers.indexOf('correctindex');
+      const catIdx = headers.indexOf('category');
+      
+      if (qIdx === -1 || aIdx === -1 || bIdx === -1 || cIdx === -1 || dIdx === -1) {
+        throw new Error('CSV must have columns: question,choiceA,choiceB,choiceC,choiceD,correctIndex,category');
+      }
+      
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 5) continue;
+        
+        questions.push({
+          text: cols[qIdx] || '',
+          choices: [
+            cols[aIdx] || '',
+            cols[bIdx] || '',
+            cols[cIdx] || '',
+            cols[dIdx] || ''
+          ],
+          correctIndex: correctIdx >= 0 ? parseInt(cols[correctIdx]) || 0 : 0,
+          category: catIdx >= 0 ? (cols[catIdx] || null) : null
+        });
+      }
+      return questions;
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i+1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function parseJSON(text) {
+      try {
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) throw new Error('JSON must be an array');
+        return data.map(q => ({
+          text: q.text || q.question || '',
+          choices: q.choices || [q.choiceA, q.choiceB, q.choiceC, q.choiceD].filter(Boolean),
+          correctIndex: q.correctIndex ?? q.correct ?? q.answer ?? 0,
+          category: q.category || q.tag || ''
+        })).filter(q => q.text && q.choices.length === 4);
+      } catch (e) {
+        throw new Error('Invalid JSON: ' + e.message);
+      }
+    }
+
+    function showImportPreview() {
+      if (!parsedQuestions.length) {
+        showAlert(alertContainer, 'No valid questions found in input.', 'warning');
+        return;
+      }
+      
+      importPreviewList.innerHTML = parsedQuestions.map((q, i) => `
+        <article class="card import-preview-item">
+          <div class="card-body p-3">
+            <div class="font-medium">Q${i+1}. ${escapeHtml(q.text)}</div>
+            <div class="text-sm text-muted mt-1">
+              ${q.choices.map((c, idx) => `
+                <span class="badge ${idx === q.correctIndex ? 'badge-success' : 'badge-outline'}">${String.fromCharCode(65+idx)}. ${escapeHtml(c)}</span>
+              `).join(' ')}
+              ${q.category ? `<span class="badge badge-primary ml-2">${escapeHtml(q.category)}</span>` : ''}
+            </div>
+          </div>
+        </article>
+      `).join('');
+      
+      importPreview.classList.remove('hidden');
+      showAlert(alertContainer, `Parsed ${parsedQuestions.length} questions. Review and click "Add All Questions".`, 'success');
+    }
+
+    function confirmImport() {
+      // Remove the default empty question if it exists (first question with no text)
+      const blocks = questionsContainer.querySelectorAll('.question-block');
+      if (blocks.length > 0) {
+        const firstBlock = blocks[0];
+        const firstQuestionText = firstBlock.querySelector('textarea[name$="[text]"]').value.trim();
+        const firstChoices = firstBlock.querySelectorAll('.choice-input');
+        let firstChoicesEmpty = true;
+        firstChoices.forEach(input => {
+          if (input.value.trim()) firstChoicesEmpty = false;
+        });
+        // If first question is completely empty (default question), remove it
+        if (!firstQuestionText && firstChoicesEmpty) {
+          firstBlock.remove();
+          questionCounter--;
+        }
+      }
+      
+      parsedQuestions.forEach(q => addQuestion(q));
+      parsedQuestions = [];
+      importPreview.classList.add('hidden');
+      importText.value = '';
+      lastExtractedText = '';
+      const statusEl = document.getElementById('import-status');
+      if (statusEl) statusEl.classList.add('hidden');
+      showAlert(alertContainer, 'Questions added successfully!', 'success');
+    }
+
+    // ============ FORM HANDLING ============
+
+    function validateForm() {
+      const title = document.getElementById('title').value.trim();
+      const timeLimit = parseInt(document.getElementById('timeLimitMinutes').value);
+      const passingPercent = parseInt(document.getElementById('passingPercent').value);
+      const questions = questionsContainer.querySelectorAll('.question-block');
+
+      if (!title) {
+        showAlert(alertContainer, 'Please enter an exam title.', 'error');
+        return false;
+      }
+      if (!timeLimit || timeLimit < 1 || timeLimit > 480) {
+        showAlert(alertContainer, 'Time limit must be between 1 and 480 minutes.', 'error');
+        return false;
+      }
+      if (isNaN(passingPercent) || passingPercent < 0 || passingPercent > 100) {
+        showAlert(alertContainer, 'Passing percentage must be between 0 and 100.', 'error');
+        return false;
+      }
+      if (questions.length === 0) {
+        showAlert(alertContainer, 'Please add at least one question.', 'error');
+        return false;
+      }
+
+      for (let i = 0; i < questions.length; i++) {
+        const block = questions[i];
+        const text = block.querySelector('textarea[name$="[text]"]').value.trim();
+        if (!text) {
+          showAlert(alertContainer, `Question ${i + 1}: Please enter question text.`, 'error');
+          return false;
+        }
+        const choices = block.querySelectorAll('.choice-input');
+        let allChoicesFilled = true;
+        choices.forEach(input => {
+          if (!input.value.trim()) allChoicesFilled = false;
+        });
+        if (!allChoicesFilled) {
+          showAlert(alertContainer, `Question ${i + 1}: All four answer choices are required.`, 'error');
+          return false;
+        }
+        const correctRadio = block.querySelector('input[type="radio"][name$="[correctIndex]"]:checked');
+        if (!correctRadio) {
+          showAlert(alertContainer, `Question ${i + 1}: Please select the correct answer.`, 'error');
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function collectFormData() {
+      const questions = [];
+      const blocks = questionsContainer.querySelectorAll('.question-block');
+      
+      blocks.forEach((block, index) => {
+        const text = block.querySelector('textarea[name$="[text]"]').value.trim();
+        const category = block.querySelector('input[name$="[category]"]').value.trim();
+        const choices = [];
+        const choiceInputs = block.querySelectorAll('.choice-input');
+        choiceInputs.forEach(input => choices.push(input.value.trim()));
+        const correctIndex = parseInt(block.querySelector('input[type="radio"][name$="[correctIndex]"]:checked').value);
+        
+        questions.push({
+          id: generateId(),
+          text,
+          category: category || null,
+          choices,
+          correctIndex
+        });
+      });
+
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      return {
+        title: document.getElementById('title').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        timeLimitMinutes: parseInt(document.getElementById('timeLimitMinutes').value),
+        passingPercent: parseInt(document.getElementById('passingPercent').value),
+        showResultsToStudent: document.getElementById('showResultsToStudent').checked,
+        randomizeQuestions: document.getElementById('randomizeQuestions').checked,
+        allowPrevious: document.getElementById('allowPrevious').checked,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        questions,
+        createdBy: currentUser.uid,
+        updatedAt: serverTimestamp()
+      };
+    }
+
+    async function saveExam(isDraft = false) {
+      if (!validateForm()) return false;
+
+      setLoading(true);
+      clearAlert();
+
+      try {
+        const examData = collectFormData();
+        
+        if (isDraft) {
+          examData.status = 'draft';
+        } else {
+          examData.status = 'published';
+          if (!examData.createdAt) examData.createdAt = serverTimestamp();
+        }
+
+        let targetExamId = examId;
+        if (!targetExamId) {
+          targetExamId = generateId();
+        }
+
+        await setDoc(doc(db, 'exams', targetExamId), examData, { merge: true });
+        
+        examId = targetExamId;
+        isEditing = true;
+        document.getElementById('page-title').textContent = 'Edit Exam';
+        document.getElementById('page-subtitle').textContent = 'Modify exam details and questions';
+        submitBtnText.textContent = 'Update Exam';
+        history.replaceState(null, '', `create-exam.html?examId=${examId}`);
+
+        showAlert(alertContainer, isDraft ? 'Draft saved successfully.' : 'Exam published successfully!', 'success');
+        return true;
+      } catch (error) {
+        console.error('Error saving exam:', error);
+        showAlert(alertContainer, 'Failed to save exam. Please try again.', 'error');
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      saveDraftBtn.disabled = loading;
+      submitSpinner.classList.toggle('hidden', !loading);
+      submitBtnText.textContent = loading ? (isEditing ? 'Updating...' : 'Publishing...') : (isEditing ? 'Update Exam' : 'Publish Exam');
+    }
+
+    function clearAlert() {
+      alertContainer.innerHTML = '';
+    }
+
+    // Firestore functions already imported at top
+  </script>
+</body>
+</html>

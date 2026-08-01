@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Exam Results - Exam Platform">
+  <title>Exam Results - Exam Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="header no-print">
+    <div class="container header-inner">
+      <a href="/admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Exam Platform
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/admin-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/create-exam.html" class="nav-link">Create Exam</a>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <div id="alert-container"></div>
+
+      <!-- Exam Header -->
+      <section class="card results-header" aria-labelledby="exam-title" id="exam-header-card">
+        <div class="results-header-content">
+          <h1 id="exam-title" class="results-title">Loading...</h1>
+          <p id="exam-description" class="results-description"></p>
+          <div class="results-meta" aria-label="Exam details">
+            <span class="badge badge-primary" id="badge-questions"></span>
+            <span class="badge badge-secondary" id="badge-time"></span>
+            <span class="badge badge-secondary" id="badge-passing"></span>
+            <span class="badge badge-secondary" id="badge-availability"></span>
+          </div>
+        </div>
+        <div class="results-actions">
+          <button class="btn btn-primary" id="export-csv-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+          <button class="btn btn-outline" id="print-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5"/><path d="M18 18h2a2 2 0 0 0 2-2v-5"/></svg>
+            Print
+          </button>
+          <a href="/create-exam.html?examId=" id="edit-exam-link" class="btn btn-outline">Edit Exam</a>
+          <button class="btn btn-outline copy-link-btn" id="copy-link-btn" aria-label="Copy exam link" title="Copy exam link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Summary Stats -->
+      <section class="stats-grid summary-stats" aria-label="Exam summary statistics" id="summary-stats">
+        <article class="card stat-card">
+          <div class="stat-icon primary" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-total-attempts">0</span>
+            <span class="stat-label">Total Attempts</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon success" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-passed">0</span>
+            <span class="stat-label">Passed</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon danger" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-failed">0</span>
+            <span class="stat-label">Failed</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon warning" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-avg-score">0%</span>
+            <span class="stat-label">Average Score</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Filters -->
+      <section class="card filters-card no-print" aria-labelledby="filters-heading">
+        <h2 class="sr-only" id="filters-heading">Filter Submissions</h2>
+        <div class="filters-grid">
+          <div class="filter-group form-group">
+            <label class="label" for="search-student">Search Student</label>
+            <input type="text" id="search-student" class="input" placeholder="Name or email..." aria-describedby="search-help">
+            <span id="search-help" class="sr-only">Search by student name or email</span>
+          </div>
+          <div class="filter-group form-group">
+            <label class="label" for="filter-status">Filter by Status</label>
+            <select id="filter-status" class="select">
+              <option value="">All</option>
+              <option value="passed">Passed</option>
+              <option value="failed">Failed</option>
+              <option value="auto">Auto-submitted</option>
+            </select>
+          </div>
+          <div class="filter-group form-group">
+            <label class="label" for="sort-by">Sort By</label>
+            <select id="sort-by" class="select">
+              <option value="submittedAt-desc">Newest First</option>
+              <option value="submittedAt-asc">Oldest First</option>
+              <option value="percentage-desc">Score: High to Low</option>
+              <option value="percentage-asc">Score: Low to High</option>
+              <option value="studentName-asc">Name: A-Z</option>
+              <option value="studentName-desc">Name: Z-A</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Submissions List -->
+      <section class="card submissions-table-container" aria-labelledby="submissions-heading">
+        <header class="card-header">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h2 class="card-title" id="submissions-heading">Student Submissions</h2>
+            <span class="text-sm text-muted" id="submissions-count">0 submissions</span>
+          </div>
+        </header>
+        <div class="card-body p-0">
+          <div class="table-container">
+            <table class="table submissions-table" role="grid">
+              <thead>
+                <tr>
+                  <th scope="col">Student</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">%</th>
+                  <th scope="col">Time Taken</th>
+                  <th scope="col">Submitted</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="submissions-tbody">
+                <tr>
+                  <td colspan="8" class="text-center py-8 text-muted">Loading submissions...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detail View (hidden by default) -->
+      <section id="detail-view" class="detail-view" hidden aria-labelledby="detail-title">
+        <article class="card">
+          <header class="detail-header">
+            <h2 class="detail-title" id="detail-title">Submission Detail</h2>
+            <button class="btn btn-ghost btn-sm" id="close-detail-btn" type="button">Back to List</button>
+          </header>
+          <div class="card-body" id="detail-content"></div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from '/src/firebase.js';
+    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+    import { formatDate, formatDateTime, formatDuration, formatPercent, escapeHtml, showAlert } from '/js/admin.js';
+
+    // DOM Elements
+    const logoutBtn = document.getElementById('logout-btn');
+    const alertContainer = document.getElementById('alert-container');
+    const examHeaderCard = document.getElementById('exam-header-card');
+    const examTitle = document.getElementById('exam-title');
+    const examDescription = document.getElementById('exam-description');
+    const badgeQuestions = document.getElementById('badge-questions');
+    const badgeTime = document.getElementById('badge-time');
+    const badgePassing = document.getElementById('badge-passing');
+    const badgeAvailability = document.getElementById('badge-availability');
+    const editExamLink = document.getElementById('edit-exam-link');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    const printBtn = document.getElementById('print-btn');
+    const statTotalAttempts = document.getElementById('stat-total-attempts');
+    const statPassed = document.getElementById('stat-passed');
+    const statFailed = document.getElementById('stat-failed');
+    const statAvgScore = document.getElementById('stat-avg-score');
+    const submissionsTbody = document.getElementById('submissions-tbody');
+    const submissionsCount = document.getElementById('submissions-count');
+    const searchStudent = document.getElementById('search-student');
+    const filterStatus = document.getElementById('filter-status');
+    const sortBy = document.getElementById('sort-by');
+    const detailView = document.getElementById('detail-view');
+    const detailContent = document.getElementById('detail-content');
+    const closeDetailBtn = document.getElementById('close-detail-btn');
+
+    // State
+    let currentUser = null;
+    let examId = null;
+    let exam = null;
+    let allSubmissions = [];
+    let filteredSubmissions = [];
+
+    // Get examId from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    examId = urlParams.get('examId');
+
+    if (!examId) {
+      window.location.href = '/admin-dashboard.html';
+    }
+
+    // Auth check
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+        return;
+      }
+      currentUser = user;
+      editExamLink.href = `/create-exam.html?examId=${examId}`;
+      
+      // Copy exam link button
+      const copyLinkBtn = document.getElementById('copy-link-btn');
+      if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', () => {
+          const examLink = `${window.location.origin}/exam.html?examId=${examId}`;
+          navigator.clipboard.writeText(examLink).then(() => {
+            // Show temporary feedback
+            const originalHTML = copyLinkBtn.innerHTML;
+            copyLinkBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            copyLinkBtn.classList.add('btn-success');
+            copyLinkBtn.classList.remove('btn-outline');
+            setTimeout(() => {
+              copyLinkBtn.innerHTML = originalHTML;
+              copyLinkBtn.classList.add('btn-outline');
+              copyLinkBtn.classList.remove('btn-success');
+            }, 2000);
+          }).catch(() => {
+            // Fallback for older browsers
+            prompt('Copy this link:', `${window.location.origin}/exam.html?examId=${examId}`);
+          });
+        });
+      }
+      
+      await loadExamAndSubmissions();
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = '/index.html';
+    });
+
+    async function loadExamAndSubmissions() {
+      try {
+        // Load exam
+        const examDoc = await getDoc(doc(db, 'exams', examId));
+        if (!examDoc.exists()) {
+          showAlert(alertContainer, 'Exam not found.', 'error');
+          setTimeout(() => window.location.href = '/admin-dashboard.html', 2000);
+          return;
+        }
+        exam = { id: examDoc.id, ...examDoc.data() };
+        renderExamHeader();
+
+        // Load submissions
+        const submissionsQuery = query(
+          collection(db, 'submissions'),
+          where('examId', '==', examId),
+          orderBy('submittedAt', 'desc')
+        );
+        const submissionsSnapshot = await getDocs(submissionsQuery);
+        allSubmissions = submissionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        applyFiltersAndSort();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showAlert(alertContainer, 'Failed to load exam results.', 'error');
+      }
+    }
+
+    function renderExamHeader() {
+      examTitle.textContent = exam.title;
+      examDescription.textContent = exam.description || 'No description provided.';
+      badgeQuestions.textContent = `${exam.questions?.length || 0} Questions`;
+      badgeTime.textContent = `${exam.timeLimitMinutes} min`;
+      badgePassing.textContent = `Passing: ${exam.passingPercent || 70}%`;
+      
+      const now = new Date();
+      const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+      const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+      
+      let availabilityText = 'Always Open';
+      let availabilityClass = 'success';
+      if (startDate && startDate > now) {
+        availabilityText = `Opens ${formatDate(startDate)}`;
+        availabilityClass = 'warning';
+      } else if (endDate && endDate < now) {
+        availabilityText = `Closed ${formatDate(endDate)}`;
+        availabilityClass = 'danger';
+      } else if (endDate) {
+        availabilityText = `Closes ${formatDate(endDate)}`;
+        availabilityClass = 'warning';
+      }
+      badgeAvailability.textContent = availabilityText;
+      badgeAvailability.className = `badge badge-${availabilityClass}`;
+    }
+
+    function applyFiltersAndSort() {
+      let filtered = [...allSubmissions];
+
+      // Search filter
+      const search = searchStudent.value.toLowerCase().trim();
+      if (search) {
+        filtered = filtered.filter(s => 
+          (s.studentName?.toLowerCase().includes(search)) ||
+          (s.studentEmail?.toLowerCase().includes(search))
+        );
+      }
+
+      // Status filter
+      const status = filterStatus.value;
+      if (status === 'passed') {
+        filtered = filtered.filter(s => s.passed === true);
+      } else if (status === 'failed') {
+        filtered = filtered.filter(s => s.passed === false);
+      } else if (status === 'auto') {
+        filtered = filtered.filter(s => s.autoSubmitted === true);
+      }
+
+      // Sort
+      const [sortField, sortDir] = sortBy.value.split('-');
+      filtered.sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+        
+        if (valA instanceof Date || valA?.toDate) {
+          valA = valA.toDate ? valA.toDate() : new Date(valA);
+          valB = valB.toDate ? valB.toDate() : new Date(valB);
+        }
+        
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      filteredSubmissions = filtered;
+      renderSubmissionsTable();
+      updateSummaryStats();
+    }
+
+    function renderSubmissionsTable() {
+      submissionsCount.textContent = `${filteredSubmissions.length} submission${filteredSubmissions.length !== 1 ? 's' : ''}`;
+      
+      if (filteredSubmissions.length === 0) {
+        submissionsTbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-muted">No submissions found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      submissionsTbody.innerHTML = filteredSubmissions.map(sub => {
+        const percentage = sub.percentage ?? 0;
+        const passed = sub.passed === true;
+        const autoSubmitted = sub.autoSubmitted === true;
+        const timeTaken = sub.submittedAt && sub.startedAt 
+          ? (sub.submittedAt.toDate ? sub.submittedAt.toDate() : new Date(sub.submittedAt)) - (sub.startedAt.toDate ? sub.startedAt.toDate() : new Date(sub.startedAt))
+          : 0;
+
+        let statusBadge = '';
+        if (autoSubmitted) {
+          statusBadge = '<span class="badge badge-warning">Auto-submitted</span>';
+        } else if (passed) {
+          statusBadge = '<span class="badge badge-success">Passed</span>';
+        } else {
+          statusBadge = '<span class="badge badge-danger">Failed</span>';
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="student-name">${escapeHtml(sub.studentName || 'Unknown')}</div>
+              <div class="student-email">${escapeHtml(sub.studentEmail || 'N/A')}</div>
+            </td>
+            <td class="score-cell">${sub.score || 0} / ${exam.questions?.length || 0}</td>
+            <td class="percent-cell ${passed ? 'passed' : 'failed'}">${formatPercent(percentage)}</td>
+            <td class="time-cell">${formatDuration(timeTaken)}</td>
+            <td class="date-cell">${formatDateTime(sub.submittedAt)}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-outline view-btn view-detail-btn" data-submission-id="${sub.id}" aria-label="View details for ${escapeHtml(sub.studentName || 'Unknown')}">View</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Attach view detail listeners
+      document.querySelectorAll('.view-detail-btn').forEach(btn => {
+        btn.addEventListener('click', () => showSubmissionDetail(btn.dataset.submissionId));
+      });
+    }
+
+    function updateSummaryStats() {
+      const total = allSubmissions.length;
+      const passed = allSubmissions.filter(s => s.passed === true).length;
+      const failed = allSubmissions.filter(s => s.passed === false).length;
+      const avgScore = total > 0 
+        ? allSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / total 
+        : 0;
+
+      statTotalAttempts.textContent = total;
+      statPassed.textContent = passed;
+      statFailed.textContent = failed;
+      statAvgScore.textContent = formatPercent(avgScore);
+    }
+
+    function showSubmissionDetail(submissionId) {
+      const sub = allSubmissions.find(s => s.id === submissionId);
+      if (!sub) return;
+
+      const percentage = sub.percentage ?? 0;
+      const passed = sub.passed === true;
+      const autoSubmitted = sub.autoSubmitted === true;
+      // Prefer the client-recorded duration; fall back to submitted − started.
+      const timeTaken = sub.timeTakenMs ?? (sub.submittedAt && sub.startedAt
+        ? (sub.submittedAt.toDate ? sub.submittedAt.toDate() : new Date(sub.submittedAt)) - (sub.startedAt.toDate ? sub.startedAt.toDate() : new Date(sub.startedAt))
+        : 0);
+      const flaggedQuestions = Array.isArray(sub.flaggedQuestions) ? sub.flaggedQuestions : [];
+
+      let html = `
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Student Name</span>
+            <span class="detail-value">${escapeHtml(sub.studentName || 'Unknown')}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">${escapeHtml(sub.studentEmail || 'N/A')}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Score</span>
+            <span class="detail-value font-semibold ${passed ? 'text-success' : 'text-danger'}">${sub.score || 0} / ${exam.questions?.length || 0} (${formatPercent(percentage)})</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Status</span>
+            <span class="detail-value">
+              ${autoSubmitted ? '<span class="badge badge-warning">Auto-submitted</span>' : ''}
+              ${passed ? '<span class="badge badge-success">Passed</span>' : '<span class="badge badge-danger">Failed</span>'}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Time Taken</span>
+            <span class="detail-value">${formatDuration(timeTaken)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Submitted</span>
+            <span class="detail-value">${formatDateTime(sub.submittedAt)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Started</span>
+            <span class="detail-value">${formatDateTime(sub.startedAt)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Tab Switches</span>
+            <span class="detail-value">${sub.tabSwitchCount || 0}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Flagged Questions</span>
+            <span class="detail-value">${flaggedQuestions.length}</span>
+          </div>
+        </div>
+      `;
+
+      // Question-by-question breakdown
+      html += '<h3 class="mt-6 mb-4">Answer Breakdown</h3>';
+      html += '<div class="answer-breakdown">';
+
+      const questions = exam.questions || [];
+      const answers = sub.answers || [];
+
+      questions.forEach((question, qIndex) => {
+        const studentAnswer = answers.find(a => a.questionId === question.id);
+        const selectedIndex = studentAnswer?.selectedIndex ?? -1;
+        const isCorrect = selectedIndex === question.correctIndex;
+        const isAnswered = selectedIndex >= 0;
+        const isFlagged = flaggedQuestions.includes(qIndex);
+
+        html += `
+          <article class="answer-item ${isCorrect ? 'correct' : (isAnswered ? 'incorrect' : '')}${isFlagged ? ' flagged' : ''}">
+            <header class="answer-header">
+              <div class="answer-question">
+                <span class="answer-question-number">Q${qIndex + 1}</span>
+                <span class="answer-question-text">${escapeHtml(question.text)}</span>
+                ${question.category ? `<span class="answer-question-category">${escapeHtml(question.category)}</span>` : ''}
+              </div>
+              <div class="answer-status">
+                ${isFlagged ? '<span class="badge badge-warning" title="Student flagged this question for review">Flagged</span>' : ''}
+                ${isAnswered ? (isCorrect ? '<span class="badge badge-success">Correct</span>' : '<span class="badge badge-danger">Incorrect</span>') : '<span class="badge badge-warning">Not Answered</span>'}
+              </div>
+            </header>
+            <div class="answer-choices">
+        `;
+
+        question.choices.forEach((choice, cIndex) => {
+          let classes = 'answer-choice';
+          if (cIndex === question.correctIndex) classes += ' correct';
+          if (cIndex === selectedIndex) classes += ' selected';
+          
+          let label = '';
+          if (cIndex === question.correctIndex && cIndex === selectedIndex) {
+            label = '<span class="answer-choice-label">(Correct Answer - Selected)</span>';
+          } else if (cIndex === question.correctIndex) {
+            label = '<span class="answer-choice-label">(Correct Answer)</span>';
+          } else if (cIndex === selectedIndex) {
+            label = '<span class="answer-choice-label">(Student\'s Answer)</span>';
+          }
+
+          html += `
+            <div class="${classes}">
+              <span class="answer-choice-letter">${String.fromCharCode(65 + cIndex)}</span>
+              <span class="answer-choice-text">${escapeHtml(choice)}</span>
+              ${label}
+            </div>
+          `;
+        });
+
+        html += '</div></article>';
+      });
+
+      html += '</div>';
+
+      detailContent.innerHTML = html;
+      detailView.hidden = false;
+      detailView.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeDetail() {
+      detailView.hidden = true;
+    }
+
+    // Event listeners
+    searchStudent.addEventListener('input', applyFiltersAndSort);
+    filterStatus.addEventListener('change', applyFiltersAndSort);
+    sortBy.addEventListener('change', applyFiltersAndSort);
+    closeDetailBtn.addEventListener('click', closeDetail);
+
+    // Export CSV
+    exportCsvBtn.addEventListener('click', () => {
+      if (allSubmissions.length === 0) {
+        showAlert(alertContainer, 'No submissions to export.', 'warning');
+        return;
+      }
+
+      const headers = ['Student Name', 'Email', 'Score', 'Total Questions', 'Percentage', 'Passed', 'Time Taken (min)', 'Submitted At', 'Auto-submitted'];
+      const rows = allSubmissions.map(sub => {
+        const timeTaken = sub.submittedAt && sub.startedAt 
+          ? Math.round(((sub.submittedAt.toDate ? sub.submittedAt.toDate() : new Date(sub.submittedAt)) - (sub.startedAt.toDate ? sub.startedAt.toDate() : new Date(sub.startedAt))) / 60000)
+          : 0;
+        return [
+          `"${(sub.studentName || '').replace(/"/g, '""')}"`,
+          `"${(sub.studentEmail || '').replace(/"/g, '""')}"`,
+          sub.score || 0,
+          exam.questions?.length || 0,
+          (sub.percentage || 0).toFixed(1),
+          sub.passed ? 'Yes' : 'No',
+          timeTaken,
+          formatDateTime(sub.submittedAt),
+          sub.autoSubmitted ? 'Yes' : 'No'
+        ].join(',');
+      });
+
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      // Use form submission instead of link.click() so Playwright can intercept the download
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = URL.createObjectURL(blob);
+      form.target = '_blank';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'csv';
+      input.value = csv;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      // Note: URL.revokeObjectURL will be called after a short delay to allow download to start
+      setTimeout(() => URL.revokeObjectURL(form.action), 1000);
+    });
+
+    // Print
+    printBtn.addEventListener('click', () => {
+      window.print();
+    });
+  </script>
+</body>
+</html>

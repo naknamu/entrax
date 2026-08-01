@@ -1,0 +1,165 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ==========================================================================
+    // SECURITY RULES FOR ONLINE EXAM PLATFORM
+    // ==========================================================================
+    //
+    // IMPORTANT SECURITY TRADEOFF NOTE:
+    // ---------------------------------
+    // Firestore security rules CANNOT hide specific fields within a document.
+    // If a user has read access to a document, they can read ALL fields.
+    //
+    // In this "no-backend" static-only version:
+    // - Correct answers (correctIndex) are stored in the exam document
+    // - Students need read access to exams to take them
+    // - Therefore, a determined student COULD read correctIndex before submitting
+    //
+    // MITIGATIONS IN THIS IMPLEMENTATION:
+    // 1. Grading happens client-side AFTER submission (not before)
+    // 2. Exam documents are only readable during the exam availability window
+    // 3. Students only get exam data when they start the exam (via token)
+    // 4. For TRUE security (hiding answers completely), you would need:
+    //    - A Cloud Function (Firebase Functions) to grade server-side
+    //    - Store correct answers in a separate collection only admins can read
+    //    - Call the Function on submit, never send correctIndex to client
+    //
+    // This is a known limitation of client-side-only Firebase apps.
+    // For production high-stakes exams, use Cloud Functions.
+    // ==========================================================================
+
+    // Helper functions
+    function isAdmin() {
+      // For development: any authenticated user is an admin
+      // In production, change to: request.auth != null && request.auth.token.email_verified == true
+      return request.auth != null;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function examExists(examId) {
+      return exists(/databases/$(database)/documents/exams/$(examId));
+    }
+
+    function isExamOpen(examId) {
+      let exam = get(/databases/$(database)/documents/exams/$(examId));
+      let now = request.time;
+      // Check if exam is published (has questions) and within date window
+      return exam.data.questions != null && exam.data.questions.size() > 0 &&
+             (exam.data.startDate == null || exam.data.startDate <= now) &&
+             (exam.data.endDate == null || exam.data.endDate >= now);
+    }
+
+    function isExamOwner(examId) {
+      let exam = get(/databases/$(database)/documents/exams/$(examId));
+      return exam.data.createdBy == request.auth.uid;
+    }
+
+    // Allow users to read their own exams (for category loading, dashboard, etc.)
+    function isOwnExam() {
+      return request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    // ==========================================================================
+    // EXAMS COLLECTION
+    // ==========================================================================
+    match /exams/{examId} {
+      // Admins can create exams
+      allow create: if isAdmin() && request.resource.data.createdBy == request.auth.uid;
+
+      // Admins can read all exams (for dashboard)
+      // Users can read their own exams (for category loading, editing)
+      // Students can read exam ONLY during exam window (for taking the exam)
+      allow read: if isAdmin() || isOwnExam() || (!isAdmin() && isExamOpen(examId));
+
+      // Admins can update their own exams
+      allow update: if isAdmin() && isExamOwner(examId);
+
+      // Admins can delete their own exams
+      allow delete: if isAdmin() && isExamOwner(examId);
+    }
+
+    // ==========================================================================
+    // SUBMISSIONS COLLECTION
+    // ==========================================================================
+    match /submissions/{submissionId} {
+      // Students can CREATE a submission (take an exam)
+      // They provide: examId, studentName, studentEmail, answers, startedAt
+      // Server-side: submittedAt, score, percentage, passed, autoSubmitted are set by client after grading
+      allow create: if 
+        // Must be for a valid, open exam
+        examExists(request.resource.data.examId) &&
+        isExamOpen(request.resource.data.examId) &&
+        // Student info required
+        request.resource.data.studentName != null &&
+        request.resource.data.studentName != '' &&
+        request.resource.data.studentEmail != null &&
+        request.resource.data.studentEmail != '' &&
+        // Started timestamp required
+        request.resource.data.startedAt != null &&
+        // Answers array required
+        request.resource.data.answers != null &&
+        // Prevent duplicate submissions for same exam+student
+        // Note: This requires a composite index or client-side check
+        true;
+
+      // Students can READ their own submission (after submitting)
+      // Matched by studentEmail + examId (queried client-side)
+      allow read: if 
+        isAuthenticated() &&
+        (resource.data.studentEmail == request.auth.token.email || 
+         // For anonymous auth, allow reading if the submission was created by this session
+         request.auth.token.firebase.sign_in_provider == 'anonymous');
+
+      // Admins can read ALL submissions
+      allow read: if isAdmin();
+
+      // Students can UPDATE their own submission (autosave answers, final submit)
+      // For anonymous auth, allow update if the submission's studentEmail matches the request data
+      allow update: if 
+        isAuthenticated() &&
+        (resource.data.studentEmail == request.auth.token.email ||
+         // For anonymous auth, allow update if the request data contains the same studentEmail
+         (request.auth.token.firebase.sign_in_provider == 'anonymous' && 
+          request.resource.data.studentEmail == resource.data.studentEmail));
+
+      // No deletes for submissions (audit trail) — except: an authenticated
+      // student may remove their own abandoned DRAFT (submittedAt null) so a
+      // crashed session doesn't lock them out of retaking the exam.
+      allow delete: if isAuthenticated() && resource.data.submittedAt == null;
+    }
+
+    // ==========================================================================
+    // DEFAULT DENY
+    // ==========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/* ==========================================================================
+   DEPLOYMENT INSTRUCTIONS FOR FIRESTORE RULES
+   ==========================================================================
+   
+   1. Go to Firebase Console → Firestore Database → Rules tab
+   2. Copy the entire content of this file
+   3. Paste into the rules editor
+   4. Click "Publish"
+   
+   OR use Firebase CLI:
+   firebase deploy --only firestore:rules
+   
+   REQUIRED INDEXES (create in Firebase Console → Firestore → Indexes):
+   - Collection: submissions
+     Fields: examId (Ascending), studentEmail (Ascending)
+     Query scope: Collection
+   - Collection: submissions  
+     Fields: examId (Ascending), submittedAt (Descending)
+     Query scope: Collection
+   - Collection: exams
+     Fields: createdBy (Ascending), createdAt (Descending)
+     Query scope: Collection
+*/

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Take Exam - Exam Platform">
+  <title>Take Exam - Exam Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="exam-page">
+  <!-- Start Screen -->
+  <section id="start-screen" class="exam-screen active" aria-labelledby="start-title">
+    <div class="exam-container exam-container--start">
+      <header class="start-header">
+        <h1 id="exam-title-start" class="start-title">Loading...</h1>
+        <p id="exam-description-start" class="start-description"></p>
+      </header>
+
+      <div id="start-alert-container"></div>
+
+      <article class="card start-info-card">
+        <div class="card-body">
+          <div class="start-info-grid" role="list" aria-label="Exam information">
+            <div class="info-card info-card--primary" role="listitem">
+              <div class="info-value" id="info-questions">-</div>
+              <div class="info-label">Questions</div>
+            </div>
+            <div class="info-card info-card--secondary" role="listitem">
+              <div class="info-value" id="info-time">-</div>
+              <div class="info-label">Time Limit</div>
+            </div>
+            <div class="info-card info-card--success" role="listitem">
+              <div class="info-value" id="info-passing">-</div>
+              <div class="info-label">Passing Score</div>
+            </div>
+          </div>
+
+          <form id="start-form" class="start-form" novalidate>
+            <div class="form-group">
+              <label class="label" for="student-name">Your Full Name <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="text" id="student-name" class="input input-lg" placeholder="Enter your full name" required autocomplete="name" autofocus>
+            </div>
+            <div class="form-group">
+              <label class="label" for="student-email">Your Email / ID <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="email" id="student-email" class="input input-lg" placeholder="Enter your email or student ID" required autocomplete="email">
+            </div>
+
+            <div class="alert alert-info" role="alert">
+              <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <div>
+                <strong>Important:</strong> Once you start, the timer begins immediately and cannot be paused.
+                The exam will auto-submit when time runs out. Make sure you have a stable internet connection.
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block btn-lg btn-start" id="start-exam-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Start Exam
+            </button>
+          </form>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Exam Screen -->
+  <section id="exam-screen" class="exam-screen" aria-labelledby="exam-title" hidden>
+    <!-- Sticky Timer Bar -->
+    <header class="exam-timer-bar" id="timer-bar" role="region" aria-label="Exam timer" aria-live="polite">
+      <div class="timer-container">
+        <div class="timer-info">
+          <span class="timer-label">Time Remaining</span>
+          <div class="timer-display" id="timer-display" aria-live="polite">--:--</div>
+        </div>
+        <div class="timer-progress-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="Time progress">
+          <div class="timer-progress-bar" id="timer-progress-bar"></div>
+        </div>
+        <div class="timer-progress-text" id="timer-progress-text" aria-hidden="true">
+          <span class="timer-progress-label">Question</span>
+          <span id="current-q-num">1</span>
+          <span class="timer-progress-separator" aria-hidden="true">/</span>
+          <span id="total-q-num">-</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="exam-main">
+      <!-- Progress Sidebar -->
+      <aside class="exam-sidebar no-print" id="exam-sidebar" aria-label="Question navigation">
+        <div class="sidebar-header">
+          <h3 class="sidebar-title">Progress</h3>
+          <button type="button" class="btn btn-ghost btn-sm sidebar-close" id="sidebar-close" aria-label="Close navigation" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="progress-bar-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Exam completion progress">
+          <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-text" id="progress-text">0% Complete</div>
+        <nav class="question-nav" id="question-nav" role="navigation" aria-label="Question navigation">
+          <!-- Question numbers rendered by JS -->
+        </nav>
+      </aside>
+
+            <!-- Sidebar Overlay (drawer backdrop) -->
+      <div class="sidebar-overlay no-print" id="sidebar-overlay" aria-hidden="true"></div>
+
+      <!-- Question Area -->
+      <section class="exam-question-area" aria-live="polite">
+        <div id="exam-alert-container"></div>
+        
+        <header class="question-header">
+          <div class="question-meta">
+            <span class="question-number" id="question-number">Question 1 of 10</span>
+            <span class="question-category" id="question-category" hidden></span>
+          </div>
+          <div class="question-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="flag-question-btn" title="Flag for review" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span class="flag-btn-text">Flag</span>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm sidebar-toggle" id="sidebar-toggle" aria-label="Open question navigation" aria-expanded="false" aria-controls="exam-sidebar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="18" x2="9" y2="6"/><line x1="15" y1="18" x2="15" y2="6"/><line x1="21" y1="18" x2="21" y2="6"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="question-content">
+          <div class="question-text" id="question-text"></div>
+          
+          <fieldset class="choices-fieldset" id="choices-fieldset" aria-labelledby="choices-legend">
+            <legend class="sr-only" id="choices-legend">Answer Choices</legend>
+            <div class="choices-grid" id="choices-grid" role="radiogroup" aria-label="Answer choices">
+              <!-- Choices rendered by JS -->
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <footer class="exam-navigation no-print">
+          <button type="button" class="btn btn-outline btn-lg" id="prev-btn" disabled aria-label="Previous question">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span class="btn-text">Previous</span>
+          </button>
+          <div class="nav-center">
+            <button type="button" class="btn btn-danger btn-lg" id="submit-exam-btn" aria-label="Submit exam">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <span class="btn-text">Submit Exam</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-lg" id="next-btn" aria-label="Next question">
+            <span class="btn-text">Next</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </footer>
+      </section>
+    </main>
+
+    <!-- Tab Switch Warning Modal -->
+    <div class="modal-overlay" id="tab-warning-modal" role="dialog" aria-modal="true" aria-labelledby="tab-warning-title" hidden>
+      <div class="modal modal--compact">
+        <header class="modal-header">
+          <h3 class="modal-title" id="tab-warning-title">⚠️ Tab Switch Detected</h3>
+        </header>
+        <div class="modal-body">
+          <p>You switched away from the exam tab. Please return to the exam immediately.</p>
+          <p class="text-sm text-muted">Tab switches are logged and visible to your instructor.</p>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="btn btn-primary" id="tab-warning-ok">I Understand</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div class="modal-overlay" id="submit-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="submit-confirm-title" hidden>
+      <div class="modal modal--compact">
+        <header class="modal-header">
+          <h3 class="modal-title" id="submit-confirm-title">Submit Exam?</h3>
+        </header>
+        <div class="modal-body">
+          <p>Are you sure you want to submit your exam? You won't be able to change your answers after submitting.</p>
+          <div class="checkbox-group">
+            <input type="checkbox" id="confirm-submit" required>
+            <label for="confirm-submit">I understand this action cannot be undone</label>
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancel-submit">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirm-submit-btn" disabled>Submit Exam</button>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- Submission Confirmation Screen -->
+  <section id="submission-screen" class="exam-screen" aria-labelledby="submission-title" hidden>
+    <div class="exam-container exam-container--results">
+      <article class="submission-confirmation">
+        <div class="submission-icon success" id="submission-icon" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h1 id="submission-title" class="submission-title">Exam Submitted</h1>
+        <p class="submission-message" id="submission-message">Your exam has been submitted successfully.</p>
+        
+        <div class="card results-display" id="results-display" hidden>
+          <div class="card-body text-center">
+            <h3 class="results-title">Your Results</h3>
+            <div class="score-display">
+              <div class="score-circle" id="score-circle" style="--score: 0" role="img" aria-label="Score percentage">
+                <span class="score-value" id="score-percent">0%</span>
+              </div>
+              <div class="score-details">
+                <div class="score-detail-grid">
+                  <div class="score-detail score-detail--correct">
+                    <div class="score-detail-value" id="score-correct">0</div>
+                    <div class="score-detail-label">Correct</div>
+                  </div>
+                  <div class="score-detail score-detail--incorrect">
+                    <div class="score-detail-value" id="score-incorrect">0</div>
+                    <div class="score-detail-label">Incorrect</div>
+                  </div>
+                  <div class="score-detail score-detail--unanswered">
+                    <div class="score-detail-value" id="score-unanswered">0</div>
+                    <div class="score-detail-label">Unanswered</div>
+                  </div>
+                  <div class="score-detail score-detail--flagged">
+                    <div class="score-detail-value" id="score-flagged">0</div>
+                    <div class="score-detail-label">Flagged</div>
+                  </div>
+                </div>
+                <div class="mt-4">
+                  <span class="status-badge status-badge--passed" id="badge-passed" hidden>Passed</span>
+                  <span class="status-badge status-badge--failed" id="badge-failed" hidden>Failed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 text-center">
+          <p class="text-muted">You may now close this window.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Already Submitted Screen -->
+  <section id="already-submitted-screen" class="exam-screen" aria-labelledby="already-title" hidden>
+    <div class="exam-container exam-container--results">
+      <article class="submission-confirmation">
+        <div class="submission-icon warning" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h1 id="already-title" class="submission-title">Already Submitted</h1>
+        <p class="submission-message" id="already-submitted-message">You have already submitted this exam.</p>
+        <div class="card mt-6">
+          <div class="card-body">
+            <dl class="grid grid-2 gap-4">
+              <div>
+                <dt class="text-sm text-muted">Submitted</dt>
+                <dd id="prev-submitted-date" class="font-medium"></dd>
+              </div>
+              <div>
+                <dt class="text-sm text-muted">Score</dt>
+                <dd id="prev-score" class="font-medium"></dd>
+              </div>
+              <div>
+                <dt class="text-sm text-muted">Status</dt>
+                <dd id="prev-status" class="font-medium"></dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Exam Closed Screen -->
+  <section id="exam-closed-screen" class="exam-screen" aria-labelledby="closed-title" hidden>
+    <div class="exam-container exam-container--results">
+      <article class="submission-confirmation">
+        <div class="submission-icon warning" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h1 id="closed-title" class="submission-title">Exam Not Available</h1>
+        <p class="submission-message" id="exam-closed-message">This exam is not currently available.</p>
+      </article>
+    </div>
+  </section>
+
+  <script type="module">
+    import { auth, db } from '/src/firebase.js';
+    import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+    import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+    import { gradeExam } from '/js/grading.js';
+    import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
+
+    // DOM Elements - Start Screen
+    const startScreen = document.getElementById('start-screen');
+    const examScreen = document.getElementById('exam-screen');
+    const submissionScreen = document.getElementById('submission-screen');
+    const alreadySubmittedScreen = document.getElementById('already-submitted-screen');
+    const examClosedScreen = document.getElementById('exam-closed-screen');
+    const startAlertContainer = document.getElementById('start-alert-container');
+    const examTitleStart = document.getElementById('exam-title-start');
+    const examDescriptionStart = document.getElementById('exam-description-start');
+    const infoQuestions = document.getElementById('info-questions');
+    const infoTime = document.getElementById('info-time');
+    const infoPassing = document.getElementById('info-passing');
+    const studentNameInput = document.getElementById('student-name');
+    const studentEmailInput = document.getElementById('student-email');
+    const startExamBtn = document.getElementById('start-exam-btn');
+
+    // DOM Elements - Exam Screen
+    const timerBar = document.getElementById('timer-bar');
+    const timerDisplay = document.getElementById('timer-display');
+    const timerProgressBar = document.getElementById('timer-progress-bar');
+    const currentQNum = document.getElementById('current-q-num');
+    const totalQNum = document.getElementById('total-q-num');
+    const examAlertContainer = document.getElementById('exam-alert-container');
+    const questionNumber = document.getElementById('question-number');
+    const questionCategory = document.getElementById('question-category');
+    const questionText = document.getElementById('question-text');
+    const choicesGrid = document.getElementById('choices-grid');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitExamBtn = document.getElementById('submit-exam-btn');
+    const flagQuestionBtn = document.getElementById('flag-question-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const questionNav = document.getElementById('question-nav');
+    const tabWarningModal = document.getElementById('tab-warning-modal');
+    const tabWarningOk = document.getElementById('tab-warning-ok');
+    const submitConfirmModal = document.getElementById('submit-confirm-modal');
+    const cancelSubmit = document.getElementById('cancel-submit');
+    const confirmSubmitCheckbox = document.getElementById('confirm-submit');
+    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const examSidebar = document.getElementById('exam-sidebar');
+
+    // DOM Elements - Submission Screen
+    const scorePercent = document.getElementById('score-percent');
+    const scoreCorrect = document.getElementById('score-correct');
+    const scoreIncorrect = document.getElementById('score-incorrect');
+    const scoreUnanswered = document.getElementById('score-unanswered');
+    const scoreFlagged = document.getElementById('score-flagged');
+    const badgePassed = document.getElementById('badge-passed');
+    const badgeFailed = document.getElementById('badge-failed');
+    const resultsDisplay = document.getElementById('results-display');
+    const submissionMessage = document.getElementById('submission-message');
+    const scoreCircle = document.getElementById('score-circle');
+    const submissionIcon = document.getElementById('submission-icon');
+
+    // DOM Elements - Already Submitted
+    const prevSubmittedDate = document.getElementById('prev-submitted-date');
+    const prevScore = document.getElementById('prev-score');
+    const prevStatus = document.getElementById('prev-status');
+
+    // State
+    let exam = null;
+    let examId = null;
+    let studentName = '';
+    let studentEmail = '';
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let answers = []; // Array of { questionId, selectedIndex }
+    let flaggedQuestions = new Set();
+    let startTime = null;
+    let timeLimitMs = 0;
+    let submissionId = null;
+    let tabSwitchCount = 0;
+    let isSubmitted = false;
+    let isAutoSubmitting = false;
+    let timerInterval = null;
+    let allowPrevious = true;
+    let showResultsToStudent = false;
+    let passingPercent = 70;
+    let randomizeQuestions = false;
+    let questionOrder = []; // randomized order indices
+
+    // Get URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    examId = urlParams.get('examId');
+
+    if (!examId) {
+      showScreen('exam-closed-screen');
+      document.getElementById('exam-closed-message').textContent = 'Invalid exam link. Please check the URL.';
+    }
+
+    // Auth anonymously
+    signInAnonymously(auth).catch(console.error);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await loadExam();
+      }
+    });
+
+    async function loadExam() {
+      try {
+        const examDoc = await getDoc(doc(db, 'exams', examId));
+        if (!examDoc.exists()) {
+          showScreen('exam-closed-screen');
+          document.getElementById('exam-closed-message').textContent = 'This exam does not exist.';
+          return;
+        }
+
+        exam = { id: examDoc.id, ...examDoc.data() };
+        questions = exam.questions || [];
+        timeLimitMs = (exam.timeLimitMinutes || 60) * 60 * 1000;
+        allowPrevious = exam.allowPrevious !== false;
+        showResultsToStudent = exam.showResultsToStudent !== false;
+        passingPercent = exam.passingPercent || 70;
+        randomizeQuestions = exam.randomizeQuestions === true;
+
+        // Check availability window
+        const now = new Date();
+        const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+        const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+
+        if (startDate && startDate > now) {
+          showScreen('exam-closed-screen');
+          document.getElementById('exam-closed-message').textContent = `This exam opens on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}.`;
+          return;
+        }
+        if (endDate && endDate < now) {
+          showScreen('exam-closed-screen');
+          document.getElementById('exam-closed-message').textContent = `This exam closed on ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}.`;
+          return;
+        }
+
+        // Randomize question order if enabled
+        if (randomizeQuestions) {
+          questionOrder = questions.map((_, i) => i).sort(() => Math.random() - 0.5);
+        } else {
+          questionOrder = questions.map((_, i) => i);
+        }
+
+        // Render start screen
+        renderStartScreen();
+        showScreen('start-screen');
+      } catch (error) {
+        console.error('Error loading exam:', error);
+        showScreen('exam-closed-screen');
+        document.getElementById('exam-closed-message').textContent = 'Failed to load exam. Please try again.';
+      }
+    }
+
+    function renderStartScreen() {
+      examTitleStart.textContent = exam.title;
+      examDescriptionStart.textContent = exam.description || 'No description provided.';
+      infoQuestions.textContent = questions.length;
+      infoTime.textContent = `${exam.timeLimitMinutes} min`;
+      infoPassing.textContent = `${passingPercent}%`;
+    }
+
+    // Start Exam
+    let isStartingExam = false;
+    startExamBtn.addEventListener('click', async () => {
+      if (isStartingExam) return;
+      isStartingExam = true;
+      
+      studentName = studentNameInput.value.trim();
+      studentEmail = studentEmailInput.value.trim();
+
+      if (!studentName || !studentEmail) {
+        showAlert(startAlertContainer, 'Please enter both your name and email/ID.', 'error');
+        isStartingExam = false;
+        return;
+      }
+
+      // Check if already submitted
+      try {
+        const existingQuery = query(
+          collection(db, 'submissions'),
+          where('examId', '==', examId),
+          where('studentEmail', '==', studentEmail)
+        );
+        const existingSnapshot = await getDocs(existingQuery);
+        if (!existingSnapshot.empty) {
+          const existingSub = existingSnapshot.docs[0].data();
+          if (existingSub.submittedAt == null) {
+            // Abandoned draft from a crashed session — remove it so the
+            // student can start fresh instead of being locked out.
+            await deleteDoc(doc(db, 'submissions', existingSnapshot.docs[0].id));
+          } else {
+            showAlreadySubmitted(existingSub);
+            isStartingExam = false;
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing submission:', error);
+        showAlert(startAlertContainer, 'Could not verify your previous attempts. Please try again.', 'error');
+        isStartingExam = false;
+        return;
+      }
+
+      // Initialize exam state
+      startTime = Date.now();
+      answers = new Array(questions.length).fill(null).map(() => ({ selectedIndex: -1 }));
+      flaggedQuestions.clear();
+      currentQuestionIndex = 0;
+      tabSwitchCount = 0;
+      isSubmitted = false;
+
+      // Create submission document with start time
+      submissionId = generateId();
+      try {
+        await setDoc(doc(db, 'submissions', submissionId), {
+          examId,
+          studentName,
+          studentEmail,
+          startedAt: serverTimestamp(),
+          submittedAt: null,
+          answers: [],
+          score: 0,
+          totalQuestions: questions.length,
+          percentage: 0,
+          passed: false,
+          autoSubmitted: false,
+          tabSwitchCount: 0,
+          flaggedQuestions: [],
+          questionOrder: questionOrder
+        });
+      } catch (error) {
+        console.error('Error creating submission:', error);
+        showAlert(startAlertContainer, 'Failed to start exam. Please try again.', 'error');
+        isStartingExam = false;
+        return;
+      }
+
+      // Save start time to localStorage for persistence
+      localStorage.setItem(`exam_${examId}_${studentEmail}_start`, startTime.toString());
+      localStorage.setItem(`exam_${examId}_${studentEmail}_answers`, JSON.stringify(answers));
+      localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
+
+      // Start exam
+      showScreen('exam-screen');
+      renderQuestion();
+      startTimer();
+      setupTabVisibilityListener();
+      updateNavigation();
+      setupMobileSidebar();
+      isStartingExam = false;
+    });
+
+    // Timer
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        updateTimerDisplay();
+        checkAutoSubmit();
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      if (!startTime) return;
+      
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, timeLimitMs - elapsed);
+      
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      // Progress bar
+      const progress = Math.max(0, (remaining / timeLimitMs) * 100);
+      timerProgressBar.style.width = `${progress}%`;
+      timerBar.querySelector('.timer-progress-container').setAttribute('aria-valuenow', Math.round(progress));
+
+      // Warning states
+      timerBar.classList.remove('warning', 'danger');
+      timerDisplay.classList.remove('warning', 'danger', 'pulse');
+      timerProgressBar.classList.remove('warning', 'danger');
+      if (remaining <= 60000) { // 1 minute
+        timerBar.classList.add('danger');
+        timerDisplay.classList.add('danger', 'pulse');
+        timerProgressBar.classList.add('danger');
+      } else if (remaining <= 300000) { // 5 minutes
+        timerBar.classList.add('warning');
+        timerDisplay.classList.add('warning');
+        timerProgressBar.classList.add('warning');
+      }
+
+      // Progress text
+      currentQNum.textContent = currentQuestionIndex + 1;
+      totalQNum.textContent = questions.length;
+    }
+
+    function checkAutoSubmit() {
+      if (isSubmitted || isAutoSubmitting) return;
+      
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= timeLimitMs) {
+        isAutoSubmitting = true;
+        autoSubmit();
+      }
+    }
+
+    // Tab visibility detection
+    function setupTabVisibilityListener() {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden && !isSubmitted) {
+        tabSwitchCount++;
+        showTabWarning();
+        saveTabSwitchCount();
+      }
+    }
+
+    function showTabWarning() {
+      tabWarningModal.hidden = false;
+      tabWarningModal.classList.add('open');
+    }
+
+    tabWarningOk.addEventListener('click', () => {
+      tabWarningModal.hidden = true;
+      tabWarningModal.classList.remove('open');
+    });
+
+    async function saveTabSwitchCount() {
+      if (submissionId) {
+        try {
+          await updateDoc(doc(db, 'submissions', submissionId), {
+            tabSwitchCount: tabSwitchCount
+          });
+        } catch (error) {
+          console.error('Error saving tab switch count:', error);
+        }
+      }
+    }
+
+    // Render Question
+    function renderQuestion() {
+      const qIndex = questionOrder[currentQuestionIndex];
+      const question = questions[qIndex];
+      
+      questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+      questionCategory.textContent = question.category || '';
+      questionCategory.hidden = !question.category;
+      questionText.innerHTML = escapeHtml(question.text);
+
+      // Render choices
+      choicesGrid.innerHTML = question.choices.map((choice, cIndex) => {
+        const isSelected = answers[qIndex]?.selectedIndex === cIndex;
+        const isFlagged = flaggedQuestions.has(qIndex);
+        return `
+          <button type="button" class="choice-btn ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" 
+                  data-choice-index="${cIndex}" 
+                  data-question-index="${qIndex}"
+                  role="radio"
+                  aria-checked="${isSelected}"
+                  aria-label="Choice ${String.fromCharCode(65 + cIndex)}: ${escapeHtml(choice)}">
+            <span class="choice-letter">${String.fromCharCode(65 + cIndex)}</span>
+            <span class="choice-text">${escapeHtml(choice)}</span>
+            <span class="choice-check" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+          </button>
+        `;
+      }).join('');
+
+      // Attach choice listeners
+      choicesGrid.querySelectorAll('.choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => selectChoice(parseInt(btn.dataset.choiceIndex), parseInt(btn.dataset.questionIndex)));
+      });
+
+      // Update navigation buttons
+      prevBtn.disabled = currentQuestionIndex === 0 || !allowPrevious;
+      if (currentQuestionIndex === questions.length - 1) {
+        nextBtn.innerHTML = '<span class="btn-text">Finish</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+        nextBtn.setAttribute('aria-label', 'Finish exam');
+      } else {
+        nextBtn.innerHTML = '<span class="btn-text">Next</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+        nextBtn.setAttribute('aria-label', 'Next question');
+      }
+
+      // Sync the flag button with the current question's flag state
+      const isFlagged = flaggedQuestions.has(qIndex);
+      flagQuestionBtn.setAttribute('aria-pressed', isFlagged ? 'true' : 'false');
+      flagQuestionBtn.classList.toggle('active', isFlagged);
+
+      // Update progress
+      updateProgress();
+      updateQuestionNav();
+    }
+
+    function selectChoice(choiceIndex, questionIndex) {
+      answers[questionIndex] = { selectedIndex: choiceIndex };
+      
+      // Save to localStorage
+      localStorage.setItem(`exam_${examId}_${studentEmail}_answers`, JSON.stringify(answers));
+      
+      // Auto-save to Firestore
+      autoSaveAnswers();
+      
+      // Re-render current question to show selection
+      renderQuestion();
+    }
+
+    async function autoSaveAnswers() {
+      if (!submissionId) return;
+      try {
+        await updateDoc(doc(db, 'submissions', submissionId), {
+          answers: answers.map((a, i) => ({ questionId: questions[i].id, selectedIndex: a?.selectedIndex ?? -1 })),
+          flaggedQuestions: [...flaggedQuestions],
+          lastSavedAt: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }
+
+    // Navigation
+    prevBtn.addEventListener('click', () => {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion();
+      } else {
+        // Last question - show submit confirmation
+        showSubmitConfirmation();
+      }
+    });
+
+    submitExamBtn.addEventListener('click', showSubmitConfirmation);
+
+    function showSubmitConfirmation() {
+      submitConfirmModal.hidden = false;
+      submitConfirmModal.classList.add('open');
+      confirmSubmitCheckbox.checked = false;
+      confirmSubmitBtn.disabled = true;
+    }
+
+    confirmSubmitCheckbox.addEventListener('change', () => {
+      confirmSubmitBtn.disabled = !confirmSubmitCheckbox.checked;
+    });
+
+    cancelSubmit.addEventListener('click', () => {
+      submitConfirmModal.hidden = true;
+      submitConfirmModal.classList.remove('open');
+    });
+
+    confirmSubmitBtn.addEventListener('click', () => {
+      submitConfirmModal.hidden = true;
+      submitConfirmModal.classList.remove('open');
+      submitExam(false);
+    });
+
+    // Flag question
+    flagQuestionBtn.addEventListener('click', () => {
+      const qIndex = questionOrder[currentQuestionIndex];
+      if (flaggedQuestions.has(qIndex)) {
+        flaggedQuestions.delete(qIndex);
+      } else {
+        flaggedQuestions.add(qIndex);
+      }
+      autoSaveAnswers();
+      renderQuestion();
+    });
+
+    // Question navigation sidebar
+    function updateQuestionNav() {
+      questionNav.innerHTML = questions.map((q, i) => {
+        const displayIndex = questionOrder.indexOf(i);
+        const answer = answers[i];
+        const isAnswered = answer?.selectedIndex >= 0;
+        const isCurrent = displayIndex === currentQuestionIndex;
+        const isFlagged = flaggedQuestions.has(i);
+        
+        let classes = 'nav-btn';
+        if (isCurrent) classes += ' current';
+        if (isAnswered) classes += ' answered';
+        if (isFlagged) classes += ' flagged';
+        
+        return `<button type="button" class="${classes}" data-nav-index="${displayIndex}" aria-label="Question ${displayIndex + 1}${isCurrent ? ', current' : ''}${isAnswered ? ', answered' : ''}${isFlagged ? ', flagged' : ''}">${displayIndex + 1}</button>`;
+      }).join('');
+
+      questionNav.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentQuestionIndex = parseInt(btn.dataset.navIndex);
+          renderQuestion();
+          closeMobileSidebar();
+        });
+      });
+    }
+
+    function updateProgress() {
+      const answered = answers.filter(a => a?.selectedIndex >= 0).length;
+      const percent = Math.round((answered / questions.length) * 100);
+      progressBar.style.width = `${percent}%`;
+      progressBar.setAttribute('aria-valuenow', percent);
+      progressText.textContent = `${percent}% Complete (${answered}/${questions.length} answered)`;
+    }
+
+    function updateNavigation() {
+      prevBtn.style.display = allowPrevious ? 'inline-flex' : 'none';
+    }
+
+    // Mobile sidebar
+    function setupMobileSidebar() {
+      if (sidebarToggle) {
+        sidebarToggle.hidden = false;
+        sidebarToggle.addEventListener('click', toggleMobileSidebar);
+      }
+      if (sidebarClose) {
+        sidebarClose.addEventListener('click', closeMobileSidebar);
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+      }
+    }
+
+    // Close sidebar when clicking outside (all devices)
+    document.addEventListener('click', (e) => {
+      const isClickInsideSidebar = examSidebar.contains(e.target);
+      const isClickOnToggle = sidebarToggle.contains(e.target);
+      const isSidebarOpen = examSidebar.classList.contains('open');
+      if (isSidebarOpen && !isClickInsideSidebar && !isClickOnToggle) {
+        closeMobileSidebar();
+      }
+    });
+
+    function toggleMobileSidebar() {
+      const isOpen = examSidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', isOpen);
+      sidebarToggle.setAttribute('aria-label', isOpen ? 'Close question navigation' : 'Open question navigation');
+      sidebarClose.setAttribute('aria-expanded', isOpen);
+    }
+
+    function closeMobileSidebar() {
+      examSidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+      sidebarToggle.setAttribute('aria-label', 'Open question navigation');
+      sidebarClose.setAttribute('aria-expanded', 'false');
+    }
+
+    // Submit Exam
+    async function submitExam(autoSubmitted = false) {
+      if (isSubmitted) return;
+      isSubmitted = true;
+      isAutoSubmitting = autoSubmitted;
+
+      clearInterval(timerInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+      const endTime = Date.now();
+      const timeTaken = endTime - startTime;
+
+      // Grade exam
+      const gradedAnswers = answers.map((a, i) => ({
+        questionId: questions[i].id,
+        selectedIndex: a?.selectedIndex ?? -1
+      }));
+
+      const { score, totalQuestions, percentage, passed } = gradeExam(questions, gradedAnswers, passingPercent);
+
+      // Save final submission
+      try {
+        await updateDoc(doc(db, 'submissions', submissionId), {
+          submittedAt: serverTimestamp(),
+          answers: gradedAnswers,
+          flaggedQuestions: [...flaggedQuestions],
+          score,
+          totalQuestions,
+          percentage,
+          passed,
+          autoSubmitted,
+          timeTakenMs: timeTaken,
+          tabSwitchCount
+        });
+      } catch (error) {
+        console.error('Error submitting exam:', error);
+        showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
+        isSubmitted = false;
+        startTimer();
+        setupTabVisibilityListener();
+        return;
+      }
+
+      // Clear localStorage
+      localStorage.removeItem(`exam_${examId}_${studentEmail}_start`);
+      localStorage.removeItem(`exam_${examId}_${studentEmail}_answers`);
+      localStorage.removeItem(`exam_${examId}_${studentEmail}_submissionId`);
+
+      // Show results
+      showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted);
+    }
+
+    function showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted) {
+      showScreen('submission-screen');
+      
+      if (autoSubmitted) {
+        submissionMessage.textContent = 'Time ran out. Your exam has been auto-submitted.';
+        submissionIcon.className = 'submission-icon warning';
+        submissionIcon.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      } else {
+        submissionMessage.textContent = 'Your exam has been submitted successfully.';
+      }
+
+      if (showResultsToStudent) {
+        resultsDisplay.hidden = false;
+        scorePercent.textContent = `${percentage.toFixed(1)}%`;
+        scoreCorrect.textContent = score;
+        scoreIncorrect.textContent = totalQuestions - score;
+        scoreUnanswered.textContent = answers.filter(a => a?.selectedIndex < 0).length;
+        scoreFlagged.textContent = flaggedQuestions.size;
+        scoreCircle.style.setProperty('--score', percentage.toFixed(1));
+        
+        if (passed) {
+          badgePassed.hidden = false;
+          scoreCircle.style.borderColor = 'var(--color-success)';
+        } else {
+          badgeFailed.hidden = false;
+          scoreCircle.style.borderColor = 'var(--color-danger)';
+        }
+      }
+    }
+
+    function showAlreadySubmitted(submission) {
+      showScreen('already-submitted-screen');
+      prevSubmittedDate.textContent = formatDateTime(submission.submittedAt);
+      prevScore.textContent = `${submission.score || 0} / ${submission.totalQuestions || 0} (${(submission.percentage || 0).toFixed(1)}%)`;
+      prevStatus.textContent = submission.passed ? 'Passed' : 'Failed';
+      prevStatus.className = submission.passed ? 'badge badge-success' : 'badge badge-danger';
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.exam-screen').forEach(s => {
+        s.hidden = true;
+        s.classList.remove('active');
+      });
+      const target = document.getElementById(screenId);
+      target.hidden = false;
+      target.classList.add('active');
+    }
+
+    // Firestore functions already imported at top of script
+  </script>
+</body>
+</html>

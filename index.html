@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Online Exam Platform - Secure academic testing">
+  <title>Sign In - Exam Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-page">
+  <main class="container">
+    <div class="login-card">
+      <header class="login-header">
+        <div class="login-logo" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-subtitle">Sign in to access your admin dashboard</p>
+      </header>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div id="alert-container"></div>
+
+        <div class="form-group">
+          <label class="label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="input" placeholder="admin@example.com" required autocomplete="email" autofocus>
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="password">Password</label>
+          <input type="password" id="password" name="password" class="input" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="remember" name="remember">
+            <label for="remember">Remember me</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+          <span class="btn-text">Sign In</span>
+          <span class="spinner hidden" id="login-spinner"></span>
+        </button>
+      </form>
+
+      <footer class="login-footer">
+        <p>Don't have an account? <a href="#" id="forgot-password-link">Contact your administrator</a></p>
+      </footer>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth } from '/src/firebase.js';
+    import { signInWithEmailAndPassword } from 'firebase/auth';
+    import { showAlert } from '/js/admin.js';
+
+    const form = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('login-btn');
+    const loginSpinner = document.getElementById('login-spinner');
+    const loginBtnText = loginBtn.querySelector('.btn-text');
+    const alertContainer = document.getElementById('alert-container');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        showAlert(alertContainer, 'Please enter both email and password.', 'error');
+        return;
+      }
+
+      setLoading(true);
+      clearAlert();
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // Show success message before redirect
+        showAlert(alertContainer, 'Login successful! Redirecting...', 'success');
+        // Redirect to admin dashboard after a brief delay
+        setTimeout(() => {
+          window.location.href = '/admin-dashboard.html';
+        }, 500);
+      } catch (error) {
+        console.error('Login error:', error);
+        let message = 'Invalid email or password. Please try again.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          message = 'Invalid email or password. Please try again.';
+        } else if (error.code === 'auth/too-many-requests') {
+          message = 'Too many failed attempts. Please try again later.';
+        }
+        showAlert(alertContainer, message, 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function setLoading(loading) {
+      loginBtn.disabled = loading;
+      loginSpinner.classList.toggle('hidden', !loading);
+      loginBtnText.textContent = loading ? 'Signing in...' : 'Sign In';
+    }
+
+    function clearAlert() {
+      alertContainer.innerHTML = '';
+    }
+  </script>
+</body>
+</html>

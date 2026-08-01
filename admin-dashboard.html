@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Admin Dashboard - Exam Platform">
+  <title>Admin Dashboard - Exam Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="header no-print">
+    <div class="container header-inner">
+      <a href="/admin-dashboard.html" class="logo" aria-label="Exam Platform Home">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Exam Platform
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/admin-dashboard.html" class="nav-link active" aria-current="page">Dashboard</a>
+        <a href="/create-exam.html" class="nav-link">Create Exam</a>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <header class="page-header">
+        <h1 class="page-title">Admin Dashboard</h1>
+        <p class="page-subtitle">Manage exams and view student results</p>
+      </header>
+
+      <div id="alert-container"></div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" aria-label="Dashboard statistics">
+        <article class="card stat-card">
+          <div class="stat-icon primary" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-exams">0</span>
+            <span class="stat-label">Total Exams</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon success" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-attempts">0</span>
+            <span class="stat-label">Total Attempts</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon warning" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-avg-score">0%</span>
+            <span class="stat-label">Avg Score</span>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon danger" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-pass-rate">0%</span>
+            <span class="stat-label">Pass Rate</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- Exams Table -->
+      <section class="card" aria-labelledby="exams-heading">
+        <header class="card-header">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h2 class="card-title" id="exams-heading">All Exams</h2>
+            <a href="/create-exam.html" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Create New Exam
+            </a>
+          </div>
+        </header>
+        <div class="table-container">
+          <table class="table" id="exams-table" role="grid">
+            <thead>
+              <tr>
+                <th scope="col">Exam Title</th>
+                <th scope="col">Questions</th>
+                <th scope="col">Time Limit</th>
+                <th scope="col">Passing %</th>
+                <th scope="col">Availability</th>
+                <th scope="col">Attempts</th>
+                <th scope="col">Avg Score</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="exams-tbody">
+              <tr>
+                <td colspan="8" class="text-center py-8 text-muted">Loading exams...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from '/src/firebase.js';
+    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { collection, query, where, orderBy, getDocs, getCountFromServer, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+    import { formatDate, formatDateTime, formatDuration, showAlert, showConfirm, formatPercent, escapeHtml } from '/js/admin.js';
+
+    // DOM Elements
+    const logoutBtn = document.getElementById('logout-btn');
+    const examsTbody = document.getElementById('exams-tbody');
+    const alertContainer = document.getElementById('alert-container');
+    const statExams = document.getElementById('stat-exams');
+    const statAttempts = document.getElementById('stat-attempts');
+    const statAvgScore = document.getElementById('stat-avg-score');
+    const statPassRate = document.getElementById('stat-pass-rate');
+
+    // Auth check
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+        return;
+      }
+      await loadDashboard();
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = '/index.html';
+    });
+
+    async function loadDashboard() {
+      try {
+        // Load exams
+        const examsQuery = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
+        const examsSnapshot = await getDocs(examsQuery);
+        const exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Load all submissions for stats
+        const submissionsSnapshot = await getDocs(collection(db, 'submissions'));
+        const submissions = submissionsSnapshot.docs.map(doc => doc.data());
+
+        // Calculate stats
+        const totalExams = exams.length;
+        const totalAttempts = submissions.length;
+        const avgScore = totalAttempts > 0 
+          ? submissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / totalAttempts 
+          : 0;
+        const passRate = totalAttempts > 0
+          ? (submissions.filter(s => s.passed).length / totalAttempts) * 100
+          : 0;
+
+        statExams.textContent = totalExams;
+        statAttempts.textContent = totalAttempts;
+        statAvgScore.textContent = formatPercent(avgScore);
+        statPassRate.textContent = formatPercent(passRate);
+
+        // Render exams table
+        renderExamsTable(exams, submissions);
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        showAlert(alertContainer, 'Failed to load dashboard. Please refresh.', 'error');
+      }
+    }
+
+    function renderExamsTable(exams, submissions) {
+      if (exams.length === 0) {
+        examsTbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-muted">
+              No exams created yet. <a href="/create-exam.html" class="text-primary">Create your first exam</a>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      examsTbody.innerHTML = exams.map(exam => {
+        const examSubmissions = submissions.filter(s => s.examId === exam.id);
+        const attempts = examSubmissions.length;
+        const avgScore = attempts > 0 
+          ? examSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / attempts 
+          : 0;
+        const passCount = examSubmissions.filter(s => s.passed).length;
+        const passRate = attempts > 0 ? (passCount / attempts) * 100 : 0;
+
+        // Availability
+        const now = new Date();
+        const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+        const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+        let availability = 'Always Open';
+        let availabilityClass = 'success';
+        if (startDate && startDate > now) {
+          availability = `Opens ${formatDate(startDate)}`;
+          availabilityClass = 'warning';
+        } else if (endDate && endDate < now) {
+          availability = `Closed ${formatDate(endDate)}`;
+          availabilityClass = 'danger';
+        } else if (endDate) {
+          availability = `Closes ${formatDate(endDate)}`;
+          availabilityClass = 'warning';
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="exam-title">${escapeHtml(exam.title)}</div>
+              <div class="exam-description">${escapeHtml(exam.description || 'No description')}</div>
+            </td>
+            <td>${exam.questions?.length || 0}</td>
+            <td>${exam.timeLimitMinutes} min</td>
+            <td>${exam.passingPercent || 70}%</td>
+            <td><span class="badge badge-${availabilityClass}">${availability}</span></td>
+            <td>${attempts}</td>
+            <td>${formatPercent(avgScore)}</td>
+            <td>
+              <div class="table-actions">
+                <a href="/exam-results.html?examId=${exam.id}" class="btn btn-sm btn-outline" aria-label="View results for ${escapeHtml(exam.title)}">Results</a>
+                <a href="/create-exam.html?examId=${exam.id}" class="btn btn-sm btn-outline" aria-label="Edit ${escapeHtml(exam.title)}">Edit</a>
+                <button class="btn btn-sm btn-outline copy-link-btn" data-exam-id="${exam.id}" aria-label="Copy exam link for ${escapeHtml(exam.title)}" title="Copy exam link">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="btn btn-sm btn-danger delete-exam-btn" data-exam-id="${exam.id}" data-exam-title="${escapeHtml(exam.title)}" aria-label="Delete ${escapeHtml(exam.title)}">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Make deleteExam globally accessible
+    window.deleteExam = async function(examId, title) {
+      const confirmed = await showConfirm('Delete Exam', `Are you sure you want to delete "${title}"? This will also delete all student submissions for this exam.`);
+      if (!confirmed) return;
+
+      try {
+        // Delete exam
+        await deleteDoc(doc(db, 'exams', examId));
+        
+        // Delete associated submissions (batch delete)
+        const submissionsQuery = query(collection(db, 'submissions'), where('examId', '==', examId));
+        const submissionsSnapshot = await getDocs(submissionsQuery);
+        const batch = writeBatch(db);
+        submissionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        showAlert(alertContainer, 'Exam deleted successfully.', 'success');
+        loadDashboard();
+      } catch (error) {
+        console.error('Error deleting exam:', error);
+        showAlert(alertContainer, 'Failed to delete exam.', 'error');
+      }
+    };
+
+    // Delete exam (delegated handler — avoids inline-onclick string escaping bugs)
+    document.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.delete-exam-btn');
+      if (!delBtn) return;
+      const examId = delBtn.dataset.examId;
+      if (!examId) return;
+      await window.deleteExam(examId, delBtn.dataset.examTitle || 'this exam');
+    });
+
+    // Copy exam link to clipboard
+    document.addEventListener('click', async (e) => {
+      const copyBtn = e.target.closest('.copy-link-btn');
+      if (!copyBtn) return;
+      
+      const examId = copyBtn.dataset.examId;
+      if (!examId) return;
+      
+      const link = `${window.location.origin}/exam.html?examId=${examId}`;
+      
+      try {
+        await navigator.clipboard.writeText(link);
+        showAlert(alertContainer, 'Exam link copied to clipboard!', 'success');
+      } catch (error) {
+        console.error('Failed to copy link:', error);
+        showAlert(alertContainer, 'Failed to copy link.', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
