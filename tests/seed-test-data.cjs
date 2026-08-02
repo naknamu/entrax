@@ -1,6 +1,6 @@
 /**
  * Seed test data for Firebase emulators
- * Run with: node tests/seed-test-data.js
+ * Run with: node tests/seed-test-data.cjs
  */
 
 const admin = require('firebase-admin');

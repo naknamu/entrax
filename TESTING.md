@@ -24,7 +24,7 @@ npm install -g firebase-tools
 firebase emulators:start --only auth,firestore --project demo-test
 
 # 5. Seed test data (in another terminal)
-node tests/seed-test-data.js
+node tests/seed-test-data.cjs
 
 # 6. Run tests
 npx playwright test
@@ -95,7 +95,7 @@ The emulators will be available at:
 ### 5. Seed Test Data
 
 ```bash
-node tests/seed-test-data.js
+node tests/seed-test-data.cjs
 ```
 
 This creates:
@@ -130,7 +130,7 @@ npx playwright test --debug
 tests/
 ├── global-setup.js          # Global test setup (starts emulators)
 ├── global-teardown.js       # Global test teardown
-├── seed-test-data.js        # Seeds test data
+├── seed-test-data.cjs        # Seeds test data
 ├── fixtures.js              # Test data fixtures
 ├── utils.js                 # Test utilities
 └── exam-platform.spec.js    # Main test suite
