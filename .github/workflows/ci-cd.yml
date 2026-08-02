@@ -48,23 +48,33 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Cache the Firebase emulator binaries so cold starts don't re-download
+      # them every run (first run may still take a few minutes).
+      - name: Cache Firebase emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase
+          key: firebase-emulators-${{ runner.os }}
+
       # Emulators + seed + tests run in ONE step so the backgrounded emulator
       # process lives for the whole test run (each step is a fresh shell).
       - name: Run E2E tests against emulators
         run: |
           set -e
+          echo "--- java ---"
+          java -version 2>&1 || true
           npx firebase emulators:start --only auth,firestore --project demo-test > emulators.log 2>&1 &
           EMULATOR_PID=$!
           trap 'kill $EMULATOR_PID 2>/dev/null || true' EXIT
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             if curl -sf http://localhost:8081/ >/dev/null 2>&1 && curl -sf http://localhost:9099/ >/dev/null 2>&1; then
               echo "emulators ready (${i}x5s)"
               break
             fi
             sleep 5
-            if [ "$i" = 60 ]; then
+            if [ "$i" = 120 ]; then
               echo "emulators did not start in time:"
-              cat emulators.log
+              tail -100 emulators.log
               exit 1
             fi
           done
@@ -74,6 +84,15 @@ jobs:
           FIRESTORE_EMULATOR_HOST: localhost:8081
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
+      - name: Upload emulator log (diagnostics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulators-log
+          path: emulators.log
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,6 +100,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
 
       - name: Upload test results
         if: always()
@@ -89,6 +109,7 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # Build the production bundle (gated on green tests)
