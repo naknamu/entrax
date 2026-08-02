@@ -48,8 +48,12 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # Cache the Firebase emulator binaries so cold starts don't re-download
-      # them every run (first run may still take a few minutes).
+      - name: Setup Java (Firestore emulator requires JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Cache Firebase emulators
         uses: actions/cache@v4
         with:
@@ -61,8 +65,7 @@ jobs:
       - name: Run E2E tests against emulators
         run: |
           set -e
-          echo "--- java ---"
-          java -version 2>&1 || true
+          java -version > java-info.txt 2>&1 || true
           npx firebase emulators:start --only auth,firestore --project demo-test > emulators.log 2>&1 &
           EMULATOR_PID=$!
           trap 'kill $EMULATOR_PID 2>/dev/null || true' EXIT
@@ -83,6 +86,17 @@ jobs:
         env:
           FIRESTORE_EMULATOR_HOST: localhost:8081
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+
+      # Surface diagnostics as check-run annotations (readable from the API)
+      - name: Emulator diagnostics (debug)
+        if: failure()
+        run: |
+          for f in emulators.log firestore-debug.log java-info.txt; do
+            if [ -f "$f" ]; then
+              echo "::error::===== $f ====="
+              head -c 8000 "$f" | while IFS= read -r line; do echo "::error::$line"; done
+            fi
+          done
 
       - name: Upload emulator log (diagnostics)
         if: always()
