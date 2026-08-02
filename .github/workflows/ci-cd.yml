@@ -31,7 +31,7 @@ jobs:
   test:
     name: E2E Tests (Playwright + Emulators)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,6 +59,13 @@ jobs:
         with:
           path: ~/.cache/firebase
           key: firebase-emulators-${{ runner.os }}
+
+      # Pre-download the emulator binaries so the test step never has to wait on
+      # a cold download (first run only; cached on later runs).
+      - name: Download Firebase emulators
+        run: |
+          npx firebase setup:emulators:firestore
+          npx firebase setup:emulators:ui
 
       # Emulators + seed + tests run in ONE step so the backgrounded emulator
       # process lives for the whole test run (each step is a fresh shell).
