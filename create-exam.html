@@ -135,6 +135,30 @@
           </div>
         </section>
 
+        <!-- Generate Kaplan Math Questions -->
+        <section class="card section-card" aria-labelledby="generate-heading">
+          <header class="card-header">
+            <h2 class="card-title" id="generate-heading">Generate Kaplan Math Questions</h2>
+          </header>
+          <div class="card-body">
+            <p class="help-text mb-3">
+              Instantly create original, randomized math questions in the style of the Kaplan Nursing
+              Entrance Exam (Math section). Pick topics and how many per topic, then click
+              <strong>Add Generated Questions</strong> — they're inserted into your exam above.
+            </p>
+            <div id="generate-topics" class="flex flex-wrap gap-3"></div>
+            <div class="flex items-center gap-3 mt-3 flex-wrap">
+              <label class="label mb-0" for="generate-count">Per topic:</label>
+              <input type="number" id="generate-count" class="input" min="1" max="10" value="3" style="max-width: 90px" aria-label="Questions per topic">
+              <button type="button" class="btn btn-primary" id="generate-add-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Generated Questions
+              </button>
+            </div>
+            <p id="generate-status" class="help-text mt-2 text-success hidden"></p>
+          </div>
+        </section>
+
         <!-- Questions Section -->
         <section class="card section-card" aria-labelledby="questions-heading">
           <header class="card-header">
@@ -232,6 +256,7 @@
     import { onAuthStateChanged, signOut } from 'firebase/auth';
     import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { showAlert, showConfirm, escapeHtml, generateId } from '/js/admin.js';
+    import { generateKaplanMathQuestions, KAPLAN_MATH_TOPICS } from '/js/question-generator.js';
 
     // DOM Elements
     const form = document.getElementById('exam-form');
@@ -291,6 +316,37 @@
       }
       if (confirmImportBtn) {
         confirmImportBtn.addEventListener('click', confirmImport);
+      }
+
+      // Generate Kaplan math questions
+      const generateTopicsEl = document.getElementById('generate-topics');
+      const generateAddBtn = document.getElementById('generate-add-btn');
+      const generateStatus = document.getElementById('generate-status');
+      if (generateTopicsEl && KAPLAN_MATH_TOPICS.length) {
+        KAPLAN_MATH_TOPICS.forEach((t) => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-group flex items-center gap-2';
+          label.innerHTML = `<input type="checkbox" value="${t.id}" checked> ${escapeHtml(t.label)}`;
+          generateTopicsEl.appendChild(label);
+        });
+      }
+      if (generateAddBtn) {
+        generateAddBtn.addEventListener('click', () => {
+          const checked = [...generateTopicsEl.querySelectorAll('input:checked')].map((i) => i.value);
+          if (checked.length === 0) {
+            showAlert(alertContainer, 'Select at least one topic to generate questions.', 'error');
+            return;
+          }
+          const perTopic = Math.max(1, Math.min(10, parseInt(document.getElementById('generate-count').value) || 3));
+          const questions = generateKaplanMathQuestions(checked, perTopic);
+          questions.forEach((q) => addQuestion(q));
+          if (generateStatus) {
+            generateStatus.textContent = `Added ${questions.length} generated questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).`;
+            generateStatus.classList.remove('hidden');
+          }
+          clearAlert();
+          scrollTo({ top: document.getElementById('questions-heading').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+        });
       }
       
       // Debug: show raw text
