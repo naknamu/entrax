@@ -174,7 +174,7 @@
   --exam-question-max-width: 800px;
 }
 
-/* Dark mode support (optional, for future) */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-bg: var(--color-gray-950);
@@ -3598,3 +3598,95 @@ pre code {
    Font Face (Inter & JetBrains Mono - loaded via Google Fonts in HTML)
    ========================================================================== */
 /* Fonts are loaded via <link> in HTML for better performance */
+/* ==========================================================================
+   Dark Mode Component Overrides
+   --------------------------------------------------------------------------
+   Several components used hardcoded light colors (--color-white, gray-50/100),
+   so they stayed WHITE in dark mode. These overrides sit at the END of the
+   stylesheet so they win the cascade, and route those surfaces through the
+   dark-aware semantic variables. Light mode is untouched.
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  /* Inputs & secondary buttons: white background -> elevated surface */
+  .input,
+  .select,
+  .textarea,
+  .btn-secondary {
+    background-color: var(--color-bg-elevated);
+  }
+
+  /* Cards, panels, headers, tables, exam surfaces: light gray -> subtle surface */
+  .card-header,
+  .card-footer,
+  .modal-footer,
+  .table th,
+  .submissions-table th,
+  .question-header,
+  .exam-navigation,
+  .info-card,
+  .choice-btn,
+  .question-block,
+  .section-header,
+  .import-preview-item,
+  .detail-header,
+  .answer-item,
+  .badge-secondary,
+  .nav-btn,
+  .tag,
+  code {
+    background-color: var(--color-bg-subtle);
+  }
+
+  /* Choice letter span (A/B/C/D circles on the exam screen) */
+  .choice-letter {
+    background-color: var(--color-bg-subtle);
+  }
+
+  /* Hover states */
+  .btn-secondary:hover:not(:disabled),
+  .btn-ghost:hover:not(:disabled),
+  .table tbody tr:hover,
+  .submissions-table tbody tr:hover,
+  .nav-link:hover,
+  .choice-btn:hover,
+  .dropdown-item:hover {
+    background-color: var(--color-bg-subtle);
+  }
+
+  /* Text on the dark -900 backgrounds must flip to light shades */
+  .badge-primary,
+  .choice-btn.selected {
+    color: var(--color-primary-100);
+  }
+  .badge-success,
+  .answer-choice.correct {
+    color: var(--color-success-100);
+  }
+  .badge-warning {
+    color: var(--color-warning-100);
+  }
+  .badge-danger,
+  .answer-choice.incorrect {
+    color: var(--color-danger-100);
+  }
+  .answer-choice.selected:not(.correct) {
+    color: var(--color-primary-100);
+  }
+
+  .alert-success {
+    color: var(--color-success-100);
+    border-color: var(--color-success-700);
+  }
+  .alert-error {
+    color: var(--color-danger-100);
+    border-color: var(--color-danger-700);
+  }
+  .alert-warning {
+    color: var(--color-warning-100);
+    border-color: var(--color-warning-700);
+  }
+  .alert-info {
+    color: var(--color-info-100);
+    border-color: var(--color-primary-700);
+  }
+}
