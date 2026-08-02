@@ -4,9 +4,9 @@
  * Generates ORIGINAL, randomized math questions in the style of the Kaplan
  * Nursing Entrance Exam (Math section). Topics:
  *
- *   fractions (+ - x /), simplifying fractions, fraction word problems,
- *   exponents, algebra, ratio & proportion, decimals, unit conversions,
- *   percentages.
+ *   basic arithmetic operations, fractions, decimals, percentages,
+ *   ratios and proportions, unit conversions, basic algebra,
+ *   word problems and data interpretation.
  *
  * Every question is computed from the same numbers that appear in the text,
  * so the correct answer is always mathematically valid, and the distractors
@@ -91,6 +91,70 @@ function buildQuestion(category, text, correct, distractors) {
 // ---------------------------------------------------------------------------
 // Topic generators. Each returns an array of { text, category, correct, distractors }.
 // ---------------------------------------------------------------------------
+
+/** Basic arithmetic: whole-number addition, subtraction, multiplication, division. */
+function genBasicArithmetic(count) {
+  const out = [];
+  const ops = [
+    {
+      symbol: '+',
+      mk: () => {
+        const a = rndInt(15, 98);
+        const b = rndInt(7, 49);
+        return { a, b };
+      },
+      num: ({ a, b }) => a + b,
+      text: ({ a, b }) => `${a} + ${b}`,
+      extra: (r) => [r + 1, r - 1, r + 10],
+    },
+    {
+      symbol: '−',
+      mk: () => {
+        const a = rndInt(30, 99);
+        const b = rndInt(5, a - 1);
+        return { a, b };
+      },
+      num: ({ a, b }) => a - b,
+      text: ({ a, b }) => `${a} − ${b}`,
+      extra: (r) => [r + 1, r - 1, r + 10],
+    },
+    {
+      symbol: '×',
+      mk: () => {
+        const a = rndInt(6, 12);
+        const b = rndInt(3, 9);
+        return { a, b };
+      },
+      num: ({ a, b }) => a * b,
+      text: ({ a, b }) => `${a} × ${b}`,
+      extra: (r, { a, b }) => [r + a, r + b, (a + 1) * b],
+    },
+    {
+      symbol: '÷',
+      mk: () => {
+        const b = rndInt(2, 9);
+        const q = rndInt(2, 12);
+        return { a: b * q, b };
+      },
+      num: ({ a, b }) => a / b,
+      text: ({ a, b }) => `${a} ÷ ${b}`,
+      extra: (r) => [r + 1, r - 1, r + 10],
+    },
+  ];
+  for (let n = 0; n < count; n++) {
+    const op = ops[rndInt(0, ops.length - 1)];
+    const o = op.mk();
+    const correct = String(op.num(o));
+    const extras = op.extra(op.num(o), o).map(String).filter((v) => v !== correct);
+    out.push({
+      text: `What is ${op.text(o)}?`,
+      category: 'Basic arithmetic operations',
+      correct,
+      distractors: extras,
+    });
+  }
+  return out;
+}
 
 /** Addition / subtraction / multiplication / division of fractions. */
 function genFractionOperations(count) {
@@ -227,52 +291,10 @@ function genFractionWordProblems(count) {
     const t = templates[rndInt(0, templates.length - 1)](rndInt(1, 4));
     out.push({
       text: t.text,
-      category: 'Fractions (Word Problems)',
+      category: 'Word problems and Data interpretation',
       correct: String(t.correct),
       distractors: t.distractors.map(String),
     });
-  }
-  return out;
-}
-
-/** Exponents: evaluate powers and order-of-operations expressions. */
-function genExponents(count) {
-  const out = [];
-  for (let n = 0; n < count; n++) {
-    const kind = rndInt(0, 2);
-    if (kind === 0) {
-      const base = rndInt(2, 10);
-      const exp = rndInt(2, 4);
-      const correct = Math.pow(base, exp);
-      out.push({
-        text: `Evaluate: ${base}^${exp}`,
-        category: 'Exponents',
-        correct: String(correct),
-        distractors: [String(base * exp), String(Math.pow(base, exp - 1)), String(Math.pow(base, exp + 1))],
-      });
-    } else if (kind === 1) {
-      const base = rndInt(2, 6);
-      const exp = rndInt(2, 3);
-      const add = rndInt(1, 9);
-      const correct = add + Math.pow(base, exp);
-      out.push({
-        text: `Evaluate: ${add} + ${base}^${exp}`,
-        category: 'Exponents',
-        correct: String(correct),
-        distractors: [String(Math.pow(add + base, exp)), String(add + base * exp), String(correct - 1)],
-      });
-    } else {
-      const base = rndInt(2, 6);
-      const exp = rndInt(2, 3);
-      const sub = rndInt(1, 9);
-      const correct = Math.pow(base, exp) - sub;
-      out.push({
-        text: `Evaluate: ${base}^${exp} − ${sub}`,
-        category: 'Exponents',
-        correct: String(correct),
-        distractors: [String(Math.pow(base, exp) + sub), String(Math.pow(base - sub, exp)), String(correct + 1)],
-      });
-    }
   }
   return out;
 }
@@ -289,7 +311,7 @@ function genAlgebra(count) {
       const c = a * x + b;
       out.push({
         text: `Solve for x: ${a}x + ${b} = ${c}`,
-        category: 'Algebra',
+        category: 'Basic algebra',
         correct: String(x),
         distractors: [String(x + 1), String(x - 1), String(c - b - a)],
       });
@@ -300,7 +322,7 @@ function genAlgebra(count) {
       const correct = a * x - b;
       out.push({
         text: `If x = ${x}, evaluate ${a}x − ${b}`,
-        category: 'Algebra',
+        category: 'Basic algebra',
         correct: String(correct),
         distractors: [String(a * x + b), String(x - b), String(a * x)],
       });
@@ -310,7 +332,7 @@ function genAlgebra(count) {
       const correct = x * d;
       out.push({
         text: `Solve for x: x/${d} = ${x}`,
-        category: 'Algebra',
+        category: 'Basic algebra',
         correct: String(correct),
         distractors: [String(x + d), String(x * d + 1), String(d)],
       });
@@ -331,7 +353,7 @@ function genRatioProportion(count) {
       const x = a * k;
       out.push({
         text: `Solve for x: ${a}/${b} = x/${b * k}`,
-        category: 'Ratio & Proportion',
+        category: 'Ratios and proportions',
         correct: String(x),
         distractors: [String(x + b), String(x - a), String(a)],
       });
@@ -341,7 +363,7 @@ function genRatioProportion(count) {
       const k = rndInt(3, 8);
       out.push({
         text: `The nurse-to-patient ratio is ${nurses}:${patients}. How many nurses are needed for ${patients * k} patients?`,
-        category: 'Ratio & Proportion',
+        category: 'Ratios and proportions',
         correct: String(nurses * k),
         distractors: [String(patients * k / nurses), String(nurses * k + 1), String(nurses + k)],
       });
@@ -351,7 +373,7 @@ function genRatioProportion(count) {
       const k = rndInt(2, 6);
       out.push({
         text: `A solution mixes ${a} parts saline to ${b} parts water. If the total volume is ${(a + b) * k} mL, how many mL are saline?`,
-        category: 'Ratio & Proportion',
+        category: 'Ratios and proportions',
         correct: String(a * k),
         distractors: [String(b * k), String((a + b) * k / a), String(a * k + 1)],
       });
@@ -436,7 +458,7 @@ function genConversions(count) {
     const correct = u.div ? fmtDec(value / u.factor) : fmtDec(value * u.factor);
     out.push({
       text: `Convert ${fmtDec(value)} ${u.from} to ${u.to}:`,
-      category: 'Conversions',
+      category: 'Unit conversions',
       correct,
       distractors: [
         fmtDec(u.div ? value * u.factor : value / u.factor),
@@ -498,20 +520,102 @@ function genPercentages(count) {
   return out;
 }
 
+/** Data interpretation: read a short list of vitals and answer. */
+function genDataInterpretation(count) {
+  const out = [];
+  const letters = ['A', 'B', 'C', 'D'];
+  const fmt1 = (t) => (Number.isInteger(t) ? String(t) : t.toFixed(1));
+  for (let n = 0; n < count; n++) {
+    const kind = rndInt(0, 3);
+    if (kind === 0) {
+      // Highest / lowest heart rate
+      const vals = [];
+      const used = new Set();
+      while (vals.length < 4) {
+        const v = rndInt(60, 90);
+        if (!used.has(v)) { used.add(v); vals.push(v); }
+      }
+      const highest = rndInt(0, 1) === 0;
+      const target = highest ? Math.max(...vals) : Math.min(...vals);
+      const correct = letters[vals.indexOf(target)];
+      out.push({
+        text: `Heart rates (bpm): ${vals.map((v, i) => `Patient ${letters[i]}: ${v}`).join(', ')}. Which patient has the ${highest ? 'highest' : 'lowest'} heart rate?`,
+        category: 'Word problems and Data interpretation',
+        correct,
+        distractors: letters.filter((l) => l !== correct),
+      });
+    } else if (kind === 1) {
+      // Total IV intake for 4 patients
+      const vals = [];
+      for (let i = 0; i < 4; i++) vals.push(rndInt(2, 9) * 10);
+      const sum = vals.reduce((s, v) => s + v, 0);
+      out.push({
+        text: `IV intake (mL): ${vals.map((v, i) => `Patient ${letters[i]}: ${v}`).join(', ')}. What is the total intake for all four patients?`,
+        category: 'Word problems and Data interpretation',
+        correct: String(sum),
+        distractors: [String(sum / 2), String(sum + 10), String(sum - 10)],
+      });
+    } else if (kind === 2) {
+      // Difference between highest and lowest systolic BP
+      const vals = [];
+      const used = new Set();
+      while (vals.length < 4) {
+        const v = rndInt(95, 150);
+        if (!used.has(v)) { used.add(v); vals.push(v); }
+      }
+      const diff = Math.max(...vals) - Math.min(...vals);
+      out.push({
+        text: `Systolic BP (mmHg): ${vals.map((v, i) => `Patient ${letters[i]}: ${v}`).join(', ')}. What is the difference between the highest and lowest reading?`,
+        category: 'Word problems and Data interpretation',
+        correct: String(diff),
+        distractors: [String(Math.max(...vals) + Math.min(...vals)), String(diff + 10), String(diff + 5)],
+      });
+    } else {
+      // How many temperatures above a threshold
+      const temps = [];
+      const used = new Set();
+      while (temps.length < 4) {
+        const v = rndInt(970, 1010) / 10;
+        if (!used.has(v)) { used.add(v); temps.push(v); }
+      }
+      const threshold = rndInt(980, 1000) / 10;
+      const above = temps.filter((t) => t > threshold).length;
+      out.push({
+        text: `Temperatures (°F): ${temps.map((t, i) => `Patient ${letters[i]}: ${fmt1(t)}`).join(', ')}. How many patients have a temperature above ${fmt1(threshold)} °F?`,
+        category: 'Word problems and Data interpretation',
+        correct: String(above),
+        distractors: [String(above + 1), String(Math.max(0, above - 1)), String(4 - above)].filter((v) => v !== String(above)),
+      });
+    }
+  }
+  return out;
+}
+
+/** Fractions: mix of fraction operations and simplification. */
+function genFractions(count) {
+  const half = Math.ceil(count / 2);
+  return [...genFractionOperations(half), ...genSimplifyFractions(count - half)];
+}
+
+/** Word problems and data interpretation: fraction word problems + table reading. */
+function genWordProblems(count) {
+  const half = Math.ceil(count / 2);
+  return [...genFractionWordProblems(half), ...genDataInterpretation(count - half)];
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 export const KAPLAN_MATH_TOPICS = [
-  { id: 'fractions', label: 'Fractions (+ − × ÷)', gen: genFractionOperations },
-  { id: 'simplify', label: 'Simplifying Fractions', gen: genSimplifyFractions },
-  { id: 'fractionWords', label: 'Fraction Word Problems', gen: genFractionWordProblems },
-  { id: 'exponents', label: 'Exponents', gen: genExponents },
-  { id: 'algebra', label: 'Algebra', gen: genAlgebra },
-  { id: 'ratio', label: 'Ratio & Proportion', gen: genRatioProportion },
+  { id: 'basicArithmetic', label: 'Basic arithmetic operations', gen: genBasicArithmetic },
+  { id: 'fractions', label: 'Fractions', gen: genFractions },
   { id: 'decimals', label: 'Decimals', gen: genDecimals },
-  { id: 'conversions', label: 'Conversions', gen: genConversions },
   { id: 'percentages', label: 'Percentages', gen: genPercentages },
+  { id: 'ratios', label: 'Ratios and proportions', gen: genRatioProportion },
+  { id: 'conversions', label: 'Unit conversions', gen: genConversions },
+  { id: 'algebra', label: 'Basic algebra', gen: genAlgebra },
+  { id: 'wordProblems', label: 'Word problems and Data interpretation', gen: genWordProblems },
 ];
 
 /**
