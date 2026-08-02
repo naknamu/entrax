@@ -1002,8 +1002,9 @@
           examData.status = 'draft';
         } else {
           examData.status = 'published';
-          if (!examData.createdAt) examData.createdAt = serverTimestamp();
         }
+        // Always set createdAt (drafts too) so they appear in dashboard queries
+        if (!examData.createdAt) examData.createdAt = serverTimestamp();
 
         let targetExamId = examId;
         if (!targetExamId) {

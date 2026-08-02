@@ -141,7 +141,7 @@
   <script type="module">
     import { auth, db } from '/src/firebase.js';
     import { onAuthStateChanged, signOut } from 'firebase/auth';
-    import { collection, query, where, orderBy, getDocs, getCountFromServer, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+    import { collection, query, where, getDocs, getCountFromServer, doc, deleteDoc, writeBatch } from 'firebase/firestore';
     import { formatDate, formatDateTime, formatDuration, showAlert, showConfirm, formatPercent, escapeHtml } from '/js/admin.js';
 
     // DOM Elements
@@ -170,10 +170,17 @@
 
     async function loadDashboard() {
       try {
-        // Load exams
-        const examsQuery = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
-        const examsSnapshot = await getDocs(examsQuery);
+        // Load exams (no orderBy: Firestore's orderBy excludes documents missing
+        // the field, which hid draft exams without createdAt; sort client-side
+        // and fall back to updatedAt for older drafts).
+        const examsSnapshot = await getDocs(collection(db, 'exams'));
         const exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const examTime = (e) => {
+          if (e.createdAt && e.createdAt.toMillis) return e.createdAt.toMillis();
+          if (e.updatedAt && e.updatedAt.toMillis) return e.updatedAt.toMillis();
+          return 0;
+        };
+        exams.sort((a, b) => examTime(b) - examTime(a));
 
         // Load all submissions for stats
         const submissionsSnapshot = await getDocs(collection(db, 'submissions'));
@@ -243,7 +250,7 @@
         return `
           <tr>
             <td>
-              <div class="exam-title">${escapeHtml(exam.title)}</div>
+              <div class="exam-title">${escapeHtml(exam.title)}${exam.status === 'draft' ? ' <span class="badge badge-secondary">Draft</span>' : ''}</div>
               <div class="exam-description">${escapeHtml(exam.description || 'No description')}</div>
             </td>
             <td>${exam.questions?.length || 0}</td>
