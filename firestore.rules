@@ -92,6 +92,9 @@ service cloud.firestore {
         // Must be for a valid, open exam
         examExists(request.resource.data.examId) &&
         isExamOpen(request.resource.data.examId) &&
+        // Must be linked to the authenticated session (anonymous or email)
+        request.resource.data.studentUid != null &&
+        request.resource.data.studentUid == request.auth.uid &&
         // Student info required
         request.resource.data.studentName != null &&
         request.resource.data.studentName != '' &&
@@ -109,7 +112,8 @@ service cloud.firestore {
       // Matched by studentEmail + examId (queried client-side)
       allow read: if 
         isAuthenticated() &&
-        (resource.data.studentEmail == request.auth.token.email || 
+        (resource.data.studentUid == request.auth.uid ||
+         resource.data.studentEmail == request.auth.token.email || 
          // For anonymous auth, allow reading if the submission was created by this session
          request.auth.token.firebase.sign_in_provider == 'anonymous');
 
@@ -117,11 +121,16 @@ service cloud.firestore {
       allow read: if isAdmin();
 
       // Students can UPDATE their own submission (autosave answers, final submit)
-      // For anonymous auth, allow update if the submission's studentEmail matches the request data
+      // The submission is linked to the authenticated session via studentUid, so this
+      // works for BOTH anonymous and email/password students (their typed exam email
+      // may legitimately differ from their auth account email).
+      // Legacy fallbacks keep older submissions (created before studentUid) working:
+      //  - email/password users whose auth email matches the submission's studentEmail
+      //  - anonymous sessions (studentEmail is retained across updates)
       allow update: if 
         isAuthenticated() &&
-        (resource.data.studentEmail == request.auth.token.email ||
-         // For anonymous auth, allow update if the request data contains the same studentEmail
+        (resource.data.studentUid == request.auth.uid ||
+         resource.data.studentEmail == request.auth.token.email ||
          (request.auth.token.firebase.sign_in_provider == 'anonymous' && 
           request.resource.data.studentEmail == resource.data.studentEmail));
 

@@ -518,6 +518,7 @@
           examId,
           studentName,
           studentEmail,
+          studentUid: auth.currentUser ? auth.currentUser.uid : '',
           startedAt: serverTimestamp(),
           submittedAt: null,
           answers: [],

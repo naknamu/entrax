@@ -21,7 +21,7 @@ test.describe('Exam Layout Verification', () => {
     await page.fill('#timeLimitMinutes', '30');
     await page.fill('#passingPercent', '70');
     
-    // Add first question
+    // Add first question (page already has 1 default block, this adds the 2nd)
     await page.click('#add-question-btn');
     await page.waitForTimeout(300);
     
@@ -35,9 +35,7 @@ test.describe('Exam Layout Verification', () => {
     await firstBlock.locator('input[name$="[choices][3]"]').fill('Madrid');
     await firstBlock.locator('input[type="radio"][value="1"]').check();
     
-    // Add second question
-    await page.click('#add-question-btn');
-    await page.waitForTimeout(300);
+    // Fill second question (the default block)
     const secondBlock = blocks.nth(1);
     await secondBlock.locator('textarea[name$="[text]"]').fill('What is 2 + 2?');
     await secondBlock.locator('input[name$="[choices][0]"]').fill('3');
