@@ -61,3 +61,27 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Firestore rules job — deploys firestore.rules to the production project so
+  # security-rule changes ship with every push (no manual `firebase login` needed).
+  # Requires the FIREBASE_TOKEN secret (generate with `npx firebase login:ci`).
+  deploy-rules:
+    name: Deploy Firestore Rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Firestore rules
+        run: npx firebase deploy --only firestore:rules --project entrax-878a1
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
