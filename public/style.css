@@ -3331,7 +3331,7 @@ pre code {
 }
 
 .dropdown-menu {
-  position: absolute;
+  position: fixed;
   top: 100%;
   right: 0;
   min-width: 160px;

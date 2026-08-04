@@ -499,7 +499,52 @@
         d.classList.remove('open');
         const btn = d.querySelector('.actions-toggle');
         if (btn) btn.setAttribute('aria-expanded', 'false');
+        // Clear fixed-position inline styles
+        const menuEl = d.querySelector('.dropdown-menu');
+        if (menuEl) {
+          menuEl.style.position = '';
+          menuEl.style.top = '';
+          menuEl.style.right = '';
+          menuEl.style.left = '';
+          menuEl.style.bottom = '';
+        }
       });
+    }
+
+    // Open a row-actions dropdown. Uses position:fixed so the menu is not
+    // clipped by the table container's overflow (which otherwise hides it
+    // behind the pagination footer and adds a scrollbar on the last row).
+    // Flips upward when there is not enough space below the button.
+    function openDropdown(menu) {
+      const btn = menu.querySelector('.actions-toggle');
+      const menuEl = menu.querySelector('.dropdown-menu');
+      if (!btn || !menuEl) return;
+
+      menu.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+
+      const rect = btn.getBoundingClientRect();
+      const mh = menuEl.offsetHeight;
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+
+      if (spaceBelow < mh) {
+        menuEl.style.position = 'fixed';
+        menuEl.style.top = `${Math.max(8, rect.top - mh - 4)}px`;
+        menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+        menuEl.style.left = 'auto';
+        menuEl.style.bottom = 'auto';
+      } else {
+        menuEl.style.position = 'fixed';
+        menuEl.style.top = `${rect.bottom + 4}px`;
+        menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+        menuEl.style.left = 'auto';
+        menuEl.style.bottom = 'auto';
+      }
+
+      // Repositioned menu is stale after scroll/resize -> close it
+      const close = () => { closeAllDropdowns(); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
+      window.addEventListener('scroll', close, true);
+      window.addEventListener('resize', close);
     }
 
     // ---------- Publish (one-click) ----------
@@ -602,10 +647,7 @@
         const menu = toggle.closest('.dropdown');
         const willOpen = !menu.classList.contains('open');
         closeAllDropdowns();
-        if (willOpen) {
-          menu.classList.add('open');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
+        if (willOpen) openDropdown(menu);
         return;
       }
 
