@@ -3342,16 +3342,11 @@ pre code {
   box-shadow: var(--shadow-lg);
   padding: var(--space-1);
   z-index: var(--z-dropdown);
-  opacity: 0;
   visibility: hidden;
-  transform: translateY(-4px);
-  transition: all var(--transition-fast);
 }
 
 .dropdown.open .dropdown-menu {
-  opacity: 1;
   visibility: visible;
-  transform: translateY(0);
 }
 
 .dropdown-item {

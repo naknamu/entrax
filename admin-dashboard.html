@@ -514,7 +514,7 @@
     // Open a row-actions dropdown. Uses position:fixed so the menu is not
     // clipped by the table container's overflow (which otherwise hides it
     // behind the pagination footer and adds a scrollbar on the last row).
-    // Flips upward when there is not enough space below the button.
+    // Always opens directly below the button (no animation, no flipping).
     function openDropdown(menu) {
       const btn = menu.querySelector('.actions-toggle');
       const menuEl = menu.querySelector('.dropdown-menu');
@@ -524,22 +524,11 @@
       btn.setAttribute('aria-expanded', 'true');
 
       const rect = btn.getBoundingClientRect();
-      const mh = menuEl.offsetHeight;
-      const spaceBelow = window.innerHeight - rect.bottom - 8;
-
-      if (spaceBelow < mh) {
-        menuEl.style.position = 'fixed';
-        menuEl.style.top = `${Math.max(8, rect.top - mh - 4)}px`;
-        menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
-        menuEl.style.left = 'auto';
-        menuEl.style.bottom = 'auto';
-      } else {
-        menuEl.style.position = 'fixed';
-        menuEl.style.top = `${rect.bottom + 4}px`;
-        menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
-        menuEl.style.left = 'auto';
-        menuEl.style.bottom = 'auto';
-      }
+      menuEl.style.position = 'fixed';
+      menuEl.style.top = `${rect.bottom + 4}px`;
+      menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+      menuEl.style.left = 'auto';
+      menuEl.style.bottom = 'auto';
 
       // Repositioned menu is stale after scroll/resize -> close it
       const close = () => { closeAllDropdowns(); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
