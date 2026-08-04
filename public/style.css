@@ -3676,6 +3676,12 @@ pre code {
   .answer-choice.incorrect {
     color: var(--color-danger-100);
   }
+  .status-badge.passed {
+    color: var(--color-success-100);
+  }
+  .status-badge.failed {
+    color: var(--color-danger-100);
+  }
   .answer-choice.selected:not(.correct) {
     color: var(--color-primary-100);
   }
