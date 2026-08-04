@@ -3661,6 +3661,10 @@ pre code {
   .choice-btn.selected {
     color: var(--color-primary-100);
   }
+  .question-category,
+  .answer-question-category {
+    color: var(--color-primary-100);
+  }
   .badge-success,
   .answer-choice.correct {
     color: var(--color-success-100);
