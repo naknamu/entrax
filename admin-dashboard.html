@@ -113,17 +113,42 @@
             </a>
           </div>
         </header>
+        <div class="filters-card">
+          <div class="filters-grid">
+            <div class="filter-group form-group">
+              <label class="label" for="exam-search">Search Exams</label>
+              <input type="search" id="exam-search" class="input" placeholder="Search by title or description..." aria-label="Search exams">
+            </div>
+            <div class="filter-group form-group">
+              <label class="label" for="exam-status-filter">Status</label>
+              <select id="exam-status-filter" class="select">
+                <option value="">All Statuses</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <div class="filter-group filter-group--sm form-group">
+              <label class="label" for="exam-page-size">Per Page</label>
+              <select id="exam-page-size" class="select">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div class="table-container">
           <table class="table" id="exams-table" role="grid">
             <thead>
               <tr>
-                <th scope="col">Exam Title</th>
-                <th scope="col">Questions</th>
-                <th scope="col">Time Limit</th>
-                <th scope="col">Passing %</th>
-                <th scope="col">Availability</th>
-                <th scope="col">Attempts</th>
-                <th scope="col">Avg Score</th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="title">Exam Title <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="questions">Questions <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="timeLimitMinutes">Time Limit <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="passingPercent">Passing % <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="availability">Availability <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="attempts">Attempts <span class="sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col"><button type="button" class="th-sort" data-sort="avgScore">Avg Score <span class="sort-icon" aria-hidden="true"></span></button></th>
                 <th scope="col">Actions</th>
               </tr>
             </thead>
@@ -134,6 +159,10 @@
             </tbody>
           </table>
         </div>
+        <footer class="table-footer">
+          <span class="pagination-info" id="pagination-info"></span>
+          <nav class="pagination" id="pagination-nav" aria-label="Exam pagination"></nav>
+        </footer>
       </section>
     </div>
   </main>
@@ -178,8 +207,19 @@
     const viewModalClose = document.getElementById('view-modal-close');
     const viewModalDone = document.getElementById('view-modal-done');
 
+    // Toolbar / pagination elements
+    const examSearch = document.getElementById('exam-search');
+    const examStatusFilter = document.getElementById('exam-status-filter');
+    const examPageSize = document.getElementById('exam-page-size');
+    const paginationInfo = document.getElementById('pagination-info');
+    const paginationNav = document.getElementById('pagination-nav');
+
     // State
     let allExams = [];
+    let allSubmissions = [];
+    let attemptsMap = {};
+    let avgScoreMap = {};
+    const tableState = { search: '', status: '', sortField: 'title', sortDir: 'asc', page: 1, pageSize: 10 };
 
     // Auth check
     onAuthStateChanged(auth, async (user) => {
@@ -214,6 +254,19 @@
         // Load all submissions for stats
         const submissionsSnapshot = await getDocs(collection(db, 'submissions'));
         const submissions = submissionsSnapshot.docs.map(doc => doc.data());
+        allSubmissions = submissions;
+
+        // Per-exam stats maps
+        attemptsMap = {};
+        avgScoreMap = {};
+        allSubmissions.forEach(s => {
+          const id = s.examId;
+          attemptsMap[id] = (attemptsMap[id] || 0) + 1;
+          const prev = avgScoreMap[id] || { sum: 0, count: 0 };
+          prev.sum += (s.percentage || 0);
+          prev.count++;
+          avgScoreMap[id] = prev;
+        });
 
         // Calculate stats
         const totalExams = exams.length;
@@ -230,16 +283,75 @@
         statAvgScore.textContent = formatPercent(avgScore);
         statPassRate.textContent = formatPercent(passRate);
 
-        // Render exams table
-        renderExamsTable(exams, submissions);
+        // Render exams table (filtered, sorted, paginated)
+        applyExamsTable();
       } catch (error) {
         console.error('Error loading dashboard:', error);
         showAlert(alertContainer, 'Failed to load dashboard. Please refresh.', 'error');
       }
     }
 
-    function renderExamsTable(exams, submissions) {
-      if (exams.length === 0) {
+    // Sort keys for each column (returns a comparable value)
+    function examSortKey(exam, field) {
+      switch (field) {
+        case 'title': return (exam.title || '').toLowerCase();
+        case 'questions': return exam.questions?.length || 0;
+        case 'timeLimitMinutes': return exam.timeLimitMinutes || 0;
+        case 'passingPercent': return exam.passingPercent || 70;
+        case 'availability': {
+          const now = new Date();
+          const start = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+          const end = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+          if (end && end < now) return 0;                 // closed
+          if (start && start > now) return 2;             // opens later
+          return 1;                                       // open / closes later
+        }
+        case 'attempts': return attemptsMap[exam.id] || 0;
+        case 'avgScore': {
+          const a = avgScoreMap[exam.id];
+          return a && a.count ? a.sum / a.count : 0;
+        }
+        default: return 0;
+      }
+    }
+
+    function applyExamsTable() {
+      // Filter
+      const q = tableState.search.trim().toLowerCase();
+      let filtered = allExams.filter(exam => {
+        if (tableState.status && exam.status !== tableState.status) return false;
+        if (q) {
+          const hay = `${exam.title || ''} ${exam.description || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      // Sort
+      const field = tableState.sortField;
+      const dir = tableState.sortDir === 'desc' ? -1 : 1;
+      filtered.sort((a, b) => {
+        const ka = examSortKey(a, field);
+        const kb = examSortKey(b, field);
+        if (ka < kb) return -1 * dir;
+        if (ka > kb) return 1 * dir;
+        return 0;
+      });
+
+      // Paginate
+      const total = filtered.length;
+      const pages = Math.max(1, Math.ceil(total / tableState.pageSize));
+      if (tableState.page > pages) tableState.page = pages;
+      const start = (tableState.page - 1) * tableState.pageSize;
+      const pageExams = filtered.slice(start, start + tableState.pageSize);
+
+      renderTableRows(pageExams, total);
+      renderPagination(pages, total, start);
+      renderSortIndicators();
+    }
+
+    function renderTableRows(pageExams, total) {
+      if (allExams.length === 0) {
         examsTbody.innerHTML = `
           <tr>
             <td colspan="8" class="text-center py-8 text-muted">
@@ -249,15 +361,19 @@
         `;
         return;
       }
+      if (pageExams.length === 0) {
+        examsTbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-muted">No exams match your filters.</td>
+          </tr>
+        `;
+        return;
+      }
 
-      examsTbody.innerHTML = exams.map(exam => {
-        const examSubmissions = submissions.filter(s => s.examId === exam.id);
-        const attempts = examSubmissions.length;
-        const avgScore = attempts > 0 
-          ? examSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / attempts 
-          : 0;
-        const passCount = examSubmissions.filter(s => s.passed).length;
-        const passRate = attempts > 0 ? (passCount / attempts) * 100 : 0;
+      examsTbody.innerHTML = pageExams.map(exam => {
+        const attempts = attemptsMap[exam.id] || 0;
+        const avg = avgScoreMap[exam.id];
+        const avgScore = avg && avg.count ? avg.sum / avg.count : 0;
 
         // Availability
         const now = new Date();
@@ -307,6 +423,49 @@
           </tr>
         `;
       }).join('');
+    }
+
+    function renderPagination(pages, total, start) {
+      const from = total === 0 ? 0 : start + 1;
+      const to = Math.min(total, start + tableState.pageSize);
+      paginationInfo.textContent = total === 0 ? '0 exams' : `Showing ${from}–${to} of ${total}`;
+
+      if (pages <= 1) {
+        paginationNav.innerHTML = '';
+        return;
+      }
+
+      const btn = (label, page, opts = {}) =>
+        `<button type="button" class="page-btn ${opts.active ? 'active' : ''}" data-page="${page}" ${opts.disabled ? 'disabled' : ''}>${label}</button>`;
+
+      let html = btn('‹ Prev', tableState.page - 1, { disabled: tableState.page === 1 });
+      const windowPages = [];
+      const maxBtns = 7;
+      let startP = Math.max(1, tableState.page - 2);
+      let endP = Math.min(pages, startP + maxBtns - 1);
+      startP = Math.max(1, endP - maxBtns + 1);
+      if (startP > 1) windowPages.push('…' + '1');
+      for (let p = startP; p <= endP; p++) windowPages.push(String(p));
+      if (endP < pages) windowPages.push(String(pages) + '…');
+      // Rebuild with proper first/last page links + ellipsis markers
+      html += windowPages.map(seg => {
+        if (seg.startsWith('…')) return btn(seg.slice(1), 1, { active: tableState.page === 1 });
+        if (seg.endsWith('…')) return btn(seg.slice(0, -1), pages, { active: tableState.page === pages });
+        return btn(seg, Number(seg), { active: tableState.page === Number(seg) });
+      }).join('');
+      html += btn('Next ›', tableState.page + 1, { disabled: tableState.page === pages });
+
+      paginationNav.innerHTML = html;
+    }
+
+    function renderSortIndicators() {
+      document.querySelectorAll('#exams-table th').forEach(th => {
+        const btn = th.querySelector('.th-sort');
+        if (!btn) return;
+        const active = btn.dataset.sort === tableState.sortField;
+        th.setAttribute('aria-sort', active ? (tableState.sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
     }
 
     // Make deleteExam globally accessible
@@ -503,6 +662,50 @@
     viewModalDone.addEventListener('click', closeViewExam);
     examViewModal.addEventListener('click', (e) => {
       if (e.target === examViewModal) closeViewExam();
+    });
+
+    // ---------- Search / filter / sort / pagination ----------
+    let searchTimer = null;
+    examSearch.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        tableState.search = examSearch.value;
+        tableState.page = 1;
+        applyExamsTable();
+      }, 200);
+    });
+
+    examStatusFilter.addEventListener('change', () => {
+      tableState.status = examStatusFilter.value;
+      tableState.page = 1;
+      applyExamsTable();
+    });
+
+    examPageSize.addEventListener('change', () => {
+      tableState.pageSize = parseInt(examPageSize.value, 10) || 10;
+      tableState.page = 1;
+      applyExamsTable();
+    });
+
+    document.querySelectorAll('.th-sort').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.sort;
+        if (tableState.sortField === field) {
+          tableState.sortDir = tableState.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          tableState.sortField = field;
+          tableState.sortDir = 'asc';
+        }
+        tableState.page = 1;
+        applyExamsTable();
+      });
+    });
+
+    paginationNav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.page-btn');
+      if (!btn || btn.disabled) return;
+      tableState.page = parseInt(btn.dataset.page, 10);
+      applyExamsTable();
     });
   </script>
 </body>
