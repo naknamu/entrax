@@ -165,9 +165,10 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
     
     const row = page.locator('#submissions-tbody tr').first();
     await expect(row.locator('td').nth(0)).toContainText('Dashboard Score Student');
-    await expect(row.locator('td').nth(1)).toContainText('3 / 3'); // Score
-    await expect(row.locator('td').nth(2)).toContainText('100.0%'); // Percentage
-    await expect(row.locator('td').nth(5)).toContainText('Passed');
+    await expect(row.locator('td').nth(1)).toContainText('dashboard@test.com'); // Email
+    await expect(row.locator('td').nth(2)).toContainText('3 / 3'); // Score
+    await expect(row.locator('td').nth(3)).toContainText('100.0%'); // Percentage
+    await expect(row.locator('td').nth(6)).toContainText('Passed'); // Status
   });
 
   // 6. View submission detail

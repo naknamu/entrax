@@ -401,6 +401,8 @@
           <tr>
             <td>
               <div class="student-name">${escapeHtml(sub.studentName || 'Unknown')}</div>
+            </td>
+            <td>
               <div class="student-email">${escapeHtml(sub.studentEmail || 'N/A')}</div>
             </td>
             <td class="score-cell">${sub.score || 0} / ${exam.questions?.length || 0}</td>

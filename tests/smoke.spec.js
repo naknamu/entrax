@@ -167,8 +167,9 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
     
     const row = page.locator('#submissions-tbody tr').first();
     await expect(row.locator('td').nth(0)).toContainText('Smoke Test Student');
-    await expect(row.locator('td').nth(1)).toContainText('2 / 2'); // Score
-    await expect(row.locator('td').nth(2)).toContainText('100.0%'); // Percentage
-    await expect(row.locator('td').nth(5)).toContainText('Passed');
+    await expect(row.locator('td').nth(1)).toContainText('smoke@test.com'); // Email
+    await expect(row.locator('td').nth(2)).toContainText('2 / 2'); // Score
+    await expect(row.locator('td').nth(3)).toContainText('100.0%'); // Percentage
+    await expect(row.locator('td').nth(6)).toContainText('Passed'); // Status
   });
 });
