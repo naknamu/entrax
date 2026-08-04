@@ -225,27 +225,21 @@
                 <span class="score-value" id="score-percent">0%</span>
               </div>
               <div class="score-details">
-                <div class="score-detail-grid">
-                  <div class="score-detail score-detail--correct">
-                    <div class="score-detail-value" id="score-correct">0</div>
-                    <div class="score-detail-label">Correct</div>
-                  </div>
-                  <div class="score-detail score-detail--incorrect">
-                    <div class="score-detail-value" id="score-incorrect">0</div>
-                    <div class="score-detail-label">Incorrect</div>
-                  </div>
-                  <div class="score-detail score-detail--unanswered">
-                    <div class="score-detail-value" id="score-unanswered">0</div>
-                    <div class="score-detail-label">Unanswered</div>
-                  </div>
-                  <div class="score-detail score-detail--flagged">
-                    <div class="score-detail-value" id="score-flagged">0</div>
-                    <div class="score-detail-label">Flagged</div>
-                  </div>
+                <div class="score-detail score-detail--correct">
+                  <div class="score-detail-value" id="score-correct">0</div>
+                  <div class="score-detail-label">Correct</div>
                 </div>
-                <div class="mt-4">
-                  <span class="status-badge passed" id="badge-passed" hidden>Passed</span>
-                  <span class="status-badge failed" id="badge-failed" hidden>Failed</span>
+                <div class="score-detail score-detail--incorrect">
+                  <div class="score-detail-value" id="score-incorrect">0</div>
+                  <div class="score-detail-label">Incorrect</div>
+                </div>
+                <div class="score-detail score-detail--unanswered">
+                  <div class="score-detail-value" id="score-unanswered">0</div>
+                  <div class="score-detail-label">Unanswered</div>
+                </div>
+                <div class="score-detail score-detail--flagged">
+                  <div class="score-detail-value" id="score-flagged">0</div>
+                  <div class="score-detail-label">Flagged</div>
                 </div>
               </div>
             </div>
@@ -370,8 +364,6 @@
     const scoreIncorrect = document.getElementById('score-incorrect');
     const scoreUnanswered = document.getElementById('score-unanswered');
     const scoreFlagged = document.getElementById('score-flagged');
-    const badgePassed = document.getElementById('badge-passed');
-    const badgeFailed = document.getElementById('badge-failed');
     const resultsDisplay = document.getElementById('results-display');
     const submissionMessage = document.getElementById('submission-message');
     const scoreCircle = document.getElementById('score-circle');
@@ -961,10 +953,8 @@
         scoreCircle.style.setProperty('--score', percentage.toFixed(1));
         
         if (passed) {
-          badgePassed.hidden = false;
           scoreCircle.style.borderColor = 'var(--color-success)';
         } else {
-          badgeFailed.hidden = false;
           scoreCircle.style.borderColor = 'var(--color-danger)';
         }
 
@@ -977,8 +967,8 @@
         resultsVerdict.classList.toggle('failed', !passed);
         verdictIcon.innerHTML = passed
           ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-          : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-        verdictTitle.textContent = passed ? 'You Passed!' : 'You Failed';
+          : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+        verdictTitle.textContent = passed ? 'You Passed!' : 'Better luck next time!';
         verdictDetail.textContent = `Score ${percentage.toFixed(1)}% · Passing threshold ${passingPercent}%`;
       }
     }

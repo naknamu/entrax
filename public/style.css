@@ -2224,28 +2224,6 @@ pre code {
 .score-detail.flagged .score-detail-value,
 .score-detail--flagged .score-detail-value { color: var(--color-warning); }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-}
-
-.status-badge.passed {
-  background-color: var(--color-success-light);
-  color: var(--color-success-700);
-  border: 1px solid var(--color-success-border);
-}
-
-.status-badge.failed {
-  background-color: var(--color-danger-light);
-  color: var(--color-danger-700);
-  border: 1px solid var(--color-danger-border);
-}
-
 /* Prominent pass/fail verdict on the student results screen */
 .results-verdict {
   display: flex;
@@ -2621,10 +2599,6 @@ pre code {
   color: var(--color-text-secondary);
 }
 
-.status-badge {
-  font-size: var(--text-xs);
-}
-
 .view-btn {
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-xs);
@@ -2963,7 +2937,12 @@ pre code {
   }
   
   .score-details {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+  }
+
+  .score-detail-label {
+    font-size: 0.625rem;
   }
   
   .filters-grid {
@@ -3705,12 +3684,6 @@ pre code {
   }
   .badge-danger,
   .answer-choice.incorrect {
-    color: var(--color-danger-100);
-  }
-  .status-badge.passed {
-    color: var(--color-success-100);
-  }
-  .status-badge.failed {
     color: var(--color-danger-100);
   }
   .results-verdict.passed {
