@@ -208,8 +208,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check if Firestore config changed
+        id: firestore-changed
+        run: |
+          BASE=$(git rev-parse HEAD^ 2>/dev/null || echo "$(git rev-list --max-parents=0 HEAD)")
+          if git diff --name-only "$BASE" HEAD | grep -qE '^firestore\.(rules|indexes\.json)$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy Firestore rules and indexes
-        uses: w9jds/firebase-action@v13
+        if: steps.firestore-changed.outputs.changed == 'true'
+        uses: w9jds/firebase-action@v15.25.1
         with:
           args: deploy --only firestore:rules,firestore:indexes --project entrax-878a1
         env:
