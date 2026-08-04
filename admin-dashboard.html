@@ -138,10 +138,27 @@
     </div>
   </main>
 
+  <!-- Exam Read-Only View Modal -->
+  <div class="modal-overlay" id="exam-view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title" hidden>
+    <div class="modal modal--lg">
+      <header class="modal-header">
+        <h3 class="modal-title" id="view-modal-title">Exam Details</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="view-modal-close" aria-label="Close exam details">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </header>
+      <div class="modal-body" id="view-modal-body"></div>
+      <footer class="modal-footer">
+        <a class="btn btn-outline" id="view-modal-edit" href="#">Edit Exam</a>
+        <button type="button" class="btn btn-primary" id="view-modal-done">Done</button>
+      </footer>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from '/src/firebase.js';
     import { onAuthStateChanged, signOut } from 'firebase/auth';
-    import { collection, query, where, getDocs, getCountFromServer, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+    import { collection, query, where, getDocs, getCountFromServer, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
     import { formatDate, formatDateTime, formatDuration, showAlert, showConfirm, formatPercent, escapeHtml } from '/js/admin.js';
 
     // DOM Elements
@@ -152,6 +169,17 @@
     const statAttempts = document.getElementById('stat-attempts');
     const statAvgScore = document.getElementById('stat-avg-score');
     const statPassRate = document.getElementById('stat-pass-rate');
+
+    // View modal elements
+    const examViewModal = document.getElementById('exam-view-modal');
+    const viewModalTitle = document.getElementById('view-modal-title');
+    const viewModalBody = document.getElementById('view-modal-body');
+    const viewModalEdit = document.getElementById('view-modal-edit');
+    const viewModalClose = document.getElementById('view-modal-close');
+    const viewModalDone = document.getElementById('view-modal-done');
+
+    // State
+    let allExams = [];
 
     // Auth check
     onAuthStateChanged(auth, async (user) => {
@@ -175,6 +203,7 @@
         // and fall back to updatedAt for older drafts).
         const examsSnapshot = await getDocs(collection(db, 'exams'));
         const exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allExams = exams;
         const examTime = (e) => {
           if (e.createdAt && e.createdAt.toMillis) return e.createdAt.toMillis();
           if (e.updatedAt && e.updatedAt.toMillis) return e.updatedAt.toMillis();
@@ -248,7 +277,7 @@
         }
 
         return `
-          <tr>
+          <tr class="exam-row" data-exam-id="${exam.id}" tabindex="0" role="button" aria-label="View ${escapeHtml(exam.title)}">
             <td>
               <div class="exam-title">${escapeHtml(exam.title)}${exam.status === 'draft' ? ' <span class="badge badge-secondary">Draft</span>' : ''}</div>
               <div class="exam-description">${escapeHtml(exam.description || 'No description')}</div>
@@ -260,13 +289,19 @@
             <td>${attempts}</td>
             <td>${formatPercent(avgScore)}</td>
             <td>
-              <div class="table-actions">
-                <a href="exam-results.html?examId=${exam.id}" class="btn btn-sm btn-outline" aria-label="View results for ${escapeHtml(exam.title)}">Results</a>
-                <a href="create-exam.html?examId=${exam.id}" class="btn btn-sm btn-outline" aria-label="Edit ${escapeHtml(exam.title)}">Edit</a>
-                <button class="btn btn-sm btn-outline copy-link-btn" data-exam-id="${exam.id}" aria-label="Copy exam link for ${escapeHtml(exam.title)}" title="Copy exam link">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <div class="dropdown" data-exam-id="${exam.id}">
+                <button type="button" class="btn btn-sm btn-outline actions-toggle" aria-label="Actions for ${escapeHtml(exam.title)}" aria-haspopup="true" aria-expanded="false">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                 </button>
-                <button class="btn btn-sm btn-danger delete-exam-btn" data-exam-id="${exam.id}" data-exam-title="${escapeHtml(exam.title)}" aria-label="Delete ${escapeHtml(exam.title)}">Delete</button>
+                <div class="dropdown-menu" role="menu">
+                  <button class="dropdown-item" data-action="view" role="menuitem">View Exam</button>
+                  <a class="dropdown-item" href="exam-results.html?examId=${exam.id}" role="menuitem">Results</a>
+                  <a class="dropdown-item" href="create-exam.html?examId=${exam.id}" role="menuitem">Edit</a>
+                  <button class="dropdown-item" data-action="copy" role="menuitem">Copy Link</button>
+                  ${exam.status === 'draft' ? '<button class="dropdown-item" data-action="publish" role="menuitem">Publish</button>' : ''}
+                  <div class="dropdown-divider" role="separator"></div>
+                  <button class="dropdown-item danger" data-action="delete" role="menuitem">Delete</button>
+                </div>
               </div>
             </td>
           </tr>
@@ -298,32 +333,176 @@
       }
     };
 
-    // Delete exam (delegated handler — avoids inline-onclick string escaping bugs)
+    // ---------- Actions dropdown ----------
+    function closeAllDropdowns(exceptEl) {
+      document.querySelectorAll('.dropdown.open').forEach(d => {
+        if (exceptEl && d === exceptEl) return;
+        d.classList.remove('open');
+        const btn = d.querySelector('.actions-toggle');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    // ---------- Publish (one-click) ----------
+    window.publishExam = async function(examId, title) {
+      const confirmed = await showConfirm('Publish Exam', `Publish "${title}"? Students will be able to take it.`);
+      if (!confirmed) return;
+      try {
+        await updateDoc(doc(db, 'exams', examId), { status: 'published', updatedAt: serverTimestamp() });
+        showAlert(alertContainer, 'Exam published successfully.', 'success');
+        loadDashboard();
+      } catch (error) {
+        console.error('Error publishing exam:', error);
+        showAlert(alertContainer, 'Failed to publish exam.', 'error');
+      }
+    };
+
+    // ---------- Read-only exam view ----------
+    function openViewExam(examId) {
+      const exam = allExams.find(e => e.id === examId);
+      if (!exam) return;
+
+      viewModalTitle.textContent = exam.title;
+      viewModalEdit.href = `create-exam.html?examId=${exam.id}`;
+
+      const now = new Date();
+      const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+      const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+      let availability = 'Always Open';
+      let availabilityClass = 'success';
+      if (startDate && startDate > now) {
+        availability = `Opens ${formatDate(startDate)}`;
+        availabilityClass = 'warning';
+      } else if (endDate && endDate < now) {
+        availability = `Closed ${formatDate(endDate)}`;
+        availabilityClass = 'danger';
+      } else if (endDate) {
+        availability = `Closes ${formatDate(endDate)}`;
+        availabilityClass = 'warning';
+      }
+
+      const statusBadge = exam.status === 'draft'
+        ? '<span class="badge badge-secondary">Draft</span>'
+        : '<span class="badge badge-success">Published</span>';
+
+      const meta = `
+        <div class="view-exam-meta">
+          ${statusBadge}
+          <span class="badge badge-primary">${exam.questions?.length || 0} Questions</span>
+          <span class="badge badge-secondary">${exam.timeLimitMinutes} min</span>
+          <span class="badge badge-secondary">Passing: ${exam.passingPercent || 70}%</span>
+          <span class="badge badge-${availabilityClass}">${availability}</span>
+        </div>
+      `;
+
+      const questionsHtml = (exam.questions || []).map((q, qIndex) => {
+        const choicesHtml = (q.choices || []).map((choice, cIndex) => `
+          <div class="answer-choice ${cIndex === q.correctIndex ? 'correct' : ''}">
+            <span class="answer-choice-letter">${String.fromCharCode(65 + cIndex)}</span>
+            <span class="answer-choice-text">${escapeHtml(choice)}</span>
+            ${cIndex === q.correctIndex ? '<span class="answer-choice-label">(Correct Answer)</span>' : ''}
+          </div>
+        `).join('');
+
+        return `
+          <article class="answer-item">
+            <header class="answer-header">
+              <div class="answer-question">
+                <span class="answer-question-number">Q${qIndex + 1}.</span>
+                <span class="answer-question-text">${escapeHtml(q.text)}</span>
+                ${q.category ? `<span class="answer-question-category">${escapeHtml(q.category)}</span>` : ''}
+              </div>
+            </header>
+            <div class="answer-choices">${choicesHtml}</div>
+          </article>
+        `;
+      }).join('');
+
+      viewModalBody.innerHTML = `
+        <p class="view-exam-desc">${escapeHtml(exam.description || 'No description provided.')}</p>
+        ${meta}
+        <h4 class="view-exam-questions-title">Questions</h4>
+        <div class="answer-breakdown">${questionsHtml || '<p class="text-muted">This exam has no questions yet.</p>'}</div>
+      `;
+
+      examViewModal.hidden = false;
+      examViewModal.classList.add('open');
+    }
+
+    function closeViewExam() {
+      examViewModal.classList.remove('open');
+      examViewModal.hidden = true;
+    }
+
+    // ---------- Delegated interactions ----------
     document.addEventListener('click', async (e) => {
-      const delBtn = e.target.closest('.delete-exam-btn');
-      if (!delBtn) return;
-      const examId = delBtn.dataset.examId;
-      if (!examId) return;
-      await window.deleteExam(examId, delBtn.dataset.examTitle || 'this exam');
+      // Dropdown toggle
+      const toggle = e.target.closest('.actions-toggle');
+      if (toggle) {
+        e.stopPropagation();
+        const menu = toggle.closest('.dropdown');
+        const willOpen = !menu.classList.contains('open');
+        closeAllDropdowns();
+        if (willOpen) {
+          menu.classList.add('open');
+          toggle.setAttribute('aria-expanded', 'true');
+        }
+        return;
+      }
+
+      // Dropdown menu items
+      const item = e.target.closest('.dropdown-item');
+      if (item) {
+        e.stopPropagation();
+        const menu = item.closest('.dropdown');
+        const examId = menu.dataset.examId;
+        const examTitle = allExams.find(x => x.id === examId)?.title || 'this exam';
+        const action = item.dataset.action;
+        if (action) {
+          if (action === 'view') {
+            openViewExam(examId);
+          } else if (action === 'publish') {
+            await window.publishExam(examId, examTitle);
+          } else if (action === 'copy') {
+            const link = `${new URL('exam.html', window.location.href).href}?examId=${examId}`;
+            try {
+              await navigator.clipboard.writeText(link);
+              showAlert(alertContainer, 'Exam link copied to clipboard!', 'success');
+            } catch (error) {
+              showAlert(alertContainer, 'Failed to copy link.', 'error');
+            }
+          } else if (action === 'delete') {
+            await window.deleteExam(examId, examTitle);
+          }
+        }
+        closeAllDropdowns();
+        return;
+      }
+
+      // Row click -> read-only view (ignore clicks on links/buttons)
+      if (!e.target.closest('a, button')) {
+        const row = e.target.closest('.exam-row');
+        if (row) openViewExam(row.dataset.examId);
+      }
+
+      // Click outside a dropdown closes it
+      if (!e.target.closest('.dropdown')) closeAllDropdowns();
     });
 
-    // Copy exam link to clipboard
-    document.addEventListener('click', async (e) => {
-      const copyBtn = e.target.closest('.copy-link-btn');
-      if (!copyBtn) return;
-      
-      const examId = copyBtn.dataset.examId;
-      if (!examId) return;
-      
-      const link = `${new URL('exam.html', window.location.href).href}?examId=${examId}`;
-      
-      try {
-        await navigator.clipboard.writeText(link);
-        showAlert(alertContainer, 'Exam link copied to clipboard!', 'success');
-      } catch (error) {
-        console.error('Failed to copy link:', error);
-        showAlert(alertContainer, 'Failed to copy link.', 'error');
+    // Keyboard: Enter/Space on a row opens the read-only view
+    document.addEventListener('keydown', (e) => {
+      const row = e.target.closest && e.target.closest('.exam-row');
+      if (row && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        openViewExam(row.dataset.examId);
       }
+    });
+
+    // Modal close
+    viewModalClose.addEventListener('click', closeViewExam);
+    viewModalDone.addEventListener('click', closeViewExam);
+    examViewModal.addEventListener('click', (e) => {
+      if (e.target === examViewModal) closeViewExam();
     });
   </script>
 </body>
