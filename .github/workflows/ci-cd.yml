@@ -45,6 +45,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
@@ -169,30 +177,19 @@ jobs:
           path: ./dist
 
   # ---------------------------------------------------------------------------
-  # CD: deploy the built site to GitHub Pages (push to main only)
+  # CD: deploy the built site to GitHub Pages + Firestore rules/indexes to
+  # production (push to main only). Combined into one job to avoid a duplicate
+  # checkout + npm ci. Requires the FIREBASE_TOKEN secret (generate with
+  # `npx firebase login:ci`).
   # ---------------------------------------------------------------------------
-  deploy-pages:
-    name: Deploy to GitHub Pages
+  deploy:
+    name: Deploy (Pages + Firestore)
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  # ---------------------------------------------------------------------------
-  # CD: deploy Firestore rules + indexes to production (push to main only)
-  # Requires the FIREBASE_TOKEN secret (generate with `npx firebase login:ci`).
-  # ---------------------------------------------------------------------------
-  deploy-firestore:
-    name: Deploy Firestore Rules + Indexes
-    if: github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -210,3 +207,7 @@ jobs:
         run: npx firebase deploy --only firestore:rules,firestore:indexes --project entrax-878a1
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
