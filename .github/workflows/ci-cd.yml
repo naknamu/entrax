@@ -177,13 +177,11 @@ jobs:
           path: ./dist
 
   # ---------------------------------------------------------------------------
-  # CD: deploy the built site to GitHub Pages + Firestore rules/indexes to
-  # production (push to main only). Combined into one job to avoid a duplicate
-  # checkout + npm ci. Requires the FIREBASE_TOKEN secret (generate with
-  # `npx firebase login:ci`).
+  # CD: deploy the built site to GitHub Pages (push to main only). No checkout
+  # or npm ci needed — it just publishes the artifact from the build job.
   # ---------------------------------------------------------------------------
-  deploy:
-    name: Deploy (Pages + Firestore)
+  deploy-pages:
+    name: Deploy to GitHub Pages
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
@@ -191,23 +189,28 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Deploy Firestore rules and indexes
-        run: npx firebase deploy --only firestore:rules,firestore:indexes --project entrax-878a1
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------
+  # CD: deploy Firestore rules + indexes to production (push to main only).
+  # Uses the prebuilt firebase-action Docker image so no npm ci is needed.
+  # Requires the FIREBASE_TOKEN secret (generate with `npx firebase login:ci`).
+  # Runs in parallel with the Pages deploy.
+  # ---------------------------------------------------------------------------
+  deploy-firestore:
+    name: Deploy Firestore Rules + Indexes
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Firestore rules and indexes
+        uses: w9jds/firebase-action@v13
+        with:
+          args: deploy --only firestore:rules,firestore:indexes --project entrax-878a1
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
