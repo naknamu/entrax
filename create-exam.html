@@ -339,6 +339,7 @@
           }
           const perTopic = Math.max(1, Math.min(10, parseInt(document.getElementById('generate-count').value) || 3));
           const questions = generateKaplanMathQuestions(checked, perTopic);
+          removeDefaultEmptyQuestion();
           questions.forEach((q) => addQuestion(q));
           if (generateStatus) {
             generateStatus.textContent = `Added ${questions.length} generated questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).`;
@@ -625,6 +626,28 @@
     function toggleNoQuestionsMsg() {
       if (noQuestionsMsg) {
         noQuestionsMsg.classList.toggle('hidden', questionCounter > 0);
+      }
+    }
+
+    // Remove the default empty first question (no text, no choices) that is
+    // auto-added on a new exam, so bulk-added questions (import / Kaplan
+    // generator) start at Question 1 instead of Question 2.
+    function removeDefaultEmptyQuestion() {
+      const blocks = questionsContainer.querySelectorAll('.question-block');
+      if (blocks.length === 0) return;
+      const firstBlock = blocks[0];
+      const textEl = firstBlock.querySelector('textarea[name$="[text]"]');
+      const text = textEl ? textEl.value.trim() : '';
+      const choices = firstBlock.querySelectorAll('.choice-input');
+      let choicesEmpty = true;
+      choices.forEach(input => {
+        if (input.value.trim()) choicesEmpty = false;
+      });
+      if (!text && choicesEmpty) {
+        firstBlock.remove();
+        questionCounter--;
+        updateQuestionNumbers();
+        toggleNoQuestionsMsg();
       }
     }
 
@@ -928,21 +951,7 @@
 
     function confirmImport() {
       // Remove the default empty question if it exists (first question with no text)
-      const blocks = questionsContainer.querySelectorAll('.question-block');
-      if (blocks.length > 0) {
-        const firstBlock = blocks[0];
-        const firstQuestionText = firstBlock.querySelector('textarea[name$="[text]"]').value.trim();
-        const firstChoices = firstBlock.querySelectorAll('.choice-input');
-        let firstChoicesEmpty = true;
-        firstChoices.forEach(input => {
-          if (input.value.trim()) firstChoicesEmpty = false;
-        });
-        // If first question is completely empty (default question), remove it
-        if (!firstQuestionText && firstChoicesEmpty) {
-          firstBlock.remove();
-          questionCounter--;
-        }
-      }
+      removeDefaultEmptyQuestion();
       
       parsedQuestions.forEach(q => addQuestion(q));
       parsedQuestions = [];
