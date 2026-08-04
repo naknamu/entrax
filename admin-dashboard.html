@@ -512,9 +512,10 @@
     }
 
     // Open a row-actions dropdown. Uses position:fixed so the menu is not
-    // clipped by the table container's overflow (which otherwise hides it
-    // behind the pagination footer and adds a scrollbar on the last row).
-    // Always opens directly below the button (no animation, no flipping).
+    // clipped by the table container's overflow. Simple instant show, no
+    // animation; opens below the button, or above it when there is not
+    // enough room below (e.g. last row near the bottom of the page) so the
+    // menu is never clipped by the viewport.
     function openDropdown(menu) {
       const btn = menu.querySelector('.actions-toggle');
       const menuEl = menu.querySelector('.dropdown-menu');
@@ -524,11 +525,18 @@
       btn.setAttribute('aria-expanded', 'true');
 
       const rect = btn.getBoundingClientRect();
+      const mh = menuEl.offsetHeight;
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+
       menuEl.style.position = 'fixed';
-      menuEl.style.top = `${rect.bottom + 4}px`;
       menuEl.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
       menuEl.style.left = 'auto';
       menuEl.style.bottom = 'auto';
+      if (spaceBelow < mh) {
+        menuEl.style.top = `${Math.max(8, rect.top - mh - 4)}px`;
+      } else {
+        menuEl.style.top = `${rect.bottom + 4}px`;
+      }
 
       // Repositioned menu is stale after scroll/resize -> close it
       const close = () => { closeAllDropdowns(); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
