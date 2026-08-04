@@ -210,6 +210,16 @@
         <div class="card results-display" id="results-display" hidden>
           <div class="card-body text-center">
             <h3 class="results-title">Your Results</h3>
+            <!-- Prominent pass/fail verdict -->
+            <div class="results-verdict" id="results-verdict" hidden role="status">
+              <span class="results-verdict-icon" id="verdict-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <div class="results-verdict-text">
+                <h3 class="results-verdict-title" id="verdict-title">You Passed!</h3>
+                <p class="results-verdict-detail" id="verdict-detail"></p>
+              </div>
+            </div>
             <div class="score-display">
               <div class="score-circle" id="score-circle" style="--score: 0" role="img" aria-label="Score percentage">
                 <span class="score-value" id="score-percent">0%</span>
@@ -368,6 +378,10 @@
     const submissionIcon = document.getElementById('submission-icon');
     const resultsReview = document.getElementById('results-review');
     const answerBreakdown = document.getElementById('answer-breakdown');
+    const resultsVerdict = document.getElementById('results-verdict');
+    const verdictTitle = document.getElementById('verdict-title');
+    const verdictDetail = document.getElementById('verdict-detail');
+    const verdictIcon = document.getElementById('verdict-icon');
 
     // DOM Elements - Already Submitted
     const prevSubmittedDate = document.getElementById('prev-submitted-date');
@@ -956,6 +970,16 @@
 
         resultsReview.hidden = false;
         renderAnswerReview();
+
+        // Prominent pass/fail verdict
+        resultsVerdict.hidden = false;
+        resultsVerdict.classList.toggle('passed', passed);
+        resultsVerdict.classList.toggle('failed', !passed);
+        verdictIcon.innerHTML = passed
+          ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+          : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+        verdictTitle.textContent = passed ? 'You Passed!' : 'You Failed';
+        verdictDetail.textContent = `Score ${percentage.toFixed(1)}% · Passing threshold ${passingPercent}%`;
       }
     }
 

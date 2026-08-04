@@ -2246,6 +2246,37 @@ pre code {
   border: 1px solid var(--color-danger-border);
 }
 
+/* Prominent pass/fail verdict on the student results screen */
+.results-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text);
+  text-align: left;
+  margin-bottom: var(--space-4);
+}
+
+.results-verdict.passed {
+  background-color: var(--color-success-light);
+  border-color: var(--color-success-border);
+  color: var(--color-success-700);
+}
+
+.results-verdict.failed {
+  background-color: var(--color-danger-light);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-700);
+}
+
+.results-verdict-icon { display: flex; flex-shrink: 0; }
+.results-verdict-text { min-width: 0; }
+.results-verdict-title { margin: 0; font-size: var(--text-lg); font-weight: var(--font-bold); }
+.results-verdict-detail { margin: 0; margin-top: var(--space-1); font-size: var(--text-sm); opacity: 0.9; }
+
 /* ==========================================================================
    Admin Dashboard
    ========================================================================== */
@@ -3680,6 +3711,12 @@ pre code {
     color: var(--color-success-100);
   }
   .status-badge.failed {
+    color: var(--color-danger-100);
+  }
+  .results-verdict.passed {
+    color: var(--color-success-100);
+  }
+  .results-verdict.failed {
     color: var(--color-danger-100);
   }
   .answer-choice.selected:not(.correct) {
