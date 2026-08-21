@@ -24,17 +24,22 @@ const examData = {
   showResultsToStudent: true,
   randomizeQuestions: false,
   allowPrevious: true,
+  sections: [
+    { id: 'sec-math', title: 'Math', description: 'Arithmetic and problem solving' },
+    { id: 'sec-reading', title: 'Reading', description: 'Comprehension questions' },
+    { id: 'sec-science', title: 'Science', description: 'Life and physical science' }
+  ],
   questions: [
-    { id: 'q1', text: 'What is 2 + 2?', category: 'Math', choices: ['3', '4', '5', '6'], correctIndex: 1 },
-    { id: 'q2', text: 'What is the capital of France?', category: 'Geography', choices: ['London', 'Berlin', 'Paris', 'Madrid'], correctIndex: 2 },
-    { id: 'q3', text: 'Which planet is known as the Red Planet?', category: 'Science', choices: ['Venus', 'Mars', 'Jupiter', 'Saturn'], correctIndex: 1 },
-    { id: 'q4', text: 'What is the largest mammal?', category: 'Biology', choices: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippo'], correctIndex: 1 },
-    { id: 'q5', text: 'Who wrote "Romeo and Juliet"?', category: 'Literature', choices: ['Charles Dickens', 'William Shakespeare', 'Jane Austen', 'Mark Twain'], correctIndex: 1 },
-    { id: 'q6', text: 'What is the chemical symbol for water?', category: 'Chemistry', choices: ['H2O', 'CO2', 'O2', 'NaCl'], correctIndex: 0 },
-    { id: 'q7', text: 'Which ocean is the largest?', category: 'Geography', choices: ['Atlantic', 'Indian', 'Arctic', 'Pacific'], correctIndex: 3 },
-    { id: 'q8', text: 'What year did World War II end?', category: 'History', choices: ['1943', '1944', '1945', '1946'], correctIndex: 2 },
-    { id: 'q9', text: 'How many sides does a hexagon have?', category: 'Math', choices: ['5', '6', '7', '8'], correctIndex: 1 },
-    { id: 'q10', text: 'Which gas do plants absorb from the atmosphere?', category: 'Science', choices: ['Oxygen', 'Nitrogen', 'Carbon Dioxide', 'Hydrogen'], correctIndex: 2 }
+    { id: 'q1', text: 'What is 2 + 2?', category: 'Math', choices: ['3', '4', '5', '6'], correctIndex: 1, sectionId: 'sec-math', solution: '2 + 2 = 4.' },
+    { id: 'q2', text: 'What is the capital of France?', category: 'Geography', choices: ['London', 'Berlin', 'Paris', 'Madrid'], correctIndex: 2, sectionId: 'sec-reading', solution: 'Paris is the capital of France.' },
+    { id: 'q3', text: 'Which planet is known as the Red Planet?', category: 'Science', choices: ['Venus', 'Mars', 'Jupiter', 'Saturn'], correctIndex: 1, sectionId: 'sec-science', solution: 'Mars has an iron-oxide-rich surface that appears red.' },
+    { id: 'q4', text: 'What is the largest mammal?', category: 'Biology', choices: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippo'], correctIndex: 1, sectionId: 'sec-science', solution: 'The blue whale is the largest mammal.' },
+    { id: 'q5', text: 'Who wrote "Romeo and Juliet"?', category: 'Literature', choices: ['Charles Dickens', 'William Shakespeare', 'Jane Austen', 'Mark Twain'], correctIndex: 1, sectionId: 'sec-reading', solution: 'William Shakespeare wrote Romeo and Juliet.' },
+    { id: 'q6', text: 'What is the chemical symbol for water?', category: 'Chemistry', choices: ['H2O', 'CO2', 'O2', 'NaCl'], correctIndex: 0, sectionId: 'sec-science', solution: 'Water is H2O: two hydrogen atoms and one oxygen atom.' },
+    { id: 'q7', text: 'Which ocean is the largest?', category: 'Geography', choices: ['Atlantic', 'Indian', 'Arctic', 'Pacific'], correctIndex: 3, sectionId: 'sec-reading', solution: 'The Pacific Ocean is the largest.' },
+    { id: 'q8', text: 'What year did World War II end?', category: 'History', choices: ['1943', '1944', '1945', '1946'], correctIndex: 2, sectionId: 'sec-reading', solution: 'World War II ended in 1945.' },
+    { id: 'q9', text: 'How many sides does a hexagon have?', category: 'Math', choices: ['5', '6', '7', '8'], correctIndex: 1, sectionId: 'sec-math', solution: 'A hexagon has 6 sides (hexa = six).' },
+    { id: 'q10', text: 'Which gas do plants absorb from the atmosphere?', category: 'Science', choices: ['Oxygen', 'Nitrogen', 'Carbon Dioxide', 'Hydrogen'], correctIndex: 2, sectionId: 'sec-science', solution: 'Plants absorb carbon dioxide for photosynthesis.' }
   ],
   startDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() - 86400000)),
   endDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 86400000)),

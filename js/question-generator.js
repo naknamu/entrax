@@ -59,7 +59,7 @@ function shuffle(arr) {
  * Build a question object from a correct answer + distractor pool.
  * Ensures exactly 4 distinct choices, then shuffles them.
  */
-function buildQuestion(category, text, correct, distractors) {
+function buildQuestion(category, text, correct, distractors, solution = '') {
   const correctStr = String(correct);
   const pool = [correctStr, ...(distractors || []).map(String)].filter(
     (v) => v != null && v !== ''
@@ -85,6 +85,7 @@ function buildQuestion(category, text, correct, distractors) {
     category,
     choices: shuffled,
     correctIndex: shuffled.indexOf(correctStr),
+    solution,
   };
 }
 
@@ -151,6 +152,7 @@ function genBasicArithmetic(count) {
       category: 'Basic arithmetic operations',
       correct,
       distractors: extras,
+      solution: `${op.text(o)} = ${correct}`,
     });
   }
   return out;
@@ -165,6 +167,7 @@ function genFractionOperations(count) {
       symbol: '+',
       compute: (a, b, c, d) => a * d + c * b,
       den: (a, b, c, d) => b * d,
+      work: (a, b, c, d) => `${a}/${b} + ${c}/${d} = (${a}×${d} + ${c}×${b}) / (${b}×${d})`,
       extra: (a, b, c, d) => [[a + c, b + d], [a * c, b * d], [a * d - c * b, b * d]],
     },
     {
@@ -172,6 +175,7 @@ function genFractionOperations(count) {
       symbol: '-',
       compute: (a, b, c, d) => a * d - c * b,
       den: (a, b, c, d) => b * d,
+      work: (a, b, c, d) => `${a}/${b} - ${c}/${d} = (${a}×${d} - ${c}×${b}) / (${b}×${d})`,
       extra: (a, b, c, d) => [[a + c, b + d], [a * c, b * d], [a * d + c * b, b * d]],
     },
     {
@@ -179,6 +183,7 @@ function genFractionOperations(count) {
       symbol: '×',
       compute: (a, b, c, d) => a * c,
       den: (a, b, c, d) => b * d,
+      work: (a, b, c, d) => `${a}/${b} × ${c}/${d} = (${a}×${c}) / (${b}×${d})`,
       extra: (a, b, c, d) => [[a * c, b + d], [a + c, b + d], [a * d + c * b, b * d]],
     },
     {
@@ -186,6 +191,7 @@ function genFractionOperations(count) {
       symbol: '÷',
       compute: (a, b, c, d) => a * d,
       den: (a, b, c, d) => b * c,
+      work: (a, b, c, d) => `${a}/${b} ÷ ${c}/${d} = (${a}×${d}) / (${b}×${c})`,
       extra: (a, b, c, d) => [[a * c, b * d], [b * d, a * c], [a + c, b + d]],
     },
   ];
@@ -220,6 +226,7 @@ function genFractionOperations(count) {
       category: 'Fractions',
       correct,
       distractors: extras,
+      solution: `${op.work(a, b, c, d)} = ${correct}`,
     });
   }
   return out;
@@ -245,6 +252,7 @@ function genSimplifyFractions(count) {
       category: 'Fractions',
       correct,
       distractors,
+      solution: `Divide the numerator and denominator by their greatest common factor, ${k}: ${num}/${den} = (${a}×${k}) / (${b}×${k}) = ${correct}`,
     });
   }
   return out;
@@ -260,6 +268,7 @@ function genFractionWordProblems(count) {
         text: `A nurse administers 3/4 of a ${total} mL IV bag. How many mL were given?`,
         correct: (3 * total) / 4,
         distractors: [total / 4, (total * 2) / 4, total],
+        solution: `Multiply: (3/4) × ${total} = (3 × ${total}) / 4 = ${(3 * total) / 4} mL`,
       };
     },
     (k) => {
@@ -268,6 +277,7 @@ function genFractionWordProblems(count) {
         text: `Of the ${total} patients in a ward, 2/5 are scheduled for morning procedures. How many patients is that?`,
         correct: (2 * total) / 5,
         distractors: [total / 5, (3 * total) / 5, (2 * total) / 3],
+        solution: `Multiply: (2/5) × ${total} = (2 × ${total}) / 5 = ${(2 * total) / 5} patients`,
       };
     },
     (k) => {
@@ -276,6 +286,7 @@ function genFractionWordProblems(count) {
         text: `A nurse completes 3/4 of a ${total}-hour shift before taking a break. How many hours were completed?`,
         correct: (3 * total) / 4,
         distractors: [total / 4, (total * 2) / 3, total],
+        solution: `Multiply: (3/4) × ${total} = (3 × ${total}) / 4 = ${(3 * total) / 4} hours`,
       };
     },
     (k) => {
@@ -284,6 +295,7 @@ function genFractionWordProblems(count) {
         text: `A patient drinks 7/10 of a ${total} mL glass of water. How many mL were consumed?`,
         correct: (7 * total) / 10,
         distractors: [(3 * total) / 10, total / 10, total],
+        solution: `Multiply: (7/10) × ${total} = (7 × ${total}) / 10 = ${(7 * total) / 10} mL`,
       };
     },
   ];
@@ -294,6 +306,7 @@ function genFractionWordProblems(count) {
       category: 'Word problems and Data interpretation',
       correct: String(t.correct),
       distractors: t.distractors.map(String),
+      solution: t.solution || '',
     });
   }
   return out;
@@ -314,6 +327,7 @@ function genAlgebra(count) {
         category: 'Basic algebra',
         correct: String(x),
         distractors: [String(x + 1), String(x - 1), String(c - b - a)],
+        solution: `Subtract ${b} from both sides: ${a}x = ${c} − ${b} = ${a * x}. Then divide both sides by ${a}: x = ${a * x} ÷ ${a} = ${x}`,
       });
     } else if (kind === 1) {
       const x = rndInt(2, 9);
@@ -325,6 +339,7 @@ function genAlgebra(count) {
         category: 'Basic algebra',
         correct: String(correct),
         distractors: [String(a * x + b), String(x - b), String(a * x)],
+        solution: `Substitute x = ${x}: ${a}(${x}) − ${b} = ${a * x} − ${b} = ${correct}`,
       });
     } else {
       const x = rndInt(2, 9);
@@ -335,6 +350,7 @@ function genAlgebra(count) {
         category: 'Basic algebra',
         correct: String(correct),
         distractors: [String(x + d), String(x * d + 1), String(d)],
+        solution: `Multiply both sides by ${d}: x = ${x} × ${d} = ${correct}`,
       });
     }
   }
@@ -356,6 +372,7 @@ function genRatioProportion(count) {
         category: 'Ratios and proportions',
         correct: String(x),
         distractors: [String(x + b), String(x - a), String(a)],
+        solution: `Cross-multiply: x = (${a} × ${b * k}) / ${b} = ${a * k} / 1 = ${x}`,
       });
     } else if (kind === 1) {
       const nurses = rndInt(2, 6);
@@ -366,6 +383,7 @@ function genRatioProportion(count) {
         category: 'Ratios and proportions',
         correct: String(nurses * k),
         distractors: [String(patients * k / nurses), String(nurses * k + 1), String(nurses + k)],
+        solution: `For ${patients * k} patients, multiply the nurse count by the same factor ${k}: ${nurses} × ${k} = ${nurses * k} nurses`,
       });
     } else {
       const a = rndInt(2, 5);
@@ -376,6 +394,7 @@ function genRatioProportion(count) {
         category: 'Ratios and proportions',
         correct: String(a * k),
         distractors: [String(b * k), String((a + b) * k / a), String(a * k + 1)],
+        solution: `Saline is ${a} out of every ${a + b} parts: (${a} / ${a + b}) × ${(a + b) * k} = ${a * k} mL`,
       });
     }
   }
@@ -434,6 +453,7 @@ function genDecimals(count) {
       category: 'Decimals',
       correct,
       distractors: extras,
+      solution: `${text} = ${correct}`,
     });
   }
   return out;
@@ -465,6 +485,7 @@ function genConversions(count) {
         fmtDec(Number(correct) * 10),
         fmtDec(Number(correct) / 10),
       ].filter((v) => v !== correct),
+      solution: `${fmtDec(value)} ${u.from} ${u.div ? '÷' : '×'} ${u.factor} = ${correct} ${u.to}`,
     });
   }
   return out;
@@ -484,6 +505,7 @@ function genPercentages(count) {
         category: 'Percentages',
         correct: c,
         distractors: [fmtDec(Number(c) + pct), String(pct), fmtDec(base - Number(c))],
+        solution: `${pct}% of ${base} = (${pct} / 100) × ${base} = ${c}`,
       });
     } else if (kind === 1) {
       const from = [20, 25, 40, 50, 80, 100][rndInt(0, 5)];
@@ -494,6 +516,7 @@ function genPercentages(count) {
         category: 'Percentages',
         correct: c,
         distractors: [String(delta), fmtDec(Number(c) + 5), fmtDec(100 - Number(c))],
+        solution: `Percent increase = (increase / original) × 100 = (${delta} / ${from}) × 100 = ${c}%`,
       });
     } else if (kind === 2) {
       const price = [40, 60, 80, 120, 200][rndInt(0, 4)];
@@ -504,6 +527,7 @@ function genPercentages(count) {
         category: 'Percentages',
         correct: c,
         distractors: [fmtDec((pct / 100) * price), fmtDec(Number(c) - pct), String(price)],
+        solution: `Discount = ${pct}% of $${price} = $${fmtDec((pct / 100) * price)}. Sale price = $${price} − $${fmtDec((pct / 100) * price)} = $${c}`,
       });
     } else {
       const part = [3, 5, 6, 9, 12, 15][rndInt(0, 5)];
@@ -514,6 +538,7 @@ function genPercentages(count) {
         category: 'Percentages',
         correct: c,
         distractors: [fmtDec(Number(c) + 10), String(total - part), fmtDec(100 - Number(c))],
+        solution: `Percent = (part / total) × 100 = (${part} / ${total}) × 100 = ${c}%`,
       });
     }
   }
@@ -543,6 +568,7 @@ function genDataInterpretation(count) {
         category: 'Word problems and Data interpretation',
         correct,
         distractors: letters.filter((l) => l !== correct),
+        solution: `Compare the readings: ${vals.map((v, i) => `Patient ${letters[i]} = ${v} bpm`).join(', ')}. The ${highest ? 'highest' : 'lowest'} reading is ${target} bpm (Patient ${correct}).`,
       });
     } else if (kind === 1) {
       // Total IV intake for 4 patients
@@ -554,6 +580,7 @@ function genDataInterpretation(count) {
         category: 'Word problems and Data interpretation',
         correct: String(sum),
         distractors: [String(sum / 2), String(sum + 10), String(sum - 10)],
+        solution: `Add the four readings: ${vals.join(' + ')} = ${sum} mL`,
       });
     } else if (kind === 2) {
       // Difference between highest and lowest systolic BP
@@ -569,6 +596,7 @@ function genDataInterpretation(count) {
         category: 'Word problems and Data interpretation',
         correct: String(diff),
         distractors: [String(Math.max(...vals) + Math.min(...vals)), String(diff + 10), String(diff + 5)],
+        solution: `Highest = ${Math.max(...vals)} mmHg, lowest = ${Math.min(...vals)} mmHg. Difference = ${Math.max(...vals)} − ${Math.min(...vals)} = ${diff} mmHg`,
       });
     } else {
       // How many temperatures above a threshold
@@ -585,6 +613,7 @@ function genDataInterpretation(count) {
         category: 'Word problems and Data interpretation',
         correct: String(above),
         distractors: [String(above + 1), String(Math.max(0, above - 1)), String(4 - above)].filter((v) => v !== String(above)),
+        solution: `Count readings above ${fmt1(threshold)} °F: ${temps.filter((t) => t > threshold).map((t, i) => `Patient ${letters[temps.indexOf(t)]} (${fmt1(t)} °F)`).join(', ') || 'none'} → ${above} patient(s)`,
       });
     }
   }
@@ -634,7 +663,7 @@ export function generateKaplanMathQuestions(topicIds = null, perTopic = 3) {
     if (!ids.includes(topic.id)) continue;
     const raw = topic.gen(count);
     for (const q of raw) {
-      questions.push(buildQuestion(q.category, q.text, q.correct, q.distractors));
+      questions.push(buildQuestion(q.category, q.text, q.correct, q.distractors, q.solution));
     }
   }
   return questions;

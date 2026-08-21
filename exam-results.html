@@ -495,20 +495,27 @@
       `;
 
       // Question-by-question breakdown
-      html += '<h3 class="mt-6 mb-4">Answer Breakdown</h3>';
-      html += '<div class="answer-breakdown">';
+      html += '<div class="detail-section-header mt-6 mb-2"><h3 class="mb-0">Answer Breakdown</h3><div id="detail-solutions-controls" class="solutions-controls ml-auto"><button type="button" class="btn btn-outline btn-sm" id="detail-show-all-solutions-btn">Show All Solutions</button><button type="button" class="btn btn-ghost btn-sm" id="detail-hide-all-solutions-btn" hidden>Hide All Solutions</button></div></div>';
+      html += '<div class="answer-breakdown" id="detail-answer-breakdown">';
 
       const questions = exam.questions || [];
       const answers = sub.answers || [];
+      const examSections = (exam.sections || []).filter(s => s && s.id);
+      const sectionIds = new Set(examSections.map(s => s.id));
 
+      // Group questions by section (section order, then unassigned at the end)
+      const groups = new Map(); // key -> html string
       questions.forEach((question, qIndex) => {
+        const key = question.sectionId && sectionIds.has(question.sectionId) ? question.sectionId : '__general__';
+        if (!groups.has(key)) groups.set(key, '');
+
         const studentAnswer = answers.find(a => a.questionId === question.id);
         const selectedIndex = studentAnswer?.selectedIndex ?? -1;
         const isCorrect = selectedIndex === question.correctIndex;
         const isAnswered = selectedIndex >= 0;
         const isFlagged = flaggedQuestions.includes(qIndex);
 
-        html += `
+        let itemHtml = `
           <article class="answer-item ${isCorrect ? 'correct' : (isAnswered ? 'incorrect' : '')}${isFlagged ? ' flagged' : ''}">
             <header class="answer-header">
               <div class="answer-question">
@@ -528,7 +535,7 @@
           let classes = 'answer-choice';
           if (cIndex === question.correctIndex) classes += ' correct';
           if (cIndex === selectedIndex) classes += ' selected';
-          
+
           let label = '';
           if (cIndex === question.correctIndex && cIndex === selectedIndex) {
             label = '<span class="answer-choice-label">(Correct Answer - Selected)</span>';
@@ -538,7 +545,7 @@
             label = '<span class="answer-choice-label">(Student\'s Answer)</span>';
           }
 
-          html += `
+          itemHtml += `
             <div class="${classes}">
               <span class="answer-choice-letter">${String.fromCharCode(65 + cIndex)}</span>
               <span class="answer-choice-text">${escapeHtml(choice)}</span>
@@ -547,14 +554,85 @@
           `;
         });
 
-        html += '</div></article>';
+        // Solution (collapsible, admin-facing)
+        if (question.solution && question.solution.trim()) {
+          itemHtml += `
+            <div class="solution-block">
+              <button type="button" class="btn btn-outline btn-sm solution-toggle" data-solution-idx="${qIndex}" aria-expanded="false" aria-controls="detail-solution-content-${qIndex}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span class="solution-toggle-text">Show Solution</span>
+              </button>
+              <div class="solution-content" id="detail-solution-content-${qIndex}" hidden>
+                <strong>Solution:</strong> ${escapeHtml(question.solution)}
+              </div>
+            </div>`;
+        }
+
+        itemHtml += '</div></article>';
+        groups.set(key, groups.get(key) + itemHtml);
       });
+
+      examSections.forEach(s => {
+        if (groups.has(s.id)) {
+          html += `<h4 class="review-section-title">${escapeHtml(s.title)}</h4>${groups.get(s.id)}`;
+        }
+      });
+      if (groups.has('__general__') && examSections.length > 0) {
+        html += `<h4 class="review-section-title">General</h4>${groups.get('__general__')}`;
+      } else if (groups.has('__general__')) {
+        html += groups.get('__general__');
+      }
 
       html += '</div>';
 
       detailContent.innerHTML = html;
       detailView.hidden = false;
       detailView.scrollIntoView({ behavior: 'smooth' });
+
+      // Wire up solution expand/collapse + show-all/hide-all in the detail view
+      const detailBreakdown = detailContent.querySelector('#detail-answer-breakdown');
+      const hasDetailSolutions = detailBreakdown && detailBreakdown.querySelectorAll('.solution-toggle').length > 0;
+      const detailControls = detailContent.querySelector('#detail-solutions-controls');
+      if (detailControls && detailBreakdown) {
+        detailControls.hidden = !hasDetailSolutions;
+        detailControls.querySelector('#detail-show-all-solutions-btn').hidden = false;
+        detailControls.querySelector('#detail-hide-all-solutions-btn').hidden = true;
+      }
+      if (detailBreakdown) {
+        detailBreakdown.addEventListener('click', (e) => {
+          const toggle = e.target.closest('.solution-toggle');
+          if (!toggle) return;
+          const content = document.getElementById(`detail-solution-content-${toggle.dataset.solutionIdx}`);
+          if (!content) return;
+          const isOpen = !content.hidden;
+          content.hidden = isOpen;
+          toggle.setAttribute('aria-expanded', String(!isOpen));
+          const textEl = toggle.querySelector('.solution-toggle-text');
+          if (textEl) textEl.textContent = isOpen ? 'Show Solution' : 'Hide Solution';
+        });
+      }
+      if (detailControls) {
+        detailControls.querySelector('#detail-show-all-solutions-btn').addEventListener('click', () => {
+          detailBreakdown.querySelectorAll('.solution-content').forEach(c => { c.hidden = false; });
+          detailBreakdown.querySelectorAll('.solution-toggle').forEach(t => {
+            t.setAttribute('aria-expanded', 'true');
+            const textEl = t.querySelector('.solution-toggle-text');
+            if (textEl) textEl.textContent = 'Hide Solution';
+          });
+          detailControls.querySelector('#detail-show-all-solutions-btn').hidden = true;
+          detailControls.querySelector('#detail-hide-all-solutions-btn').hidden = false;
+        });
+        detailControls.querySelector('#detail-hide-all-solutions-btn').addEventListener('click', () => {
+          detailBreakdown.querySelectorAll('.solution-content').forEach(c => { c.hidden = true; });
+          detailBreakdown.querySelectorAll('.solution-toggle').forEach(t => {
+            t.setAttribute('aria-expanded', 'false');
+            const textEl = t.querySelector('.solution-toggle-text');
+            if (textEl) textEl.textContent = 'Show Solution';
+          });
+          detailControls.querySelector('#detail-hide-all-solutions-btn').hidden = true;
+          detailControls.querySelector('#detail-show-all-solutions-btn').hidden = false;
+        });
+      }
     }
 
     function closeDetail() {

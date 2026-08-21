@@ -596,7 +596,16 @@
         </div>
       `;
 
-      const questionsHtml = (exam.questions || []).map((q, qIndex) => {
+      const examSections = (exam.sections || []).filter(s => s && s.id);
+      const sectionIds = new Set(examSections.map(s => s.id));
+      const groups = new Map();
+      (exam.questions || []).forEach((q, qIndex) => {
+        const key = q.sectionId && sectionIds.has(q.sectionId) ? q.sectionId : '__general__';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push({ q, qIndex });
+      });
+
+      const renderQuestionItem = ({ q, qIndex }) => {
         const choicesHtml = (q.choices || []).map((choice, cIndex) => `
           <div class="answer-choice ${cIndex === q.correctIndex ? 'correct' : ''}">
             <span class="answer-choice-letter">${String.fromCharCode(65 + cIndex)}</span>
@@ -615,15 +624,32 @@
               </div>
             </header>
             <div class="answer-choices">${choicesHtml}</div>
+            ${q.solution && q.solution.trim() ? `
+              <div class="solution-block">
+                <div class="solution-content" style="display:block">
+                  <strong>Solution:</strong> ${escapeHtml(q.solution)}
+                </div>
+              </div>` : ''}
           </article>
         `;
-      }).join('');
+      };
+
+      let groupedHtml = '';
+      examSections.forEach(s => {
+        if (groups.has(s.id)) {
+          groupedHtml += `<h4 class="review-section-title">${escapeHtml(s.title)}</h4>${groups.get(s.id).map(renderQuestionItem).join('')}`;
+        }
+      });
+      if (groups.has('__general__')) {
+        const items = groups.get('__general__').map(renderQuestionItem).join('');
+        groupedHtml += examSections.length > 0 ? `<h4 class="review-section-title">General</h4>${items}` : items;
+      }
 
       viewModalBody.innerHTML = `
         <p class="view-exam-desc">${escapeHtml(exam.description || 'No description provided.')}</p>
         ${meta}
         <h4 class="view-exam-questions-title">Questions</h4>
-        <div class="answer-breakdown">${questionsHtml || '<p class="text-muted">This exam has no questions yet.</p>'}</div>
+        <div class="answer-breakdown">${groupedHtml || '<p class="text-muted">This exam has no questions yet.</p>'}</div>
       `;
 
       examViewModal.hidden = false;

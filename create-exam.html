@@ -68,6 +68,7 @@
                   <input type="checkbox" id="showResultsToStudent" name="showResultsToStudent" checked>
                   <label for="showResultsToStudent">Show score and correct answers immediately after submission</label>
                 </div>
+                <div class="help-text">When enabled, students also see each question's <strong>Solution</strong> (if provided) on the results page after submitting.</div>
               </div>
             </div>
             <div class="form-group mt-4">
@@ -101,6 +102,28 @@
           </div>
         </section>
 
+        <!-- Exam Sections -->
+        <section class="card section-card" aria-labelledby="sections-heading">
+          <header class="card-header">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <h2 class="card-title" id="sections-heading">Exam Sections</h2>
+              <button type="button" class="btn btn-outline btn-sm" id="add-section-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Section
+              </button>
+            </div>
+          </header>
+          <div class="card-body">
+            <p class="help-text mb-3">
+              Organize questions into named sections like the Kaplan Entrance Exam
+              (e.g., <strong>Math</strong>, <strong>Reading</strong>, <strong>Science</strong>).
+              Students see section headings during the exam and on the results page.
+            </p>
+            <div id="sections-container"></div>
+            <p id="no-sections-msg" class="text-center text-muted py-4">No sections yet — adding one is optional. Questions without a section appear in a single default group.</p>
+          </div>
+        </section>
+
         <!-- Import Questions -->
         <section class="card section-card" aria-labelledby="import-heading">
           <header class="card-header">
@@ -111,7 +134,7 @@
               <label class="label" for="import-file">Upload Question File (.txt, .csv, .json, .docx)</label>
               <input type="file" id="import-file" class="input" accept=".txt,.csv,.json,.docx" aria-describedby="import-help">
               <div id="import-help" class="help-text">
-                Supported formats: <strong>Plain Text</strong> (see format below), <strong>CSV</strong> (columns: question,choiceA,choiceB,choiceC,choiceD,correctIndex,category), <strong>JSON</strong> (array of question objects), <strong>Word (.docx)</strong> (same structure as plain text)
+                Supported formats: <strong>Plain Text</strong> (see format below), <strong>CSV</strong> (columns: question,choiceA,choiceB,choiceC,choiceD,correctIndex,category,solution), <strong>JSON</strong> (array of question objects), <strong>Word (.docx)</strong> (same structure as plain text)
               </div>
               <div id="import-status" class="help-text mt-1 hidden"></div>
             </div>
@@ -119,7 +142,7 @@
               <label class="label">Or Paste Questions (Plain Text Format)</label>
               <textarea id="import-text" class="input" rows="8" placeholder="Paste questions here..."></textarea>
               <div class="help-text">
-                <strong>Format:</strong> Each question separated by blank line. First line = question text. Next 4 lines = choices A-D. Line starting with "Answer:" or "Correct:" = correct index (0-3). Optional line starting with "Category:" = category.
+                <strong>Format:</strong> Each question separated by blank line. First line = question text. Next 4 lines = choices A-D. Line starting with "Answer:" or "Correct:" = correct index (0-3). Optional lines: "Category:" = category, "Solution:" = explanation shown on results.
               </div>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -150,6 +173,10 @@
             <div class="flex items-center gap-3 mt-3 flex-wrap">
               <label class="label mb-0" for="generate-count">Per topic:</label>
               <input type="number" id="generate-count" class="input" min="1" max="10" value="3" style="max-width: 90px" aria-label="Questions per topic">
+              <label class="label mb-0" for="generate-section">Add to section:</label>
+              <select id="generate-section" class="input" style="max-width: 220px" aria-label="Add generated questions to section">
+                <option value="">— No section —</option>
+              </select>
               <button type="button" class="btn btn-primary" id="generate-add-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Generated Questions
@@ -211,6 +238,17 @@
             <label class="label">Category / Tag (optional)</label>
             <input type="text" name="questions[0][category]" class="input category-input" placeholder="e.g., Math, Reading, Science" list="categories-list">
             <datalist id="categories-list"></datalist>
+          </div>
+          <div class="form-group">
+            <label class="label" for="question-section-0">Section (optional)</label>
+            <select id="question-section-0" name="questions[0][sectionId]" class="input section-select">
+              <option value="">— No section —</option>
+            </select>
+            <div class="help-text">Assign this question to one of the exam sections defined above.</div>
+          </div>
+          <div class="form-group">
+            <label class="label" for="question-solution-0">Solution / Explanation (optional)</label>
+            <textarea id="question-solution-0" name="questions[0][solution]" class="input solution-input" rows="2" placeholder="Explain how to solve this question — shown to students on the results page (e.g., 3/4 × 200 = 150 mL)"></textarea>
           </div>
           <fieldset class="form-group">
             <legend class="label">Answer Choices <span class="text-danger" aria-hidden="true">*</span></legend>
@@ -280,6 +318,11 @@
     const importPreviewList = document.getElementById('import-preview-list');
     const confirmImportBtn = document.getElementById('confirm-import-btn');
 
+    // Sections elements
+    const sectionsContainer = document.getElementById('sections-container');
+    const addSectionBtn = document.getElementById('add-section-btn');
+    const noSectionsMsg = document.getElementById('no-sections-msg');
+
     // State
     let currentUser = null;
     let examId = null;
@@ -288,6 +331,8 @@
     let existingCategories = new Set();
     let parsedQuestions = [];
     let lastExtractedText = '';
+    let examSections = []; // [{ id, title, description }]
+    let sectionCounter = 0;
 
     // Get examId from URL if editing
     const urlParams = new URLSearchParams(window.location.search);
@@ -302,6 +347,11 @@
           console.log('Add question clicked');
           addQuestion();
         });
+      }
+
+      // Add section button
+      if (addSectionBtn) {
+        addSectionBtn.addEventListener('click', () => addSection());
       }
 
       // Import buttons
@@ -339,8 +389,12 @@
           }
           const perTopic = Math.max(1, Math.min(10, parseInt(document.getElementById('generate-count').value) || 3));
           const questions = generateKaplanMathQuestions(checked, perTopic);
+          const targetSection = document.getElementById('generate-section')?.value || '';
           removeDefaultEmptyQuestion();
-          questions.forEach((q) => addQuestion(q));
+          questions.forEach((q) => {
+            if (targetSection) q.sectionId = targetSection;
+            addQuestion(q);
+          });
           if (generateStatus) {
             generateStatus.textContent = `Added ${questions.length} generated questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).`;
             generateStatus.classList.remove('hidden');
@@ -429,6 +483,88 @@
       }
     }
 
+    // ============ SECTIONS MANAGEMENT ============
+
+    function addSection(title = '', description = '') {
+      examSections.push({ id: `sec${Date.now().toString(36)}${sectionCounter++}`, title, description });
+      renderSections();
+      updateSectionSelects();
+    }
+
+    function removeSection(sectionId) {
+      examSections = examSections.filter(s => s.id !== sectionId);
+      renderSections();
+      updateSectionSelects();
+      // Unassign questions that pointed at the removed section
+      questionsContainer.querySelectorAll('.section-select').forEach(sel => {
+        if (sel.value === sectionId) sel.value = '';
+      });
+    }
+
+    function renderSections() {
+      if (!sectionsContainer) return;
+      if (noSectionsMsg) noSectionsMsg.classList.toggle('hidden', examSections.length > 0);
+      sectionsContainer.innerHTML = examSections.map((s, i) => `
+        <article class="card section-row mb-3" data-section-id="${escapeHtml(s.id)}">
+          <div class="card-body p-3">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="badge badge-primary section-index-badge" aria-hidden="true">${i + 1}</span>
+              <input type="text" class="input section-title-input" value="${escapeHtml(s.title)}" placeholder="Section title (e.g., Math)" maxlength="100" aria-label="Section ${i + 1} title">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon delete-section-btn" title="Delete section" aria-label="Delete section ${i + 1}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+            <input type="text" class="input section-desc-input mt-2" value="${escapeHtml(s.description)}" placeholder="Optional description / instructions for this section" maxlength="300" aria-label="Section ${i + 1} description">
+          </div>
+        </article>
+      `).join('');
+
+      // Wire up listeners
+      sectionsContainer.querySelectorAll('.section-row').forEach(row => {
+        const id = row.dataset.sectionId;
+        const titleInput = row.querySelector('.section-title-input');
+        const descInput = row.querySelector('.section-desc-input');
+        titleInput.addEventListener('input', () => {
+          const s = examSections.find(x => x.id === id);
+          if (s) s.title = titleInput.value;
+          updateSectionSelects();
+        });
+        descInput.addEventListener('input', () => {
+          const s = examSections.find(x => x.id === id);
+          if (s) s.description = descInput.value;
+        });
+        row.querySelector('.delete-section-btn').addEventListener('click', () => {
+          showConfirm('Delete Section', 'Questions assigned to this section will become unassigned. Delete this section?').then(confirmed => {
+            if (confirmed) removeSection(id);
+          });
+        });
+      });
+    }
+
+    /** Refresh every question's section <select> with the current sections. */
+    function updateSectionSelects() {
+      const options = ['<option value="">— No section —</option>']
+        .concat(examSections.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.title || 'Untitled section')}</option>`))
+        .join('');
+      questionsContainer.querySelectorAll('.section-select').forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = options;
+        sel.value = current; // keep the selected value if the section still exists
+      });
+      // Keep the Kaplan generator's target-section picker in sync
+      const generateSection = document.getElementById('generate-section');
+      if (generateSection) {
+        const current = generateSection.value;
+        generateSection.innerHTML = options;
+        generateSection.value = current;
+      }
+    }
+
+    function getSectionTitle(sectionId) {
+      const s = examSections.find(x => x.id === sectionId);
+      return s ? s.title : '';
+    }
+
     // Load exam for editing
     async function loadExamForEdit(id) {
       try {
@@ -464,6 +600,15 @@
         document.getElementById('endDate').value = dt.toISOString().slice(0, 16);
       }
 
+      // Restore sections (before questions so their <select> options exist)
+      examSections = [];
+      sectionCounter = 0;
+      (exam.sections || []).forEach(s => {
+        examSections.push({ id: s.id || `sec${Date.now().toString(36)}${sectionCounter}`, title: s.title || '', description: s.description || '' });
+        sectionCounter++;
+      });
+      renderSections();
+
       // Load questions
       questionsContainer.innerHTML = '';
       questionCounter = 0;
@@ -472,6 +617,7 @@
       });
       updateQuestionNumbers();
       toggleNoQuestionsMsg();
+      updateSectionSelects();
     }
 
     // Add question block
@@ -495,6 +641,19 @@
         // Set first choice as correct by default for new questions
         const firstRadio = clone.querySelector('input[type="radio"][value="0"]');
         if (firstRadio) firstRadio.checked = true;
+      }
+
+      // Refresh section <select> options for the new block (the option list
+      // isn't populated until now, so set the value from the question data).
+      const sectionSelect = clone.querySelector('select[name$="[sectionId]"]');
+      if (sectionSelect) {
+        const desired = questionData
+          ? (questionData.sectionId || '')
+          : (examSections.length === 1 ? examSections[0].id : '');
+        sectionSelect.innerHTML = ['<option value="">— No section —</option>']
+          .concat(examSections.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.title || 'Untitled section')}</option>`))
+          .join('');
+        sectionSelect.value = desired;
       }
 
       questionsContainer.appendChild(clone);
@@ -560,6 +719,14 @@
       // Category
       const categoryInput = clone.querySelector('input[name$="[category]"]');
       if (categoryInput) categoryInput.value = question.category || '';
+
+      // Solution
+      const solutionInput = clone.querySelector('textarea[name$="[solution]"]');
+      if (solutionInput) solutionInput.value = question.solution || '';
+
+      // Section
+      const sectionSelect = clone.querySelector('select[name$="[sectionId]"]');
+      if (sectionSelect) sectionSelect.value = question.sectionId || '';
 
       // Choices
       const choices = question.choices || ['', '', '', ''];
@@ -815,8 +982,9 @@
         
         let correctIndex = 0;
         let category = '';
+        let solution = '';
         
-        // Check remaining lines for Answer:/Correct:/Category:
+        // Check remaining lines for Answer:/Correct:/Category:/Solution:
         for (let i = 5; i < lines.length; i++) {
           const line = lines[i];
           if (line.match(/^(Answer|Correct):/i)) {
@@ -831,6 +999,9 @@
           } else if (line.match(/^Category:/i)) {
             const match = line.match(/:(.*)/);
             if (match) category = match[1].trim();
+          } else if (line.match(/^Solution:/i)) {
+            const match = line.match(/:(.*)/);
+            if (match) solution = match[1].trim();
           }
         }
         
@@ -839,7 +1010,8 @@
             text: questionText,
             choices,
             correctIndex,
-            category: category || null
+            category: category || null,
+            solution
           });
         }
       }
@@ -862,6 +1034,7 @@
       const dIdx = headers.indexOf('choiced');
       const correctIdx = headers.indexOf('correctindex');
       const catIdx = headers.indexOf('category');
+      const solIdx = headers.indexOf('solution');
       
       if (qIdx === -1 || aIdx === -1 || bIdx === -1 || cIdx === -1 || dIdx === -1) {
         throw new Error('CSV must have columns: question,choiceA,choiceB,choiceC,choiceD,correctIndex,category');
@@ -880,7 +1053,8 @@
             cols[dIdx] || ''
           ],
           correctIndex: correctIdx >= 0 ? parseInt(cols[correctIdx]) || 0 : 0,
-          category: catIdx >= 0 ? (cols[catIdx] || null) : null
+          category: catIdx >= 0 ? (cols[catIdx] || null) : null,
+          solution: solIdx >= 0 ? (cols[solIdx] || '') : ''
         });
       }
       return questions;
@@ -918,7 +1092,8 @@
           text: q.text || q.question || '',
           choices: q.choices || [q.choiceA, q.choiceB, q.choiceC, q.choiceD].filter(Boolean),
           correctIndex: q.correctIndex ?? q.correct ?? q.answer ?? 0,
-          category: q.category || q.tag || ''
+          category: q.category || q.tag || '',
+          solution: q.solution || q.explanation || ''
         })).filter(q => q.text && q.choices.length === 4);
       } catch (e) {
         throw new Error('Invalid JSON: ' + e.message);
@@ -940,6 +1115,7 @@
                 <span class="badge ${idx === q.correctIndex ? 'badge-success' : 'badge-outline'}">${String.fromCharCode(65+idx)}. ${escapeHtml(c)}</span>
               `).join(' ')}
               ${q.category ? `<span class="badge badge-primary ml-2">${escapeHtml(q.category)}</span>` : ''}
+              ${q.solution ? `<span class="badge badge-outline ml-2" title="${escapeHtml(q.solution)}">✓ Solution</span>` : ''}
             </div>
           </div>
         </article>
@@ -1021,6 +1197,8 @@
       blocks.forEach((block, index) => {
         const text = block.querySelector('textarea[name$="[text]"]').value.trim();
         const category = block.querySelector('input[name$="[category]"]').value.trim();
+        const solution = block.querySelector('textarea[name$="[solution]"]')?.value.trim() || '';
+        const sectionId = block.querySelector('select[name$="[sectionId]"]')?.value || '';
         const choices = [];
         const choiceInputs = block.querySelectorAll('.choice-input');
         choiceInputs.forEach(input => choices.push(input.value.trim()));
@@ -1031,7 +1209,9 @@
           text,
           category: category || null,
           choices,
-          correctIndex
+          correctIndex,
+          solution,
+          sectionId
         });
       });
 
@@ -1049,6 +1229,9 @@
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         questions,
+        sections: examSections
+          .filter(s => s.title && s.title.trim())
+          .map(s => ({ id: s.id, title: s.title.trim(), description: (s.description || '').trim() })),
         createdBy: currentUser.uid,
         updatedAt: serverTimestamp()
       };

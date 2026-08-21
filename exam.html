@@ -39,6 +39,9 @@
             </div>
           </div>
 
+          <!-- Exam sections (Kaplan-style section list) rendered by JS -->
+          <div id="start-sections" class="start-sections" hidden aria-label="Exam sections"></div>
+
           <form id="start-form" class="start-form" novalidate>
             <div class="form-group">
               <label class="label" for="student-name">Your Full Name <span class="text-danger" aria-hidden="true">*</span></label>
@@ -116,6 +119,7 @@
         <header class="question-header">
           <div class="question-meta">
             <span class="question-number" id="question-number">Question 1 of 10</span>
+            <span class="question-section-badge" id="question-section" hidden></span>
             <span class="question-category" id="question-category" hidden></span>
           </div>
           <div class="question-actions">
@@ -250,7 +254,11 @@
         <div class="card results-review" id="results-review" hidden>
           <div class="card-body">
             <h3 class="results-title">Answer Review</h3>
-            <p class="text-sm text-muted mb-4">Your answer is highlighted; the correct answer is marked in green.</p>
+            <p class="text-sm text-muted mb-4">Your answer is highlighted; the correct answer is marked in green. Click <strong>Show Solution</strong> on any question to see how to work it out.</p>
+            <div id="solutions-controls" class="solutions-controls mb-3" hidden>
+              <button type="button" class="btn btn-outline btn-sm" id="show-all-solutions-btn">Show All Solutions</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="hide-all-solutions-btn" hidden>Hide All Solutions</button>
+            </div>
             <div class="answer-breakdown" id="answer-breakdown"></div>
           </div>
         </div>
@@ -322,6 +330,7 @@
     const startAlertContainer = document.getElementById('start-alert-container');
     const examTitleStart = document.getElementById('exam-title-start');
     const examDescriptionStart = document.getElementById('exam-description-start');
+    const startSections = document.getElementById('start-sections');
     const infoQuestions = document.getElementById('info-questions');
     const infoTime = document.getElementById('info-time');
     const infoPassing = document.getElementById('info-passing');
@@ -338,6 +347,7 @@
     const examAlertContainer = document.getElementById('exam-alert-container');
     const questionNumber = document.getElementById('question-number');
     const questionCategory = document.getElementById('question-category');
+    const questionSection = document.getElementById('question-section');
     const questionText = document.getElementById('question-text');
     const choicesGrid = document.getElementById('choices-grid');
     const prevBtn = document.getElementById('prev-btn');
@@ -370,6 +380,9 @@
     const submissionIcon = document.getElementById('submission-icon');
     const resultsReview = document.getElementById('results-review');
     const answerBreakdown = document.getElementById('answer-breakdown');
+    const solutionsControls = document.getElementById('solutions-controls');
+    const showAllSolutionsBtn = document.getElementById('show-all-solutions-btn');
+    const hideAllSolutionsBtn = document.getElementById('hide-all-solutions-btn');
     const resultsVerdict = document.getElementById('results-verdict');
     const verdictTitle = document.getElementById('verdict-title');
     const verdictDetail = document.getElementById('verdict-detail');
@@ -386,6 +399,7 @@
     let studentName = '';
     let studentEmail = '';
     let questions = [];
+    let examSections = []; // [{ id, title, description }] from exam.sections
     let currentQuestionIndex = 0;
     let answers = []; // Array of { questionId, selectedIndex }
     let flaggedQuestions = new Set();
@@ -431,6 +445,8 @@
 
         exam = { id: examDoc.id, ...examDoc.data() };
         questions = exam.questions || [];
+        examSections = (exam.sections || [])
+          .map(s => ({ id: s.id, title: s.title || 'Untitled Section', description: s.description || '' }));
         timeLimitMs = (exam.timeLimitMinutes || 60) * 60 * 1000;
         allowPrevious = exam.allowPrevious !== false;
         showResultsToStudent = exam.showResultsToStudent !== false;
@@ -453,9 +469,11 @@
           return;
         }
 
-        // Randomize question order if enabled
+        // Randomize question order if enabled. When the exam has named
+        // sections, questions are shuffled WITHIN each section (Kaplan-style:
+        // sections stay contiguous) and section order is preserved.
         if (randomizeQuestions) {
-          questionOrder = questions.map((_, i) => i).sort(() => Math.random() - 0.5);
+          questionOrder = buildRandomizedOrder();
         } else {
           questionOrder = questions.map((_, i) => i);
         }
@@ -473,12 +491,74 @@
       }
     }
 
+    /** Find the exam section a question belongs to (or null). */
+    function getSectionForQuestion(question) {
+      if (!question || !question.sectionId) return null;
+      return examSections.find(s => s.id === question.sectionId) || null;
+    }
+
+    /**
+     * Build the question order for the exam. When the exam has named sections,
+     * keep sections contiguous (in section order) and shuffle questions within
+     * each section; questions without a section form a trailing "General" group.
+     */
+    function buildRandomizedOrder() {
+      const sectionIds = new Set(examSections.map(s => s.id));
+      const groups = new Map(); // key -> array of question indices
+      questions.forEach((q, i) => {
+        const key = q.sectionId && sectionIds.has(q.sectionId) ? q.sectionId : '__general__';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(i);
+      });
+      const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
+      if (groups.has('__general__')) orderedKeys.push('__general__');
+
+      const order = [];
+      for (const key of orderedKeys) {
+        const indices = groups.get(key);
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        order.push(...indices);
+      }
+      return order;
+    }
+
     function renderStartScreen() {
       examTitleStart.textContent = exam.title;
       examDescriptionStart.textContent = exam.description || 'No description provided.';
       infoQuestions.textContent = questions.length;
       infoTime.textContent = `${exam.timeLimitMinutes} min`;
       infoPassing.textContent = `${passingPercent}%`;
+
+      // Kaplan-style section list on the start screen
+      if (startSections) {
+        if (examSections.length) {
+          const sectionCounts = new Map();
+          questions.forEach(q => {
+            const s = getSectionForQuestion(q);
+            const key = s ? s.id : '__general__';
+            sectionCounts.set(key, (sectionCounts.get(key) || 0) + 1);
+          });
+          startSections.innerHTML = examSections.map((s, i) => {
+            const count = sectionCounts.get(s.id) || 0;
+            return `
+              <div class="start-section-row">
+                <span class="start-section-index">${i + 1}</span>
+                <div class="start-section-info">
+                  <span class="start-section-name">${escapeHtml(s.title)}</span>
+                  ${s.description ? `<span class="start-section-desc">${escapeHtml(s.description)}</span>` : ''}
+                </div>
+                <span class="start-section-count">${count} ${count === 1 ? 'question' : 'questions'}</span>
+              </div>
+            `;
+          }).join('');
+          startSections.hidden = false;
+        } else {
+          startSections.hidden = true;
+        }
+      }
     }
 
     // Start Exam
@@ -673,6 +753,13 @@
       const question = questions[qIndex];
       
       questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+      const section = getSectionForQuestion(question);
+      if (section) {
+        questionSection.textContent = section.title;
+        questionSection.hidden = false;
+      } else {
+        questionSection.hidden = true;
+      }
       questionCategory.textContent = question.category || '';
       questionCategory.hidden = !question.category;
       questionText.innerHTML = escapeHtml(question.text);
@@ -804,20 +891,41 @@
 
     // Question navigation sidebar
     function updateQuestionNav() {
-      questionNav.innerHTML = questions.map((q, i) => {
-        const displayIndex = questionOrder.indexOf(i);
-        const answer = answers[i];
-        const isAnswered = answer?.selectedIndex >= 0;
-        const isCurrent = displayIndex === currentQuestionIndex;
-        const isFlagged = flaggedQuestions.has(i);
-        
-        let classes = 'nav-btn';
-        if (isCurrent) classes += ' current';
-        if (isAnswered) classes += ' answered';
-        if (isFlagged) classes += ' flagged';
-        
-        return `<button type="button" class="${classes}" data-nav-index="${displayIndex}" aria-label="Question ${displayIndex + 1}${isCurrent ? ', current' : ''}${isAnswered ? ', answered' : ''}${isFlagged ? ', flagged' : ''}">${displayIndex + 1}</button>`;
-      }).join('');
+      // Group display indices by section (Kaplan-style: named groups).
+      const sectionIds = new Set(examSections.map(s => s.id));
+      const groups = new Map(); // key -> array of { displayIndex, qIndex }
+      questionOrder.forEach((qIndex, displayIndex) => {
+        const q = questions[qIndex];
+        const key = q.sectionId && sectionIds.has(q.sectionId) ? q.sectionId : '__general__';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push({ displayIndex, qIndex });
+      });
+      const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
+      if (groups.has('__general__')) orderedKeys.push('__general__');
+
+      let html = '';
+      for (const key of orderedKeys) {
+        const section = examSections.find(s => s.id === key);
+        if (section || examSections.length > 0) {
+          html += `<div class="nav-section-header">${section ? escapeHtml(section.title) : 'General'}</div>`;
+        }
+        html += '<div class="question-nav">';
+        groups.get(key).forEach(({ displayIndex, qIndex }) => {
+          const answer = answers[qIndex];
+          const isAnswered = answer?.selectedIndex >= 0;
+          const isCurrent = displayIndex === currentQuestionIndex;
+          const isFlagged = flaggedQuestions.has(qIndex);
+
+          let classes = 'nav-btn';
+          if (isCurrent) classes += ' current';
+          if (isAnswered) classes += ' answered';
+          if (isFlagged) classes += ' flagged';
+
+          html += `<button type="button" class="${classes}" data-nav-index="${displayIndex}" aria-label="Question ${displayIndex + 1}${isCurrent ? ', current' : ''}${isAnswered ? ', answered' : ''}${isFlagged ? ', flagged' : ''}">${displayIndex + 1}</button>`;
+        });
+        html += '</div>';
+      }
+      questionNav.innerHTML = html;
 
       questionNav.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -977,14 +1085,20 @@
      * Render the question-by-question review after submission:
      * each question with its choices, highlighting the student's answer
      * and the correct answer. Questions appear in the same order the
-     * student saw them (questionOrder).
+     * student saw them (questionOrder), grouped under section headings
+     * when the exam has named sections. Questions with a solution get a
+     * collapsible "Show Solution" panel.
      */
     function renderAnswerReview() {
       if (!resultsReview || !answerBreakdown) return;
 
-      const reviewItems = questionOrder.map((qIndex, displayIndex) => {
+      const sectionIds = new Set(examSections.map(s => s.id));
+      const groups = new Map(); // key -> array of review item html + solution info
+      let hasSolutions = false;
+
+      questionOrder.forEach((qIndex, displayIndex) => {
         const question = questions[qIndex];
-        if (!question) return '';
+        if (!question) return;
 
         const studentAnswer = answers[qIndex];
         const selectedIndex = studentAnswer?.selectedIndex ?? -1;
@@ -1025,7 +1139,22 @@
           `;
         }).join('');
 
-        return `
+        const hasSolution = !!(question.solution && question.solution.trim());
+        if (hasSolution) hasSolutions = true;
+        const solutionHtml = hasSolution
+          ? `
+            <div class="solution-block">
+              <button type="button" class="btn btn-outline btn-sm solution-toggle" data-solution-idx="${displayIndex}" aria-expanded="false" aria-controls="solution-content-${displayIndex}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span class="solution-toggle-text">Show Solution</span>
+              </button>
+              <div class="solution-content" id="solution-content-${displayIndex}" hidden>
+                <strong>Solution:</strong> ${escapeHtml(question.solution)}
+              </div>
+            </div>`
+          : '';
+
+        const itemHtml = `
           <article class="answer-item ${isCorrect ? 'correct' : (isAnswered ? 'incorrect' : '')}${isFlagged ? ' flagged' : ''}">
             <header class="answer-header">
               <div class="answer-question">
@@ -1040,11 +1169,72 @@
             <div class="answer-choices">
               ${choicesHtml}
             </div>
+            ${solutionHtml}
           </article>
         `;
+
+        const key = question.sectionId && sectionIds.has(question.sectionId) ? question.sectionId : '__general__';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(itemHtml);
+      });
+
+      const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
+      if (groups.has('__general__')) orderedKeys.push('__general__');
+
+      const reviewHtml = orderedKeys.map((key) => {
+        const section = examSections.find(s => s.id === key);
+        const header = section
+          ? `<h4 class="review-section-title">${escapeHtml(section.title)}</h4>`
+          : (examSections.length > 0 ? '<h4 class="review-section-title">General</h4>' : '');
+        return `${header}${groups.get(key).join('')}`;
       }).join('');
 
-      answerBreakdown.innerHTML = reviewItems || '<p class="text-muted">No questions available.</p>';
+      answerBreakdown.innerHTML = reviewHtml || '<p class="text-muted">No questions available.</p>';
+
+      // Solution toggle controls
+      if (solutionsControls && showAllSolutionsBtn && hideAllSolutionsBtn) {
+        solutionsControls.hidden = !hasSolutions;
+        showAllSolutionsBtn.hidden = false;
+        hideAllSolutionsBtn.hidden = true;
+      }
+    }
+
+    // Solution expand/collapse (event delegation)
+    answerBreakdown.addEventListener('click', (e) => {
+      const toggle = e.target.closest('.solution-toggle');
+      if (!toggle) return;
+      const content = document.getElementById(`solution-content-${toggle.dataset.solutionIdx}`);
+      if (!content) return;
+      const isOpen = !content.hidden;
+      content.hidden = isOpen;
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+      const textEl = toggle.querySelector('.solution-toggle-text');
+      if (textEl) textEl.textContent = isOpen ? 'Show Solution' : 'Hide Solution';
+    });
+
+    if (showAllSolutionsBtn) {
+      showAllSolutionsBtn.addEventListener('click', () => {
+        answerBreakdown.querySelectorAll('.solution-content').forEach(c => { c.hidden = false; });
+        answerBreakdown.querySelectorAll('.solution-toggle').forEach(t => {
+          t.setAttribute('aria-expanded', 'true');
+          const textEl = t.querySelector('.solution-toggle-text');
+          if (textEl) textEl.textContent = 'Hide Solution';
+        });
+        showAllSolutionsBtn.hidden = true;
+        hideAllSolutionsBtn.hidden = false;
+      });
+    }
+    if (hideAllSolutionsBtn) {
+      hideAllSolutionsBtn.addEventListener('click', () => {
+        answerBreakdown.querySelectorAll('.solution-content').forEach(c => { c.hidden = true; });
+        answerBreakdown.querySelectorAll('.solution-toggle').forEach(t => {
+          t.setAttribute('aria-expanded', 'false');
+          const textEl = t.querySelector('.solution-toggle-text');
+          if (textEl) textEl.textContent = 'Show Solution';
+        });
+        hideAllSolutionsBtn.hidden = true;
+        showAllSolutionsBtn.hidden = false;
+      });
     }
 
     function showAlreadySubmitted(submission) {
