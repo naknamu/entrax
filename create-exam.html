@@ -165,18 +165,27 @@
           </div>
         </section>
 
-        <!-- Generate Kaplan Math Questions -->
+        <!-- Generate Kaplan Questions -->
         <section class="card section-card" aria-labelledby="generate-heading">
           <header class="card-header">
-            <h2 class="card-title" id="generate-heading">Generate Kaplan Math Questions</h2>
+            <h2 class="card-title" id="generate-heading">Generate Kaplan Questions</h2>
           </header>
           <div class="card-body">
             <p class="help-text mb-3">
-              Instantly create original, randomized math questions in the style of the Kaplan Nursing
-              Entrance Exam (Math section). Pick topics and how many per topic, then click
-              <strong>Add Generated Questions</strong> — they're inserted into your exam above.
+              Instantly create original, randomized questions for every Kaplan Entrance Exam
+              section. Pick a section, choose topics, and click
+              <strong>Add Generated Questions</strong>. Generated questions fill any empty
+              slots already in that section, then new ones are appended.
             </p>
-            <div id="generate-topics" class="flex flex-wrap gap-3"></div>
+
+            <div class="generate-tabs" role="tablist" aria-label="Question section to generate">
+              <button type="button" class="generate-tab" data-gen-tab="reading" role="tab" aria-selected="false">Reading</button>
+              <button type="button" class="generate-tab active" data-gen-tab="math" role="tab" aria-selected="true">Math</button>
+              <button type="button" class="generate-tab" data-gen-tab="writing" role="tab" aria-selected="false">Writing</button>
+              <button type="button" class="generate-tab" data-gen-tab="science" role="tab" aria-selected="false">Science</button>
+            </div>
+
+            <div id="generate-topics" class="flex flex-wrap gap-3 mt-3"></div>
             <div class="flex items-center gap-3 mt-3 flex-wrap">
               <label class="label mb-0" for="generate-count">Per topic:</label>
               <input type="number" id="generate-count" class="input" min="1" max="10" value="3" style="max-width: 90px" aria-label="Questions per topic">
@@ -301,7 +310,12 @@
     import { onAuthStateChanged, signOut } from 'firebase/auth';
     import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { showAlert, showConfirm, escapeHtml, generateId } from '/js/admin.js';
-    import { generateKaplanMathQuestions, KAPLAN_MATH_TOPICS } from '/js/question-generator.js';
+    import {
+      generateKaplanMathQuestions, KAPLAN_MATH_TOPICS,
+      generateKaplanReadingQuestions, KAPLAN_READING_TOPICS,
+      generateKaplanWritingQuestions, KAPLAN_WRITING_TOPICS,
+      generateKaplanScienceQuestions, KAPLAN_SCIENCE_TOPICS
+    } from '/js/question-generator.js';
 
     // DOM Elements
     const form = document.getElementById('exam-form');
@@ -341,10 +355,31 @@
     let examSections = []; // [{ id, title, description }]
     let sectionCounter = 0;
 
+    // Kaplan question generators keyed by exam section (Reading/Math/Writing/Science)
+    const GENERATOR_SECTIONS = {
+      reading: { label: 'Reading', topics: KAPLAN_READING_TOPICS, fn: generateKaplanReadingQuestions, match: /reading/i, recommended: 6 },
+      math: { label: 'Math', topics: KAPLAN_MATH_TOPICS, fn: generateKaplanMathQuestions, match: /math/i, recommended: 4 },
+      writing: { label: 'Writing', topics: KAPLAN_WRITING_TOPICS, fn: generateKaplanWritingQuestions, match: /writing/i, recommended: 7 },
+      science: { label: 'Science', topics: KAPLAN_SCIENCE_TOPICS, fn: generateKaplanScienceQuestions, match: /science/i, recommended: 2 }
+    };
+    let currentGenSection = 'math';
+
     // Get examId from URL if editing
     const urlParams = new URLSearchParams(window.location.search);
     examId = urlParams.get('examId');
     isEditing = !!examId;
+
+    /** Auto-select the exam section whose title matches the active generator tab. */
+    function autoSelectGenerateSection() {
+      const select = document.getElementById('generate-section');
+      if (!select) return;
+      const activeTab = document.querySelector('.generate-tab.active');
+      const key = activeTab ? activeTab.dataset.genTab : 'math';
+      const g = GENERATOR_SECTIONS[key];
+      if (!g) return;
+      const match = examSections.find((s) => g.match.test(s.title || ''));
+      select.value = match ? match.id : '';
+    }
 
     // Initialize event listeners immediately (not waiting for auth)
     function initEventListeners() {
@@ -382,35 +417,95 @@
         confirmImportBtn.addEventListener('click', confirmImport);
       }
 
-      // Generate Kaplan math questions
+      // Generate Kaplan questions (Reading / Math / Writing / Science)
       const generateTopicsEl = document.getElementById('generate-topics');
       const generateAddBtn = document.getElementById('generate-add-btn');
       const generateStatus = document.getElementById('generate-status');
-      if (generateTopicsEl && KAPLAN_MATH_TOPICS.length) {
-        KAPLAN_MATH_TOPICS.forEach((t) => {
-          const label = document.createElement('label');
-          label.className = 'checkbox-group flex items-center gap-2';
-          label.innerHTML = `<input type="checkbox" value="${t.id}" checked> ${escapeHtml(t.label)}`;
-          generateTopicsEl.appendChild(label);
-        });
+      const generateCount = document.getElementById('generate-count');
+      const generateSectionSelect = document.getElementById('generate-section');
+
+      /** Render topic checkboxes for the active generator section. */
+      function renderGenerateTopics() {
+        const g = GENERATOR_SECTIONS[currentGenSection];
+        if (!generateTopicsEl || !g) return;
+        generateTopicsEl.innerHTML = g.topics.map((t) =>
+          `<label class="checkbox-group flex items-center gap-2"><input type="checkbox" value="${escapeHtml(t.id)}" checked> ${escapeHtml(t.label)}</label>`
+        ).join('');
+        autoSelectGenerateSection();
+        // Recommended per-topic count (so the Kaplan distribution is easy to hit)
+        if (generateCount) generateCount.value = g.recommended;
       }
+
+      // Section tabs
+      document.querySelectorAll('.generate-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.generate-tab').forEach((t) => {
+            t.classList.toggle('active', t === tab);
+            t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+          });
+          currentGenSection = tab.dataset.genTab || 'math';
+          renderGenerateTopics();
+        });
+      });
+
+      if (generateTopicsEl && KAPLAN_MATH_TOPICS.length) {
+        renderGenerateTopics();
+      }
+
+      /** Fill empty question slots assigned to a section, then return leftovers. */
+      function fillEmptySlots(sectionId, newQuestions) {
+        if (!sectionId || !newQuestions.length) return newQuestions;
+        const emptyBlocks = [...questionsContainer.querySelectorAll('.question-block')].filter((block) => {
+          const sel = block.querySelector('select[name$="[sectionId]"]');
+          if (!sel || sel.value !== sectionId) return false;
+          const text = block.querySelector('textarea[name$="[text]"]')?.value.trim() || '';
+          const choices = [...block.querySelectorAll('.choice-input')];
+          return !text && choices.every((i) => !i.value.trim());
+        });
+        if (!emptyBlocks.length) return newQuestions;
+        let remaining = newQuestions;
+        emptyBlocks.forEach((block, i) => {
+          if (i >= remaining.length) return;
+          const q = remaining[i];
+          block.querySelector('textarea[name$="[text]"]').value = q.text;
+          const catInput = block.querySelector('input[name$="[category]"]');
+          if (catInput) catInput.value = q.category || '';
+          const solInput = block.querySelector('textarea[name$="[solution]"]');
+          if (solInput) solInput.value = q.solution || '';
+          (q.choices || []).forEach((choice, ci) => {
+            const input = block.querySelector(`input[name$="[choices][${ci}]"]`);
+            if (input) input.value = choice;
+          });
+          const radio = block.querySelector(`input[type="radio"][value="${q.correctIndex}"]`);
+          if (radio) radio.checked = true;
+        });
+        return remaining.slice(emptyBlocks.length);
+      }
+
       if (generateAddBtn) {
         generateAddBtn.addEventListener('click', () => {
+          const g = GENERATOR_SECTIONS[currentGenSection];
+          if (!g) return;
           const checked = [...generateTopicsEl.querySelectorAll('input:checked')].map((i) => i.value);
           if (checked.length === 0) {
             showAlert(alertContainer, 'Select at least one topic to generate questions.', 'error');
             return;
           }
-          const perTopic = Math.max(1, Math.min(10, parseInt(document.getElementById('generate-count').value) || 3));
-          const questions = generateKaplanMathQuestions(checked, perTopic);
-          const targetSection = document.getElementById('generate-section')?.value || '';
+          const perTopic = Math.max(1, Math.min(10, parseInt(generateCount.value) || 3));
+          const questions = g.fn(checked, perTopic);
+          const targetSection = generateSectionSelect?.value || '';
           removeDefaultEmptyQuestion();
-          questions.forEach((q) => {
+          const leftovers = fillEmptySlots(targetSection, questions);
+          leftovers.forEach((q) => {
             if (targetSection) q.sectionId = targetSection;
             addQuestion(q);
           });
+          renderSections(); // refresh per-section count badges
           if (generateStatus) {
-            generateStatus.textContent = `Added ${questions.length} generated questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).`;
+            const filled = questions.length - leftovers.length;
+            const sectionName = targetSection ? (examSections.find((s) => s.id === targetSection)?.title || '') : '';
+            const fillNote = filled > 0 ? ` — filled ${filled} empty slot${filled > 1 ? 's' : ''} in ${sectionName || 'the section'}` : '';
+            generateStatus.textContent = `Added ${questions.length} generated ${g.label} questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).${fillNote}`;
             generateStatus.classList.remove('hidden');
           }
           clearAlert();
@@ -566,6 +661,7 @@
         });
 
         updateSectionSelects();
+        autoSelectGenerateSection();
         updateQuestionNumbers();
         renderSections(); // refresh per-section question count badges
         toggleNoQuestionsMsg();
@@ -890,10 +986,12 @@
 
     // Remove the default empty first question (no text, no choices) that is
     // auto-added on a new exam, so bulk-added questions (import / Kaplan
-    // generator) start at Question 1 instead of Question 2.
+    // generator) start at Question 1 instead of Question 2. Only removes it
+    // when it is the ONLY question block — never an empty template slot when
+    // the Kaplan template's 91 slots are present.
     function removeDefaultEmptyQuestion() {
       const blocks = questionsContainer.querySelectorAll('.question-block');
-      if (blocks.length === 0) return;
+      if (blocks.length !== 1) return;
       const firstBlock = blocks[0];
       const textEl = firstBlock.querySelector('textarea[name$="[text]"]');
       const text = textEl ? textEl.value.trim() : '';

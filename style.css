@@ -727,6 +727,34 @@ code, pre {
 }
 .btn-link-style:hover { color: var(--color-primary-hover); }
 
+/* Generate Kaplan Questions: section tabs */
+.generate-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.25rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+.generate-tab {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.generate-tab:hover { color: var(--color-primary); }
+.generate-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 /* Results Page */
 .results-header {
   display: flex;
@@ -782,6 +810,7 @@ code, pre {
 .answer-item.incorrect { border-color: var(--color-danger); }
 
 .answer-question { font-weight: 500; margin-bottom: 0.75rem; }
+.answer-question-text { white-space: pre-line; }
 .answer-choices { display: flex; flex-direction: column; gap: 0.5rem; }
 .answer-choice { padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem; }
 .answer-choice.selected { background: var(--color-primary-light); color: var(--color-primary); }
@@ -1650,6 +1679,7 @@ body.exam-page {
   background: var(--color-bg);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+  white-space: pre-line;
 }
 
 .choices-fieldset {

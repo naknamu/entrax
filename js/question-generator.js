@@ -633,6 +633,554 @@ function genWordProblems(count) {
 }
 
 // ---------------------------------------------------------------------------
+// READING — passage-based comprehension (Kaplan: 22 questions, 45 min).
+// Skills: purpose, details, inferences, passage logic. Each passage carries
+// one question per skill; the passage text is embedded with the question.
+// ---------------------------------------------------------------------------
+
+const READING_PASSAGES = [
+  {
+    title: 'Pain reassessment',
+    text: 'The nurse manager updated the unit\u2019s policy to require pain reassessment within thirty minutes of any analgesic administration. Hospital studies had shown that patients who were reassessed promptly reported better pain control and required fewer rescue doses. Staff were also reminded to document the patient\u2019s pain rating on the same numeric scale used before the medication was given.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'What is the main purpose of the passage?',
+        correct: 'To explain why the unit changed its pain reassessment policy',
+        distractors: ['To criticize staff who failed to assess pain', 'To describe a new pain medication', 'To compare two different pain scales'],
+        solution: 'The passage opens with the policy change and then gives the reasons behind it, so the main purpose is to explain why the change was made.',
+      },
+      {
+        skill: 'detail',
+        text: 'According to the passage, within how long after giving an analgesic must pain be reassessed?',
+        correct: 'Thirty minutes',
+        distractors: ['Fifteen minutes', 'One hour', 'Two hours'],
+        solution: 'The first sentence states that reassessment is required \u201cwithin thirty minutes of any analgesic administration.\u201d',
+      },
+      {
+        skill: 'inference',
+        text: 'It can be inferred from the passage that the policy change was made because —',
+        correct: 'prompt reassessment was linked to better patient outcomes',
+        distractors: ['the hospital purchased new equipment', 'staff requested fewer medications', 'documentation had always been optional'],
+        solution: 'The passage says promptly reassessed patients reported better pain control and needed fewer rescue doses, so improved outcomes motivated the change.',
+      },
+      {
+        skill: 'logic',
+        text: 'Which of the following statements, if true, would most strengthen the author\u2019s argument?',
+        correct: 'Units that reassess within thirty minutes report fewer medication errors',
+        distractors: ['Pain scales vary from one unit to another', 'Some patients decline pain medication', 'Documentation takes additional time'],
+        solution: 'A statement linking prompt reassessment to better safety outcomes supports the policy the passage defends.',
+      },
+    ],
+  },
+  {
+    title: 'Hand hygiene',
+    text: 'Hand hygiene remains the single most effective measure for preventing health care\u2013associated infections. Although compliance has improved, audits show that opportunities are still missed after glove removal and between patient contacts. The infection control team now conducts unannounced observations and posts unit-level feedback each month.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'The author\u2019s primary purpose is to —',
+        correct: 'highlight the importance of hand hygiene and of ongoing monitoring',
+        distractors: ['describe a new soap product', 'report one hospital\u2019s failure', 'argue that gloves replace hand washing'],
+        solution: 'The passage explains why hand hygiene matters and describes how the hospital monitors compliance, so the purpose is to highlight both.',
+      },
+      {
+        skill: 'detail',
+        text: 'According to the passage, when are hand hygiene opportunities still missed?',
+        correct: 'After glove removal and between patient contacts',
+        distractors: ['Before entering patient rooms', 'During medication preparation', 'Only at shift change'],
+        solution: 'The second sentence states that opportunities are missed \u201cafter glove removal and between patient contacts.\u201d',
+      },
+      {
+        skill: 'inference',
+        text: 'Posting unit-level feedback each month is most likely intended to —',
+        correct: 'encourage improvement through transparency',
+        distractors: ['replace unannounced observations', 'punish individual staff members', 'eliminate the need for training'],
+        solution: 'Public, unit-level feedback motivates teams to improve while unannounced observation continues, so transparency is the goal.',
+      },
+      {
+        skill: 'logic',
+        text: 'Which sentence would best conclude the passage?',
+        correct: 'With consistent feedback, compliance gaps can be closed and infections reduced.',
+        distractors: ['Most infections occur in the community.', 'Audits are expensive to perform.', 'Soap should be replaced entirely by alcohol rubs.'],
+        solution: 'A strong conclusion ties the monitoring strategy back to the passage\u2019s goal of preventing infections.',
+      },
+    ],
+  },
+  {
+    title: 'Medication reconciliation',
+    text: 'Medication reconciliation compares a patient\u2019s current medication list with the medications ordered on admission. Discrepancies, such as a missing dose or a doubled drug, are common at transitions of care. Reviewing the list with the patient and the pharmacy reduces the risk of harmful errors.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'The passage is mainly about —',
+        correct: 'the role of medication reconciliation in preventing errors',
+        distractors: ['the cost of prescription drugs', 'how to administer intravenous medications', 'the duties of the pharmacy department'],
+        solution: 'The passage defines reconciliation and explains how it prevents errors, which is its main focus.',
+      },
+      {
+        skill: 'detail',
+        text: 'According to the passage, discrepancies are most likely to occur —',
+        correct: 'at transitions of care',
+        distractors: ['during surgery', 'in the pharmacy storeroom', 'after discharge only'],
+        solution: 'The passage states that discrepancies \u201care common at transitions of care.\u201d',
+      },
+      {
+        skill: 'inference',
+        text: 'It can be inferred that involving the patient in the review helps because —',
+        correct: 'patients may know exactly what they take at home',
+        distractors: ['patients prefer to manage their own medications', 'pharmacists cannot read orders', 'the review takes less time'],
+        solution: 'Patients are the most reliable source for their actual home medication list, which is why their input improves accuracy.',
+      },
+      {
+        skill: 'logic',
+        text: 'Which statement, if added, would best support the passage\u2019s main idea?',
+        correct: 'Studies show reconciliation prevents up to 70% of serious medication errors.',
+        distractors: ['Most patients take fewer than three medications.', 'New computers were installed in the pharmacy.', 'Medication errors rarely cause patient harm.'],
+        solution: 'A statistic showing that reconciliation prevents errors directly supports the passage\u2019s claim about reducing risk.',
+      },
+    ],
+  },
+  {
+    title: 'Early mobilization',
+    text: 'Early mobilization of patients after surgery shortens hospital stays and reduces complications such as pneumonia and blood clots. Despite the evidence, patients often remain in bed because of fatigue or fear of pain. Nurses can ease the process by setting small, achievable goals and giving pain medication before activity.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'The purpose of this passage is to —',
+        correct: 'explain the benefits of early mobilization and how nurses can support it',
+        distractors: ['describe the risks of surgery', 'compare hospital departments', 'promote a new walking device'],
+        solution: 'The passage presents the benefits of mobilization and then practical nursing strategies, so that is its purpose.',
+      },
+      {
+        skill: 'detail',
+        text: 'Which complications does the passage say early mobilization reduces?',
+        correct: 'Pneumonia and blood clots',
+        distractors: ['Dehydration and fever', 'Infection and skin rash', 'Constipation and anemia'],
+        solution: 'The first sentence names \u201cpneumonia and blood clots\u201d as complications reduced by early mobilization.',
+      },
+      {
+        skill: 'inference',
+        text: 'Patients often remain in bed despite the evidence mainly because of —',
+        correct: 'fatigue and fear of pain',
+        distractors: ['lack of nursing staff', 'hospital policy', 'insurance requirements'],
+        solution: 'The passage says patients stay in bed \u201cbecause of fatigue or fear of pain.\u201d',
+      },
+      {
+        skill: 'logic',
+        text: 'The advice to set small, achievable goals most directly supports which idea?',
+        correct: 'Gradual activity can overcome patients\u2019 reluctance.',
+        distractors: ['Surgery should be avoided.', 'Pain medication is unnecessary.', 'Mobilization should wait until discharge.'],
+        solution: 'Small goals address the fatigue and fear that keep patients in bed, so they support gradual, achievable activity.',
+      },
+    ],
+  },
+  {
+    title: 'Diabetes teaching',
+    text: 'A patient newly diagnosed with type 2 diabetes is taught to check blood glucose before meals and at bedtime. The educator explains that consistent monitoring shows how food, activity, and medication affect glucose levels. Patients who track results in a log are better able to recognize patterns and adjust their routines with their care team.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'The main purpose of the passage is to —',
+        correct: 'describe the value of blood glucose monitoring in diabetes management',
+        distractors: ['criticize patients who do not monitor', 'explain how insulin is manufactured', 'list the symptoms of hypoglycemia'],
+        solution: 'The passage focuses on why monitoring matters and how a log helps, so its purpose is to describe the value of monitoring.',
+      },
+      {
+        skill: 'detail',
+        text: 'When is the patient taught to check blood glucose?',
+        correct: 'Before meals and at bedtime',
+        distractors: ['Only in the morning', 'After every meal', 'Once a week'],
+        solution: 'The first sentence says the patient checks glucose \u201cbefore meals and at bedtime.\u201d',
+      },
+      {
+        skill: 'inference',
+        text: 'Keeping a glucose log most likely helps because it —',
+        correct: 'reveals patterns that guide treatment decisions',
+        distractors: ['replaces the need for medication', 'reduces the frequency of office visits', 'guarantees normal glucose levels'],
+        solution: 'The passage says a log helps patients \u201crecognize patterns and adjust their routines,\u201d which guides treatment decisions.',
+      },
+      {
+        skill: 'logic',
+        text: 'Which sentence would best introduce the passage?',
+        correct: 'Blood glucose monitoring is a cornerstone of type 2 diabetes self-management.',
+        distractors: ['Most patients dislike needles.', 'Insulin was discovered in 1921.', 'Hospital food is often criticized.'],
+        solution: 'A general statement about monitoring\u2019s importance sets up the teaching example that follows.',
+      },
+    ],
+  },
+  {
+    title: 'Delegation',
+    text: 'Delegation is the transfer of a task to a competent team member while the nurse retains accountability for the outcome. Simple, stable tasks may be delegated, but assessment, teaching, and tasks requiring clinical judgment are not. The delegating nurse must verify the other person\u2019s competence and provide clear instructions.',
+    questions: [
+      {
+        skill: 'purpose',
+        text: 'The passage primarily explains —',
+        correct: 'what delegation is and what it requires of the nurse',
+        distractors: ['why delegation is illegal', 'how to evaluate nursing students', 'the difference between two medications'],
+        solution: 'The passage defines delegation and then states what the delegating nurse must do, which is its main point.',
+      },
+      {
+        skill: 'detail',
+        text: 'According to the passage, which tasks should NOT be delegated?',
+        correct: 'Assessment, teaching, and tasks requiring clinical judgment',
+        distractors: ['Simple, stable tasks', 'Measuring vital signs on stable patients', 'Delivering meal trays'],
+        solution: 'The passage states that assessment, teaching, and tasks requiring clinical judgment are not to be delegated.',
+      },
+      {
+        skill: 'inference',
+        text: 'A nurse who delegates a task remains accountable because —',
+        correct: 'accountability for the outcome stays with the delegating nurse',
+        distractors: ['the team member is supervised by management', 'tasks are always reversible', 'the patient requested the task'],
+        solution: 'The definition states the nurse \u201cretains accountability for the outcome\u201d after delegating the task.',
+      },
+      {
+        skill: 'logic',
+        text: 'Which additional statement would best clarify the author\u2019s point?',
+        correct: 'Delegation is appropriate only when the team member has the training and scope to perform the task.',
+        distractors: ['Delegation always reduces the nurse\u2019s workload.', 'Team members should never ask questions.', 'All tasks can be safely delegated.'],
+        solution: 'Clarifying that competence and scope must match the task supports the requirement to verify competence.',
+      },
+    ],
+  },
+];
+
+function genReadingSkill(skill, count) {
+  const out = [];
+  const pool = READING_PASSAGES.flatMap(p => p.questions.filter(q => q.skill === skill));
+  const shuffled = shuffle(pool);
+  if (!shuffled.length) return out;
+  for (let n = 0; n < count; n++) {
+    const q = shuffled[n % shuffled.length];
+    const passage = READING_PASSAGES.find(p => p.questions.includes(q));
+    out.push({
+      text: `${passage.text}\n\n${q.text}`,
+      category: 'Reading',
+      correct: q.correct,
+      distractors: q.distractors,
+      solution: q.solution,
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// WRITING — passage development, paragraph logic, mechanics
+// (Kaplan: 21 questions, 45 min, based on nine short passages).
+// ---------------------------------------------------------------------------
+
+/** Mechanics: choose the correctly revised sentence. */
+function genWritingMechanics(count) {
+  const items = [
+    {
+      stem: 'The nurse, along with the residents, were responsible for the evening rounds.',
+      correct: 'The nurse, along with the residents, was responsible for the evening rounds.',
+      distractors: ['The nurse and the residents was responsible for the evening rounds.', 'The nurse, along with the residents, are responsible for the evening rounds.', 'The nurse, along with the residents, were responsible for the evening rounds.'],
+      solution: 'The subject is \u201cthe nurse\u201d (singular); the phrase \u201calong with the residents\u201d does not change the number, so the verb must be \u201cwas.\u201d',
+    },
+    {
+      stem: 'The patient was restless, the nurse increased the frequency of observation.',
+      correct: 'Because the patient was restless, the nurse increased the frequency of observation.',
+      distractors: ['The patient was restless the nurse increased the frequency of observation.', 'The patient was restless, the nurse increased, the frequency of observation.', 'The patient was restless and the nurse increasing the frequency of observation.'],
+      solution: 'Two complete sentences joined only by a comma form a comma splice; subordinating with \u201cBecause\u201d fixes it.',
+    },
+    {
+      stem: 'Each nurse must document their assessment before leaving the shift.',
+      correct: 'Each nurse must document his or her assessment before leaving the shift.',
+      distractors: ['Each nurse must document their assessments before leaving the shift.', 'Each nurses must document their assessment before leaving the shift.', 'Each nurse must document themselves assessment before leaving the shift.'],
+      solution: '\u201cEach nurse\u201d is singular, so the pronoun must be singular (\u201chis or her\u201d) to agree.',
+    },
+    {
+      stem: 'The nurse checks the drip rate, verified the prescription, and then documents the findings.',
+      correct: 'The nurse checks the drip rate, verifies the prescription, and then documents the findings.',
+      distractors: ['The nurse checks the drip rate, verified the prescription, and documents the findings.', 'The nurse checked the drip rate, verifies the prescription, and then documents the findings.', 'The nurse checks the drip rate, verifying the prescription, and then documents the findings.'],
+      solution: 'Items in a list should be parallel: checks, verifies, documents are all present tense.',
+    },
+    {
+      stem: 'The patients\u2019 vital signs were stable, but the nurses station was empty.',
+      correct: 'The patients\u2019 vital signs were stable, but the nurses\u2019 station was empty.',
+      distractors: ['The patients vital signs were stable, but the nurses\u2019 station was empty.', 'The patient\u2019s vital signs were stable, but the nurses station was empty.', 'The patients\u2019 vital signs were stable, but the nurses station was empty.'],
+      solution: 'The station belongs to more than one nurse, so it needs the plural possessive \u201cnurses\u2019.\u201d',
+    },
+    {
+      stem: 'After reviewing the chart, the medication was administered by the nurse.',
+      correct: 'After reviewing the chart, the nurse administered the medication.',
+      distractors: ['After reviewing the chart, the medication was administered by the nurse.', 'After reviewed the chart, the medication was administered by the nurse.', 'After the chart was reviewed, the medication administering began.'],
+      solution: 'The introductory phrase must modify the sentence subject; the nurse reviews the chart, so the nurse must be the subject.',
+    },
+    {
+      stem: 'The technician prepares the tray and then he labels every medication.',
+      correct: 'The technician prepares the tray and then labels every medication.',
+      distractors: ['The technician prepares the tray and then he labels every medication.', 'The technician prepare the tray and then labels every medication.', 'The technician prepares the tray and then he label every medication.'],
+      solution: 'With a single subject, the second verb should not repeat the pronoun; \u201cprepares \u2026 labels\u201d is concise and correct.',
+    },
+    {
+      stem: 'There is many reasons why the wound should be kept clean and dry.',
+      correct: 'There are many reasons why the wound should be kept clean and dry.',
+      distractors: ['There is many reasons why the wound should be kept clean and dry.', 'There are many reason why the wound should be kept clean and dry.', 'There is many reason why the wound should be kept clean and dry.'],
+      solution: '\u201cReasons\u201d is plural, so the verb must be \u201care.\u201d',
+    },
+    {
+      stem: 'The nurse asked the patient how was he feeling after the procedure.',
+      correct: 'The nurse asked the patient how he was feeling after the procedure.',
+      distractors: ['The nurse asked the patient how was he feeling after the procedure.', 'The nurse ask the patient how he was feeling after the procedure.', 'The nurse asked the patient how he were feeling after the procedure.'],
+      solution: 'An indirect question uses statement word order: \u201chow he was feeling,\u201d not \u201chow was he feeling.\u201d',
+    },
+  ];
+  const out = [];
+  const shuffled = shuffle(items);
+  for (let n = 0; n < count; n++) {
+    const it = shuffled[n % shuffled.length];
+    out.push({
+      text: `Which revision best corrects the sentence?\n\n${it.stem}`,
+      category: 'Writing',
+      correct: it.correct,
+      distractors: it.distractors,
+      solution: it.solution,
+    });
+  }
+  return out;
+}
+
+/** Paragraph logic: order sentences, find the topic/concluding/odd sentence. */
+function genWritingParagraphLogic(count) {
+  const items = [
+    {
+      sentences: [
+        'Patients who understand their discharge instructions are less likely to be readmitted.',
+        'Nurses should review each instruction and ask the patient to repeat it back.',
+        'A family member may also attend the teaching session.',
+        'Discharge planning begins on the day of admission.',
+      ],
+      ask: 'Which sentence should be FIRST as the topic sentence?',
+      correct: 'Patients who understand their discharge instructions are less likely to be readmitted.',
+      distractors: ['Nurses should review each instruction and ask the patient to repeat it back.', 'A family member may also attend the teaching session.', 'Discharge planning begins on the day of admission.'],
+      solution: 'The topic sentence states the general claim (understanding instructions reduces readmissions) that the other sentences support.',
+    },
+    {
+      sentences: [
+        'Some medications require refrigeration.',
+        'Insulin should be stored in the refrigerator until it is opened.',
+        'Once opened, it may be kept at room temperature for up to 28 days.',
+        'Always check the manufacturer\u2019s storage guidance.',
+      ],
+      ask: 'Which sentence should come LAST as the concluding sentence?',
+      correct: 'Always check the manufacturer\u2019s storage guidance.',
+      distractors: ['Some medications require refrigeration.', 'Insulin should be stored in the refrigerator until it is opened.', 'Once opened, it may be kept at room temperature for up to 28 days.'],
+      solution: 'The final sentence gives the general rule that wraps up the specific examples about storage.',
+    },
+    {
+      sentences: [
+        'The call light was placed within reach.',
+        'The bed was set to its lowest position.',
+        'The nurse implemented several measures to prevent falls.',
+        'Nonskid socks were provided.',
+      ],
+      ask: 'Which sentence best serves as the topic sentence?',
+      correct: 'The nurse implemented several measures to prevent falls.',
+      distractors: ['The call light was placed within reach.', 'The bed was set to its lowest position.', 'Nonskid socks were provided.'],
+      solution: 'The topic sentence introduces the list; the other sentences are the specific measures.',
+    },
+    {
+      sentences: [
+        'The night nurse reported the patient\u2019s status to the day nurse.',
+        'The report included vital signs, medications, and recent events.',
+        'The day nurse asked clarifying questions.',
+        'Handoffs are most effective when they are structured and complete.',
+      ],
+      ask: 'Which sentence should be FIRST?',
+      correct: 'Handoffs are most effective when they are structured and complete.',
+      distractors: ['The night nurse reported the patient\u2019s status to the day nurse.', 'The report included vital signs, medications, and recent events.', 'The day nurse asked clarifying questions.'],
+      solution: 'The general principle about handoffs should open the paragraph, followed by the example of one handoff.',
+    },
+    {
+      sentences: [
+        'The wound was cleaned with sterile saline.',
+        'A new dressing was applied over the wound.',
+        'The patient\u2019s hemoglobin was 13.2 g/dL.',
+        'The nurse documented the procedure.',
+      ],
+      ask: 'Which sentence does NOT belong in the paragraph?',
+      correct: 'The patient\u2019s hemoglobin was 13.2 g/dL.',
+      distractors: ['The wound was cleaned with sterile saline.', 'A new dressing was applied over the wound.', 'The nurse documented the procedure.'],
+      solution: 'The other sentences describe one wound-care procedure; the hemoglobin value is unrelated to that sequence.',
+    },
+    {
+      sentences: [
+        'Hand washing removes transient bacteria from the skin.',
+        'Alcohol rubs are effective when hands are not visibly soiled.',
+        'Barriers such as gloves provide additional protection.',
+        'Together, these practices greatly reduce the spread of infection.',
+      ],
+      ask: 'Which sentence best concludes the paragraph?',
+      correct: 'Together, these practices greatly reduce the spread of infection.',
+      distractors: ['Hand washing removes transient bacteria from the skin.', 'Alcohol rubs are effective when hands are not visibly soiled.', 'Barriers such as gloves provide additional protection.'],
+      solution: 'The concluding sentence summarizes and synthesizes the three practices described.',
+    },
+  ];
+  const out = [];
+  const shuffled = shuffle(items);
+  for (let n = 0; n < count; n++) {
+    const it = shuffled[n % shuffled.length];
+    out.push({
+      text: `Read the sentences:\n\n${it.sentences.map((s, i) => `(${i + 1}) ${s}`).join('\n')}\n\n${it.ask}`,
+      category: 'Writing',
+      correct: it.correct,
+      distractors: it.distractors,
+      solution: it.solution,
+    });
+  }
+  return out;
+}
+
+/** Passage development: pick the sentence that best supports the paragraph. */
+function genWritingPassageDevelopment(count) {
+  const items = [
+    {
+      text: 'Vaccination programs protect communities as well as individuals. When enough people are immunized, the spread of disease slows dramatically, which shields even those who cannot be vaccinated.',
+      ask: 'Which sentence, if added, would best support the main idea?',
+      correct: 'Immunizations protect both the individual and the community through herd immunity.',
+      distractors: ['The clinic opens at 8 a.m. on weekdays.', 'Most vaccines are injected into the upper arm.', 'Cold packs should be available after vaccination.'],
+      solution: 'A sentence explaining herd immunity directly supports the claim about community protection.',
+    },
+    {
+      text: 'Adequate sleep is essential for healing and recovery. Patients who sleep poorly often have higher pain levels and slower wound healing.',
+      ask: 'Which sentence, if added, would best support the main idea?',
+      correct: 'A consistent bedtime routine helps the body prepare for rest.',
+      distractors: ['Hospitals usually serve breakfast by 7 a.m.', 'Some patients prefer warm blankets.', 'Night shift schedules vary by unit.'],
+      solution: 'A practical strategy that improves sleep supports the passage\u2019s point about the importance of sleep.',
+    },
+    {
+      text: 'Monitoring fluid balance is a core nursing responsibility. Small shifts in body water can signal serious problems before other signs appear.',
+      ask: 'Which sentence, if added, would best support the main idea?',
+      correct: 'Measuring daily weight is a reliable way to detect fluid changes.',
+      distractors: ['Most hospital scales are digital now.', 'Patients often ask about their diet.', 'Water makes up about 60% of body weight.'],
+      solution: 'A method for detecting fluid changes directly supports the claim that monitoring matters.',
+    },
+    {
+      text: 'Unrelieved pain can slow a patient\u2019s recovery. Pain interferes with sleep, appetite, and the willingness to move, which are all needed for healing.',
+      ask: 'Which sentence, if added, would best support the main idea?',
+      correct: 'Patients with well-managed pain are often discharged sooner.',
+      distractors: ['Pain scales use numbers from zero to ten.', 'Some patients close their eyes when in pain.', 'Nurses chart pain at each shift.'],
+      solution: 'A statement linking pain management to faster recovery strengthens the passage\u2019s main idea.',
+    },
+  ];
+  const out = [];
+  const shuffled = shuffle(items);
+  for (let n = 0; n < count; n++) {
+    const it = shuffled[n % shuffled.length];
+    out.push({
+      text: `${it.text}\n\n${it.ask}`,
+      category: 'Writing',
+      correct: it.correct,
+      distractors: it.distractors,
+      solution: it.solution,
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// SCIENCE — physiology topics (Kaplan: 20 questions, 30 min). Ten systems.
+// ---------------------------------------------------------------------------
+
+function genScienceFromPool(pool, count) {
+  const out = [];
+  const shuffled = shuffle(pool);
+  for (let n = 0; n < count; n++) {
+    const it = shuffled[n % shuffled.length];
+    out.push({
+      text: it.text,
+      category: 'Science',
+      correct: it.correct,
+      distractors: it.distractors,
+      solution: it.solution,
+    });
+  }
+  return out;
+}
+
+const scienceCardiovascular = [
+  { text: 'Which chamber of the heart pumps oxygenated blood to the body?', correct: 'Left ventricle', distractors: ['Right ventricle', 'Left atrium', 'Right atrium'], solution: 'The left ventricle has the thickest wall because it pumps blood through the systemic circulation.' },
+  { text: 'Which type of blood vessel carries blood away from the heart?', correct: 'Artery', distractors: ['Vein', 'Capillary', 'Venule'], solution: 'Arteries carry blood away from the heart; veins return blood to it.' },
+  { text: 'The normal resting heart rate for an adult is approximately —', correct: '60\u2013100 beats per minute', distractors: ['40\u201360 beats per minute', '100\u2013140 beats per minute', '120\u2013160 beats per minute'], solution: 'Normal adult resting heart rate is 60\u2013100 bpm.' },
+  { text: 'Blood pressure is highest during which phase of the cardiac cycle?', correct: 'Systole', distractors: ['Diastole', 'The refractory period', 'The filling phase'], solution: 'Systole is ventricular contraction, when pressure in the arteries peaks.' },
+  { text: 'Which valve lies between the left atrium and the left ventricle?', correct: 'Mitral valve', distractors: ['Aortic valve', 'Pulmonic valve', 'Tricuspid valve'], solution: 'The mitral (bicuspid) valve separates the left atrium from the left ventricle.' },
+];
+
+const scienceElectrolytes = [
+  { text: 'Which electrolyte is essential for nerve and muscle function and is monitored closely with digoxin therapy?', correct: 'Potassium', distractors: ['Sodium', 'Chloride', 'Phosphate'], solution: 'Potassium affects cardiac conduction, and digoxin increases the risk of potassium-related rhythm problems.' },
+  { text: 'Which electrolyte imbalance commonly follows prolonged vomiting or diarrhea?', correct: 'Hypokalemia (low potassium)', distractors: ['Hyperkalemia (high potassium)', 'Hypercalcemia (high calcium)', 'Hypoglycemia (low glucose)'], solution: 'GI losses are rich in potassium, so vomiting and diarrhea commonly cause low potassium.' },
+  { text: 'Sodium balance is regulated primarily by which hormone?', correct: 'Aldosterone', distractors: ['Insulin', 'Thyroxine', 'Parathyroid hormone'], solution: 'Aldosterone causes the kidneys to retain sodium, which also pulls water with it.' },
+  { text: 'The normal serum sodium range is approximately —', correct: '135\u2013145 mEq/L', distractors: ['100\u2013110 mEq/L', '150\u2013160 mEq/L', '80\u201390 mEq/L'], solution: 'Normal serum sodium is 135\u2013145 mEq/L.' },
+  { text: 'Which mineral is essential for blood clotting and muscle contraction?', correct: 'Calcium', distractors: ['Magnesium', 'Phosphorus', 'Iron'], solution: 'Calcium is required for clot formation, muscle contraction, and nerve transmission.' },
+];
+
+const scienceGastrointestinal = [
+  { text: 'Which organ produces bile?', correct: 'Liver', distractors: ['Gallbladder', 'Pancreas', 'Stomach'], solution: 'The liver produces bile; the gallbladder stores and concentrates it.' },
+  { text: 'Most nutrient absorption occurs in the —', correct: 'Small intestine', distractors: ['Stomach', 'Large intestine', 'Esophagus'], solution: 'The small intestine has villi that maximize the surface for absorbing nutrients.' },
+  { text: 'Which enzyme begins the digestion of carbohydrates in the mouth?', correct: 'Salivary amylase', distractors: ['Pepsin', 'Lipase', 'Trypsin'], solution: 'Salivary amylase starts breaking starches into sugars in the mouth.' },
+  { text: 'Which hormone stimulates the secretion of gastric acid?', correct: 'Gastrin', distractors: ['Insulin', 'Glucagon', 'Aldosterone'], solution: 'Gastrin, released when food enters the stomach, stimulates acid secretion.' },
+  { text: 'Peristalsis is best described as —', correct: 'rhythmic muscular contractions that move contents along the digestive tract', distractors: ['the chemical breakdown of food by enzymes', 'absorption of nutrients into the blood', 'secretion of bile by the liver'], solution: 'Peristalsis is the wave-like muscular movement that propels food through the tract.' },
+];
+
+const scienceImmune = [
+  { text: 'Which cells produce antibodies?', correct: 'B lymphocytes', distractors: ['Red blood cells', 'Platelets', 'Neutrophils'], solution: 'B lymphocytes (B cells) differentiate into plasma cells that secrete antibodies.' },
+  { text: 'The body\u2019s first line of defense against infection includes —', correct: 'skin and mucous membranes', distractors: ['antibodies and complement', 'T lymphocytes', 'memory cells'], solution: 'Skin and mucous membranes are physical barriers, the first line of defense.' },
+  { text: 'Immunity acquired from vaccination is best classified as —', correct: 'active artificial immunity', distractors: ['passive natural immunity', 'active natural immunity', 'passive artificial immunity'], solution: 'Vaccination triggers the person\u2019s own immune response, so it is active and artificially induced.' },
+  { text: 'Anaphylaxis is best described as —', correct: 'a severe, systemic allergic reaction', distractors: ['a mild local rash', 'a bacterial infection', 'a type of blood clot'], solution: 'Anaphylaxis is a rapid, life-threatening systemic hypersensitivity reaction.' },
+  { text: 'Fever is most accurately described as —', correct: 'a systemic response that helps the body fight infection', distractors: ['a sign of decreased immunity', 'always a harmful response', 'a result of a low white blood cell count'], solution: 'Fever raises body temperature to inhibit pathogens and enhance immune activity.' },
+];
+
+const scienceNeurology = [
+  { text: 'Which part of the brain controls balance and coordination?', correct: 'Cerebellum', distractors: ['Cerebrum', 'Brainstem', 'Thalamus'], solution: 'The cerebellum coordinates voluntary movement, balance, and posture.' },
+  { text: 'The nervous system is divided into the central nervous system and the —', correct: 'peripheral nervous system', distractors: ['autonomic nervous system', 'somatic nervous system', 'sympathetic nervous system'], solution: 'The two main divisions are the central (brain and spinal cord) and the peripheral nervous system.' },
+  { text: 'Which lobe of the cerebrum is primarily responsible for processing vision?', correct: 'Occipital lobe', distractors: ['Frontal lobe', 'Temporal lobe', 'Parietal lobe'], solution: 'The occipital lobe at the back of the brain processes visual information.' },
+  { text: 'Slurred speech and weakness on one side of the body are classic signs of a —', correct: 'stroke', distractors: ['migraine', 'simple seizure', 'concussion'], solution: 'Sudden focal weakness and speech changes suggest interruption of blood flow to the brain, a stroke.' },
+  { text: 'Which neurotransmitter drives the fight-or-flight response?', correct: 'Epinephrine (adrenaline)', distractors: ['Dopamine', 'Serotonin', 'Acetylcholine'], solution: 'Epinephrine and norepinephrine prepare the body for stress via the sympathetic system.' },
+];
+
+const scienceRenal = [
+  { text: 'The functional unit of the kidney is the —', correct: 'nephron', distractors: ['neuron', 'alveolus', 'glomerulus'], solution: 'Each nephron filters blood and forms urine; the glomerulus is only one part of it.' },
+  { text: 'Which hormone increases water reabsorption in the kidneys?', correct: 'Antidiuretic hormone (ADH)', distractors: ['Insulin', 'Parathyroid hormone', 'Calcitonin'], solution: 'ADH causes the collecting ducts to reabsorb water, concentrating the urine.' },
+  { text: 'Normal adult urine output is approximately —', correct: '1\u20132 liters per day', distractors: ['4\u20136 liters per day', '100\u2013200 mL per day', '8\u201310 liters per day'], solution: 'Normal urine output is roughly 1\u20132 L/day, about 0.5\u20131 mL/kg/hour.' },
+  { text: 'Which blood test is the best index of kidney function?', correct: 'Creatinine', distractors: ['Glucose', 'Albumin', 'Bilirubin'], solution: 'Creatinine is produced at a steady rate and cleared by the kidneys, so it reflects renal function.' },
+  { text: 'The kidneys help regulate blood pressure by secreting —', correct: 'renin', distractors: ['erythropoietin', 'aldosterone', 'antidiuretic hormone'], solution: 'Renin starts the renin\u2013angiotensin cascade that raises blood pressure; erythropoietin instead stimulates red cell production.' },
+];
+
+const scienceHematology = [
+  { text: 'Which blood cell carries oxygen?', correct: 'Red blood cell (erythrocyte)', distractors: ['White blood cell', 'Platelet', 'Plasma cell'], solution: 'Erythrocytes contain hemoglobin, which binds and transports oxygen.' },
+  { text: 'Which nutrient is required for hemoglobin production?', correct: 'Iron', distractors: ['Calcium', 'Potassium', 'Iodine'], solution: 'Iron is a core component of hemoglobin; deficiency causes anemia.' },
+  { text: 'A low platelet count is called —', correct: 'thrombocytopenia', distractors: ['leukopenia', 'anemia', 'polycythemia'], solution: 'Thrombocytopenia is a low platelet count, which increases bleeding risk.' },
+  { text: 'Which blood type is the universal donor?', correct: 'O negative', distractors: ['AB positive', 'A positive', 'B negative'], solution: 'O negative cells lack A, B, and Rh antigens, so they can be given to most recipients.' },
+  { text: 'The main function of platelets is —', correct: 'blood clotting', distractors: ['oxygen transport', 'fighting infection', 'producing antibodies'], solution: 'Platelets aggregate and form plugs to stop bleeding and support clot formation.' },
+];
+
+const scienceHomeostasis = [
+  { text: 'Homeostasis is best defined as —', correct: 'maintenance of a stable internal environment', distractors: ['rapid change in body temperature', 'a response only to external stress', 'equalizing all body functions'], solution: 'Homeostasis keeps internal conditions such as temperature, pH, and glucose within a narrow range.' },
+  { text: 'Which mechanisms help cool the body when it overheats?', correct: 'Sweating and vasodilation', distractors: ['Shivering and vasoconstriction', 'Increased metabolic rate', 'Piloerection'], solution: 'Sweating cools by evaporation, and dilated skin vessels release heat.' },
+  { text: 'Which hormone lowers blood glucose?', correct: 'Insulin', distractors: ['Glucagon', 'Cortisol', 'Epinephrine'], solution: 'Insulin moves glucose into cells, lowering blood glucose; the others raise it.' },
+  { text: 'Which of the following is an example of negative feedback?', correct: 'Rising blood glucose triggers insulin release that lowers glucose back to normal.', distractors: ['Contractions during labor intensify until delivery', 'Platelet activation amplifies further clot formation', 'A positive result triggers more of the same response'], solution: 'Negative feedback reverses the change; labor and clotting are positive-feedback loops that amplify it.' },
+  { text: 'Body temperature is regulated by the —', correct: 'hypothalamus', distractors: ['cerebellum', 'medulla oblongata', 'pituitary gland'], solution: 'The hypothalamus is the body\u2019s thermostat, balancing heat loss and heat production.' },
+];
+
+const scienceRespiratory = [
+  { text: 'Gas exchange between air and blood occurs in the —', correct: 'alveoli', distractors: ['bronchi', 'trachea', 'pleura'], solution: 'Alveoli are thin-walled air sacs where oxygen and carbon dioxide diffuse across.' },
+  { text: 'Which gas is the main waste product exhaled by the lungs?', correct: 'Carbon dioxide', distractors: ['Oxygen', 'Nitrogen', 'Hydrogen'], solution: 'Carbon dioxide produced by cell metabolism is carried to the lungs and exhaled.' },
+  { text: 'The main muscle of respiration is the —', correct: 'diaphragm', distractors: ['pectoralis major', 'rectus abdominis', 'latissimus dorsi'], solution: 'The diaphragm contracts and flattens to expand the chest during inspiration.' },
+  { text: 'The normal adult respiratory rate is approximately —', correct: '12\u201320 breaths per minute', distractors: ['4\u20138 breaths per minute', '24\u201330 breaths per minute', '35\u201345 breaths per minute'], solution: 'Normal adult respiratory rate is about 12\u201320 breaths per minute.' },
+  { text: 'Which condition is characterized by air trapping and difficulty exhaling?', correct: 'Chronic obstructive pulmonary disease (COPD)', distractors: ['Atelectasis', 'Pleurisy', 'Pulmonary edema'], solution: 'In COPD, airway obstruction makes expiration difficult and traps air in the lungs.' },
+];
+
+const scienceSensory = [
+  { text: 'Which structure of the eye focuses light onto the retina?', correct: 'Lens', distractors: ['Cornea', 'Iris', 'Sclera'], solution: 'The lens changes shape to focus light; the cornea refracts it first, and the iris controls light entry.' },
+  { text: 'The sensory receptors for hearing are located in the —', correct: 'cochlea', distractors: ['semicircular canals', 'tympanic membrane', 'eustachian tube'], solution: 'Hair cells in the cochlea convert sound vibrations into nerve signals.' },
+  { text: 'Which cranial nerve carries visual information to the brain?', correct: 'Optic nerve (CN II)', distractors: ['Olfactory nerve (CN I)', 'Facial nerve (CN VII)', 'Vagus nerve (CN X)'], solution: 'The optic nerve transmits signals from the retina to the visual cortex.' },
+  { text: 'The sense of smell is mediated by the —', correct: 'olfactory nerve', distractors: ['optic nerve', 'trigeminal nerve', 'hypoglossal nerve'], solution: 'Olfactory receptors in the nasal cavity send signals through the olfactory nerve (CN I).' },
+  { text: 'Which part of the inner ear is responsible for balance?', correct: 'Vestibular apparatus (semicircular canals)', distractors: ['Cochlea', 'Tympanic membrane', 'Auditory ossicles'], solution: 'The semicircular canals and vestibule sense head position and movement for balance.' },
+];
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -645,6 +1193,35 @@ export const KAPLAN_MATH_TOPICS = [
   { id: 'conversions', label: 'Unit conversions', gen: genConversions },
   { id: 'algebra', label: 'Basic algebra', gen: genAlgebra },
   { id: 'wordProblems', label: 'Word problems and Data interpretation', gen: genWordProblems },
+];
+
+/** Reading topics map to the skills listed in the Kaplan app (READING section). */
+export const KAPLAN_READING_TOPICS = [
+  { id: 'readingPurpose', label: 'Identifying the purpose of a passage', gen: (c) => genReadingSkill('purpose', c) },
+  { id: 'readingDetails', label: 'Comprehending details', gen: (c) => genReadingSkill('detail', c) },
+  { id: 'readingInference', label: 'Drawing basic inferences', gen: (c) => genReadingSkill('inference', c) },
+  { id: 'readingLogic', label: 'Determining the logic of a passage', gen: (c) => genReadingSkill('logic', c) },
+];
+
+/** Writing topics map to the skills listed in the Kaplan app (WRITING section). */
+export const KAPLAN_WRITING_TOPICS = [
+  { id: 'writingMechanics', label: 'Assessing mechanics of writing', gen: genWritingMechanics },
+  { id: 'writingParagraphLogic', label: 'Assessing paragraph logic', gen: genWritingParagraphLogic },
+  { id: 'writingDevelopment', label: 'Assessing passage development', gen: genWritingPassageDevelopment },
+];
+
+/** Science topics map to the physiology areas listed in the Kaplan app (SCIENCE section). */
+export const KAPLAN_SCIENCE_TOPICS = [
+  { id: 'scienceCardiovascular', label: 'Cardiovascular system', gen: (c) => genScienceFromPool(scienceCardiovascular, c) },
+  { id: 'scienceElectrolytes', label: 'Electrolytes', gen: (c) => genScienceFromPool(scienceElectrolytes, c) },
+  { id: 'scienceGI', label: 'Gastrointestinal system', gen: (c) => genScienceFromPool(scienceGastrointestinal, c) },
+  { id: 'scienceImmune', label: 'Immune system', gen: (c) => genScienceFromPool(scienceImmune, c) },
+  { id: 'scienceNeurology', label: 'Neurology', gen: (c) => genScienceFromPool(scienceNeurology, c) },
+  { id: 'scienceRenal', label: 'Renal system', gen: (c) => genScienceFromPool(scienceRenal, c) },
+  { id: 'scienceHematology', label: 'Hematological system', gen: (c) => genScienceFromPool(scienceHematology, c) },
+  { id: 'scienceHomeostasis', label: 'Homeostasis', gen: (c) => genScienceFromPool(scienceHomeostasis, c) },
+  { id: 'scienceRespiratory', label: 'Respiratory system', gen: (c) => genScienceFromPool(scienceRespiratory, c) },
+  { id: 'scienceSensory', label: 'Sensory system', gen: (c) => genScienceFromPool(scienceSensory, c) },
 ];
 
 /**
@@ -667,4 +1244,48 @@ export function generateKaplanMathQuestions(topicIds = null, perTopic = 3) {
     }
   }
   return questions;
+}
+
+/** Shared driver for the non-math Kaplan generators (reading/writing/science). */
+function generateKaplanQuestionsByTopic(topicList, topicIds = null, perTopic = 3) {
+  const count = Math.max(1, Math.min(10, perTopic));
+  const ids = topicIds && topicIds.length
+    ? topicIds
+    : topicList.map((t) => t.id);
+  const questions = [];
+  for (const topic of topicList) {
+    if (!ids.includes(topic.id)) continue;
+    const raw = topic.gen(count);
+    for (const q of raw) {
+      questions.push(buildQuestion(q.category, q.text, q.correct, q.distractors, q.solution));
+    }
+  }
+  return questions;
+}
+
+/**
+ * Generate Kaplan-style READING comprehension questions (passage-based).
+ * @param {string[]} topicIds - subset of KAPLAN_READING_TOPICS ids (default: all)
+ * @param {number} perTopic - questions per topic (default 3)
+ */
+export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3) {
+  return generateKaplanQuestionsByTopic(KAPLAN_READING_TOPICS, topicIds, perTopic);
+}
+
+/**
+ * Generate Kaplan-style WRITING questions (mechanics, paragraph logic, passage development).
+ * @param {string[]} topicIds - subset of KAPLAN_WRITING_TOPICS ids (default: all)
+ * @param {number} perTopic - questions per topic (default 3)
+ */
+export function generateKaplanWritingQuestions(topicIds = null, perTopic = 3) {
+  return generateKaplanQuestionsByTopic(KAPLAN_WRITING_TOPICS, topicIds, perTopic);
+}
+
+/**
+ * Generate Kaplan-style SCIENCE questions (physiology topics).
+ * @param {string[]} topicIds - subset of KAPLAN_SCIENCE_TOPICS ids (default: all)
+ * @param {number} perTopic - questions per topic (default 2)
+ */
+export function generateKaplanScienceQuestions(topicIds = null, perTopic = 2) {
+  return generateKaplanQuestionsByTopic(KAPLAN_SCIENCE_TOPICS, topicIds, perTopic);
 }

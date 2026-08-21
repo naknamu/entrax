@@ -117,6 +117,79 @@ async function takeExamAndSubmit(page, examId) {
 }
 
 test.describe('Exam sections & math solutions', () => {
+  test('Generate questions for Reading and Science sections (fill empty slots)', async ({ page }) => {
+    await signInAsAdmin(page);
+    await page.goto('/create-exam.html?test=true');
+    await waitForFirebase(page);
+
+    // Load the Kaplan template first (4 sections, 91 empty slots)
+    await page.click('#kaplan-template-btn');
+    await page.waitForSelector('.confirm-ok', { timeout: 5000 });
+    await page.click('.confirm-ok');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.question-block')).toHaveCount(91);
+
+    // --- Reading tab ---
+    await page.click('.generate-tab[data-gen-tab="reading"]');
+    await expect(page.locator('.generate-tab.active')).toHaveText('Reading');
+    // 4 reading topics checked + recommended per-topic count 6 (4 x 6 = 24)
+    await expect(page.locator('#generate-topics input[type="checkbox"]:checked')).toHaveCount(4);
+    await expect(page.locator('#generate-count')).toHaveValue('6');
+    // Auto-selects the matching exam section (READING)
+    await expect(page.locator('#generate-section option:checked')).toHaveText('READING');
+
+    await page.click('#generate-add-btn');
+    await expect(page.locator('#generate-status')).toContainText('Added 24 generated Reading questions');
+    await expect(page.locator('#generate-status')).toContainText('filled 22 empty slots in READING');
+
+    // 24 of 91 slots filled + 2 appended => 93 blocks; READING badge = 24 questions
+    await expect(page.locator('.question-block')).toHaveCount(93);
+    await expect(page.locator('.section-row:has(.section-title-input[value="READING"]) .section-count-badge')).toHaveText('24 questions');
+
+    // Generated reading blocks have text, category, and a solution
+    const readingState = await page.evaluate(() => {
+      const blocks = [...document.querySelectorAll('.question-block')].filter((b) => {
+        const sel = b.querySelector('select[name$="[sectionId]"]');
+        return sel && sel.options[sel.selectedIndex].textContent.trim() === 'READING';
+      });
+      const first = blocks[0];
+      return {
+        count: blocks.length,
+        firstTextLen: first.querySelector('textarea[name$="[text]"]').value.trim().length,
+        category: first.querySelector('input[name$="[category]"]').value,
+        hasSolution: first.querySelector('textarea[name$="[solution]"]').value.trim().length > 0,
+        emptyLeft: blocks.filter((b) => !b.querySelector('textarea[name$="[text]"]').value.trim()).length
+      };
+    });
+    expect(readingState.count).toBe(24);
+    expect(readingState.firstTextLen).toBeGreaterThan(40); // passage embedded
+    expect(readingState.category).toBe('Reading');
+    expect(readingState.hasSolution).toBe(true);
+    expect(readingState.emptyLeft).toBe(0);
+
+    // --- Science tab ---
+    await page.click('.generate-tab[data-gen-tab="science"]');
+    await expect(page.locator('#generate-topics input[type="checkbox"]:checked')).toHaveCount(10);
+    await expect(page.locator('#generate-count')).toHaveValue('2');
+    await expect(page.locator('#generate-section option:checked')).toHaveText('SCIENCE');
+
+    await page.click('#generate-add-btn');
+    await expect(page.locator('#generate-status')).toContainText('Added 20 generated Science questions');
+    await expect(page.locator('#generate-status')).toContainText('filled 20 empty slots in SCIENCE');
+    await expect(page.locator('.section-row:has(.section-title-input[value="SCIENCE"]) .section-count-badge')).toHaveText('20 questions');
+
+    const scienceState = await page.evaluate(() => {
+      const blocks = [...document.querySelectorAll('.question-block')].filter((b) => {
+        const sel = b.querySelector('select[name$="[sectionId]"]');
+        return sel && sel.options[sel.selectedIndex].textContent.trim() === 'SCIENCE';
+      });
+      const allFilled = blocks.every((b) => b.querySelector('textarea[name$="[text]"]').value.trim());
+      const allSolved = blocks.every((b) => b.querySelector('textarea[name$="[solution]"]').value.trim());
+      return { count: blocks.length, allFilled, allSolved };
+    });
+    expect(scienceState).toEqual({ count: 20, allFilled: true, allSolved: true });
+  });
+
   test('Load Kaplan template scaffolds 4 sections, 91 questions, 165 minutes', async ({ page }) => {
     await signInAsAdmin(page);
     await page.goto('/create-exam.html?test=true');
