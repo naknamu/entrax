@@ -117,6 +117,55 @@ async function takeExamAndSubmit(page, examId) {
 }
 
 test.describe('Exam sections & math solutions', () => {
+  test('Load Kaplan template scaffolds 4 sections, 91 questions, 165 minutes', async ({ page }) => {
+    await signInAsAdmin(page);
+    await page.goto('/create-exam.html?test=true');
+    await waitForFirebase(page);
+
+    await page.click('#kaplan-template-btn');
+    // Confirm the replace-current-content modal
+    await page.waitForSelector('.confirm-ok', { timeout: 5000 });
+    await page.click('.confirm-ok');
+    await page.waitForTimeout(500);
+
+    // Official 165-minute time limit
+    await expect(page.locator('#timeLimitMinutes')).toHaveValue('165');
+
+    // 4 official sections in order
+    await expect(page.locator('.section-row')).toHaveCount(4);
+    const titles = await page.locator('.section-title-input').evaluateAll(els => els.map(e => e.value));
+    expect(titles).toEqual(['READING', 'MATH', 'WRITING', 'SCIENCE']);
+
+    // Question counts per section: 22/28/21/20
+    await expect(page.locator('.section-count-badge')).toHaveText(['22 questions', '28 questions', '21 questions', '20 questions']);
+
+    // 91 question slots total
+    await expect(page.locator('.question-block')).toHaveCount(91);
+
+    // Every slot is assigned to its section (official distribution)
+    const dist = await page.evaluate(() => {
+      const counts = { READING: 0, MATH: 0, WRITING: 0, SCIENCE: 0 };
+      document.querySelectorAll('.question-block').forEach(block => {
+        const sel = block.querySelector('select[name$="[sectionId]"]');
+        const label = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent.trim() : '';
+        if (counts[label] !== undefined) counts[label]++;
+      });
+      return counts;
+    });
+    expect(dist).toEqual({ READING: 22, MATH: 28, WRITING: 21, SCIENCE: 20 });
+
+    // Slots carry the section's category
+    const mathCategories = await page.evaluate(() => {
+      const blocks = [...document.querySelectorAll('.question-block')];
+      const math = blocks.filter(b => {
+        const sel = b.querySelector('select[name$="[sectionId]"]');
+        return sel && sel.options[sel.selectedIndex].textContent.trim() === 'MATH';
+      });
+      return math.map(b => b.querySelector('input[name$="[category]"]').value);
+    });
+    expect(mathCategories.every(c => c === 'MATH')).toBe(true);
+  });
+
   test('Create sectioned exam → sections shown → solutions on results', async ({ page }) => {
     await signInAsAdmin(page);
     // Tablet viewport so the question-nav sidebar (with section groups) is visible
