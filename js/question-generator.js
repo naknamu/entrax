@@ -634,8 +634,11 @@ function genWordProblems(count) {
 
 // ---------------------------------------------------------------------------
 // READING — passage-based comprehension (Kaplan: 22 questions, 45 min).
-// Skills: purpose, details, inferences, passage logic. Each passage carries
-// one question per skill; the passage text is embedded with the question.
+// Skills follow Week 1 of the vault reading-and-writing study plan and the
+// kaplan-questions-guideline.txt reference: main idea & topic (D1),
+// supporting details (D2), inferences (D3), purpose & point of view (D4),
+// passage organization (D5), passage logic (D6). Each passage carries one
+// question per skill; the passage text is embedded with the question.
 // ---------------------------------------------------------------------------
 
 const READING_PASSAGES = [
@@ -671,6 +674,27 @@ const READING_PASSAGES = [
         distractors: ['Pain scales vary from one unit to another', 'Some patients decline pain medication', 'Documentation takes additional time'],
         solution: 'A statement linking prompt reassessment to better safety outcomes supports the policy the passage defends.',
       },
+      {
+        skill: 'mainIdea',
+        text: 'What is the main idea of the passage?',
+        correct: 'Prompt pain reassessment improves patient outcomes, so the unit made it a requirement.',
+        distractors: ['Pain medication should be given every thirty minutes.', 'Pain scales are too unreliable to use at night.', 'Documentation is optional for stable patients.'],
+        solution: 'The passage explains why the unit changed the policy: promptly reassessed patients reported better pain control and needed fewer rescue doses.',
+      },
+      {
+        skill: 'organization',
+        text: 'The information in the passage is organized mainly as —',
+        correct: 'cause and effect',
+        distractors: ['chronological order', 'compare and contrast', 'general to specific'],
+        solution: 'The passage presents the policy change and then explains the study findings that led to it, a cause-and-effect structure.',
+      },
+      {
+        skill: 'pov',
+        text: 'The author\u2019s tone in the passage is best described as —',
+        correct: 'neutral and objective',
+        distractors: ['angry and critical', 'humorous and lighthearted', 'worried and alarmed'],
+        solution: 'The author reports the policy change and the evidence behind it without praise or criticism, so the tone is neutral and objective.',
+      },
     ],
   },
   {
@@ -704,6 +728,27 @@ const READING_PASSAGES = [
         correct: 'With consistent feedback, compliance gaps can be closed and infections reduced.',
         distractors: ['Most infections occur in the community.', 'Audits are expensive to perform.', 'Soap should be replaced entirely by alcohol rubs.'],
         solution: 'A strong conclusion ties the monitoring strategy back to the passage\u2019s goal of preventing infections.',
+      },
+      {
+        skill: 'mainIdea',
+        text: 'Which statement best summarizes the passage?',
+        correct: 'Hand hygiene is vital, and ongoing monitoring helps close compliance gaps.',
+        distractors: ['Hand hygiene is only necessary after glove removal.', 'Soap should be replaced entirely with alcohol rubs.', 'Infections cannot be prevented in hospitals.'],
+        solution: 'The passage states that hand hygiene is the single most effective measure and describes how monitoring and feedback improve compliance.',
+      },
+      {
+        skill: 'organization',
+        text: 'The passage is organized mainly as —',
+        correct: 'problem and solution',
+        distractors: ['compare and contrast', 'chronological order', 'cause and effect'],
+        solution: 'The passage identifies a problem (hand hygiene opportunities still missed) and then describes the solution (unannounced observations and unit-level feedback).',
+      },
+      {
+        skill: 'pov',
+        text: 'The author most likely believes that compliance gaps —',
+        correct: 'can be reduced with consistent monitoring and feedback',
+        distractors: ['will never change despite any effort', 'are acceptable because infections are rare', 'can be fixed by replacing hand washing with gloves'],
+        solution: 'The passage presents monitoring and feedback as the response to missed opportunities, so the author believes the gaps can be reduced.',
       },
     ],
   },
@@ -739,6 +784,27 @@ const READING_PASSAGES = [
         distractors: ['Most patients take fewer than three medications.', 'New computers were installed in the pharmacy.', 'Medication errors rarely cause patient harm.'],
         solution: 'A statistic showing that reconciliation prevents errors directly supports the passage\u2019s claim about reducing risk.',
       },
+      {
+        skill: 'mainIdea',
+        text: 'The main idea of the passage is that —',
+        correct: 'comparing medication lists and reviewing them with the patient prevents harmful errors',
+        distractors: ['pharmacies should fill all prescriptions on admission', 'medication errors are rare in hospitals', 'patients should bring no medications from home'],
+        solution: 'Each sentence supports the point that reconciliation catches discrepancies and reduces the risk of harmful errors.',
+      },
+      {
+        skill: 'organization',
+        text: 'How is the information in the passage organized?',
+        correct: 'from a general definition to specific examples and a specific action',
+        distractors: ['chronological order of a hospital admission', 'compare and contrast of two medications', 'a series of questions and answers'],
+        solution: 'The passage opens with a definition of reconciliation, gives examples of discrepancies, and ends with the specific review step.',
+      },
+      {
+        skill: 'pov',
+        text: 'The author would most likely agree that medication reconciliation —',
+        correct: 'is a valuable step in preventing medication errors',
+        distractors: ['adds unnecessary work for nurses', 'should be performed only at discharge', 'is the sole responsibility of the pharmacy'],
+        solution: 'The passage says that reviewing the list \u201creduces the risk of harmful errors,\u201d so the author values reconciliation as an error-prevention step.',
+      },
     ],
   },
   {
@@ -772,6 +838,27 @@ const READING_PASSAGES = [
         correct: 'Gradual activity can overcome patients\u2019 reluctance.',
         distractors: ['Surgery should be avoided.', 'Pain medication is unnecessary.', 'Mobilization should wait until discharge.'],
         solution: 'Small goals address the fatigue and fear that keep patients in bed, so they support gradual, achievable activity.',
+      },
+      {
+        skill: 'mainIdea',
+        text: 'What is the author mainly trying to tell the reader?',
+        correct: 'Early mobilization benefits patients, and nurses can help patients overcome barriers to it.',
+        distractors: ['Patients should not be moved after surgery.', 'Surgery causes more complications than it prevents.', 'Pain medication should be given only after activity.'],
+        solution: 'The passage presents the benefits of early mobilization and then explains how nurses can help patients overcome fatigue and fear.',
+      },
+      {
+        skill: 'organization',
+        text: 'The passage is organized mainly as —',
+        correct: 'problem and solution',
+        distractors: ['compare and contrast', 'a sequence of events over time', 'chronological order'],
+        solution: 'The passage describes the problem (patients staying in bed because of fatigue or fear) and the solution (small goals and pain medication before activity).',
+      },
+      {
+        skill: 'pov',
+        text: 'The author\u2019s attitude toward early mobilization is best described as —',
+        correct: 'supportive and encouraging',
+        distractors: ['skeptical and doubtful', 'indifferent and neutral', 'opposed and cautious'],
+        solution: 'The author describes the benefits and practical ways nurses can help, which shows a supportive attitude.',
       },
     ],
   },
@@ -807,6 +894,27 @@ const READING_PASSAGES = [
         distractors: ['Most patients dislike needles.', 'Insulin was discovered in 1921.', 'Hospital food is often criticized.'],
         solution: 'A general statement about monitoring\u2019s importance sets up the teaching example that follows.',
       },
+      {
+        skill: 'mainIdea',
+        text: 'Which statement best expresses the main idea of the passage?',
+        correct: 'Consistent glucose monitoring and logging help patients with diabetes manage their condition.',
+        distractors: ['Blood glucose should be checked only at bedtime.', 'Insulin cures type 2 diabetes.', 'Exercise has no effect on glucose levels.'],
+        solution: 'The passage explains how monitoring and a log help the patient recognize patterns and adjust routines.',
+      },
+      {
+        skill: 'organization',
+        text: 'The passage describes the monitoring routine mainly as —',
+        correct: 'a sequence of steps that repeats daily',
+        distractors: ['a compare-and-contrast of two medications', 'a problem followed by one solution', 'a chronological history of diabetes care'],
+        solution: 'The passage lists the steps \u2014 check before meals and at bedtime, track results in a log, recognize patterns, adjust routines \u2014 a repeating sequence.',
+      },
+      {
+        skill: 'pov',
+        text: 'The author\u2019s tone in the passage is best described as —',
+        correct: 'informative and encouraging',
+        distractors: ['critical of the patient', 'alarmist and frightening', 'sarcastic and dismissive'],
+        solution: 'The author explains monitoring neutrally and notes that patients who log results are better able to adjust routines, an encouraging tone.',
+      },
     ],
   },
   {
@@ -840,6 +948,27 @@ const READING_PASSAGES = [
         correct: 'Delegation is appropriate only when the team member has the training and scope to perform the task.',
         distractors: ['Delegation always reduces the nurse\u2019s workload.', 'Team members should never ask questions.', 'All tasks can be safely delegated.'],
         solution: 'Clarifying that competence and scope must match the task supports the requirement to verify competence.',
+      },
+      {
+        skill: 'mainIdea',
+        text: 'What is the main idea of the passage?',
+        correct: 'Delegation works only when the task fits the team member\u2019s competence and the nurse keeps accountability.',
+        distractors: ['Nurses should never delegate any task.', 'Delegation removes all responsibility from the nurse.', 'All simple tasks can be delegated without supervision.'],
+        solution: 'The passage defines delegation and stresses verifying competence and retaining accountability, which is its main point.',
+      },
+      {
+        skill: 'organization',
+        text: 'The passage is organized mainly by —',
+        correct: 'contrasting tasks that may be delegated with tasks that may not',
+        distractors: ['chronological order of a work shift', 'a cause-and-effect chain', 'a comparison of two nurses'],
+        solution: 'The passage contrasts simple, stable tasks with tasks requiring clinical judgment, then explains the delegating nurse\u2019s duties.',
+      },
+      {
+        skill: 'pov',
+        text: 'Which statement best describes the author\u2019s view of delegation?',
+        correct: 'It is useful when done correctly and safely',
+        distractors: ['It is never appropriate in nursing', 'It means the nurse is no longer accountable', 'It should be used for every patient task'],
+        solution: 'The author explains when delegation is appropriate and what it requires, showing it is useful when done correctly and safely.',
       },
     ],
   },
@@ -925,6 +1054,42 @@ function genWritingMechanics(count) {
       correct: 'The nurse asked the patient how he was feeling after the procedure.',
       distractors: ['The nurse asked the patient how was he feeling after the procedure.', 'The nurse ask the patient how he was feeling after the procedure.', 'The nurse asked the patient how he were feeling after the procedure.'],
       solution: 'An indirect question uses statement word order: \u201chow he was feeling,\u201d not \u201chow was he feeling.\u201d',
+    },
+    {
+      stem: 'Because the patient\u2019s blood pressure dropped suddenly. The nurse called the rapid response team.',
+      correct: 'Because the patient\u2019s blood pressure dropped suddenly, the nurse called the rapid response team.',
+      distractors: ['Because the patient\u2019s blood pressure dropped suddenly the nurse called the rapid response team.', 'Because the patient\u2019s blood pressure dropped suddenly, and the nurse called the rapid response team.', 'The patient\u2019s blood pressure dropped suddenly, because the nurse called the rapid response team.'],
+      solution: 'The first group of words is a fragment \u2014 a subordinate clause punctuated as a sentence. Joining it to the main clause with a comma fixes it.',
+    },
+    {
+      stem: 'The medication was due at noon the nurse administered it at 12:15.',
+      correct: 'The medication was due at noon, so the nurse administered it at 12:15.',
+      distractors: ['The medication was due at noon the nurse administered it at 12:15.', 'The medication was due at noon, the nurse administered it at 12:15.', 'The medication was due at noon the nurse administered, it at 12:15.'],
+      solution: 'Two complete sentences run together with no punctuation form a run-on; joining them with a comma and the conjunction \u201cso\u201d fixes it.',
+    },
+    {
+      stem: 'The nurse checked the IV site, the dressing and the drainage bag.',
+      correct: 'The nurse checked the IV site, the dressing, and the drainage bag.',
+      distractors: ['The nurse checked the IV site the dressing and the drainage bag.', 'The nurse checked the IV site, the dressing and the drainage, bag.', 'The nurse checked the IV site, the dressing and, the drainage bag.'],
+      solution: 'Items in a series of three or more are separated by commas, including before \u201cand\u201d (the serial comma).',
+    },
+    {
+      stem: 'After the procedure the patient was moved to the recovery room.',
+      correct: 'After the procedure, the patient was moved to the recovery room.',
+      distractors: ['After the procedure the patient, was moved to the recovery room.', 'After, the procedure the patient was moved to the recovery room.', 'After the procedure, the patient, was moved to the recovery room.'],
+      solution: 'An introductory phrase such as \u201cAfter the procedure\u201d is set off from the main clause with a comma.',
+    },
+    {
+      stem: 'The first dose was given at 8 a.m. the second dose was scheduled for 8 p.m.',
+      correct: 'The first dose was given at 8 a.m.; the second dose was scheduled for 8 p.m.',
+      distractors: ['The first dose was given at 8 a.m., the second dose was scheduled for 8 p.m.', 'The first dose was given at 8 a.m. the second dose was scheduled for 8 p.m.', 'The first dose was given at 8 a.m. and, the second dose was scheduled for 8 p.m.'],
+      solution: 'Two closely related complete sentences can be joined with a semicolon; a comma alone would create a comma splice.',
+    },
+    {
+      stem: 'The admission kit contained the following items a gown, toiletries, and a patient ID band.',
+      correct: 'The admission kit contained the following items: a gown, toiletries, and a patient ID band.',
+      distractors: ['The admission kit contained the following items; a gown, toiletries, and a patient ID band.', 'The admission kit contained the following items a gown, toiletries, and a patient ID band.', 'The admission kit contained the following items, a gown, toiletries, and a patient ID band.'],
+      solution: 'A colon introduces a list after a complete sentence such as \u201cthe following items.\u201d',
     },
   ];
   const out = [];
@@ -1033,6 +1198,74 @@ function genWritingParagraphLogic(count) {
   return out;
 }
 
+/** Transitions: choose the word that best links two sentences (Week 1 Day 5/6). */
+function genWritingTransitions(count) {
+  const items = [
+    {
+      context: 'Patients are told to report chest pain immediately. _____ , some people wait to see whether the pain passes before calling for help.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'However',
+      distractors: ['Therefore', 'For example', 'Consequently'],
+      solution: 'The second sentence contrasts with the first, so a contrast word such as \u201cHowever\u201d is needed.',
+    },
+    {
+      context: 'The wound showed no signs of healing after two weeks. _____, the care team ordered a wound culture.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'Therefore',
+      distractors: ['However', 'For example', 'Meanwhile'],
+      solution: 'The second sentence states a result of the first, so a consequence word such as \u201cTherefore\u201d is needed.',
+    },
+    {
+      context: 'The nurse explained each step of the procedure. _____, she demonstrated the steps on a mannequin.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'Next',
+      distractors: ['However', 'Similarly', 'As a result'],
+      solution: 'The second sentence continues the sequence, so a sequencing word such as \u201cNext\u201d is needed.',
+    },
+    {
+      context: 'Hand washing removes most transient bacteria from the skin. _____, alcohol-based rubs protect when hands are not visibly soiled.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'Similarly',
+      distractors: ['However', 'Therefore', 'Finally'],
+      solution: 'The second sentence makes a comparable point about another hygiene method, so \u201cSimilarly\u201d is needed.',
+    },
+    {
+      context: 'The patient\u2019s potassium level was dangerously low. _____, the physician ordered an IV potassium infusion.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'Consequently',
+      distractors: ['Nevertheless', 'For example', 'Meanwhile'],
+      solution: 'The low potassium caused the order, so a result word such as \u201cConsequently\u201d is needed.',
+    },
+    {
+      context: 'Vital signs were checked on admission, again at 4 p.m., and once more at 8 p.m. _____, the nurse recorded the last set on the flow sheet.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'Finally',
+      distractors: ['However', 'In contrast', 'For example'],
+      solution: 'The sentence marks the end of a sequence of checks, so \u201cFinally\u201d is needed.',
+    },
+    {
+      context: 'The patient tolerated the first dose of the medication well. _____, the second dose caused nausea.',
+      ask: 'Which transition word best fills the blank?',
+      correct: 'However',
+      distractors: ['Therefore', 'Furthermore', 'For example'],
+      solution: 'The second sentence contrasts with the first, so a contrast word such as \u201cHowever\u201d is needed.',
+    },
+  ];
+  const out = [];
+  const shuffled = shuffle(items);
+  for (let n = 0; n < count; n++) {
+    const it = shuffled[n % shuffled.length];
+    out.push({
+      text: `${it.context}\n\n${it.ask}`,
+      category: 'Writing',
+      correct: it.correct,
+      distractors: it.distractors,
+      solution: it.solution,
+    });
+  }
+  return out;
+}
+
 /** Passage development: pick the sentence that best supports the paragraph. */
 function genWritingPassageDevelopment(count) {
   const items = [
@@ -1063,6 +1296,27 @@ function genWritingPassageDevelopment(count) {
       correct: 'Patients with well-managed pain are often discharged sooner.',
       distractors: ['Pain scales use numbers from zero to ten.', 'Some patients close their eyes when in pain.', 'Nurses chart pain at each shift.'],
       solution: 'A statement linking pain management to faster recovery strengthens the passage\u2019s main idea.',
+    },
+    {
+      text: 'Nurses often check a patient\u2019s temperature, pulse, and blood pressure on admission. These first measurements provide a baseline for comparing later readings.',
+      ask: 'Which sentence would provide the best introduction to this paragraph?',
+      correct: 'Vital signs taken on admission give a snapshot of a patient\u2019s condition.',
+      distractors: ['The hospital cafeteria closes at 7 p.m.', 'Most thermometers are electronic now.', 'Patients may feel nervous on the first day.'],
+      solution: 'A general statement about why admission vital signs matter sets up the specific points that follow.',
+    },
+    {
+      text: 'Washing hands with soap and water removes dirt and most germs. Alcohol-based rubs are convenient when hands are not visibly soiled. Gloves provide a barrier when touching body fluids.',
+      ask: 'Which sentence would provide the most effective conclusion?',
+      correct: 'Using these measures consistently greatly reduces the spread of infection.',
+      distractors: ['Some sinks have automatic faucets.', 'Soap comes in liquid and bar forms.', 'Gloves are made of latex or vinyl.'],
+      solution: 'A concluding sentence summarizes the three hygiene measures and states their shared benefit.',
+    },
+    {
+      text: 'The nurse prepared the patient for a blood transfusion. First, she verified the patient\u2019s identity against the order. Then she checked the blood product label with a second nurse. The hospital\u2019s gift shop closes at 6 p.m.',
+      ask: 'Which sentence should be removed because it does not support the paragraph?',
+      correct: 'The hospital\u2019s gift shop closes at 6 p.m.',
+      distractors: ['The nurse prepared the patient for a blood transfusion.', 'First, she verified the patient\u2019s identity against the order.', 'Then she checked the blood product label with a second nurse.'],
+      solution: 'The gift shop detail is unrelated to the transfusion procedure and breaks the paragraph\u2019s focus.',
     },
   ];
   const out = [];
@@ -1195,17 +1449,21 @@ export const KAPLAN_MATH_TOPICS = [
   { id: 'wordProblems', label: 'Word problems and Data interpretation', gen: genWordProblems },
 ];
 
-/** Reading topics map to the skills listed in the Kaplan app (READING section). */
+/** Reading topics map to Week 1 of the vault study plan (Kaplan READING section, 22 questions). */
 export const KAPLAN_READING_TOPICS = [
-  { id: 'readingPurpose', label: 'Identifying the purpose of a passage', gen: (c) => genReadingSkill('purpose', c) },
-  { id: 'readingDetails', label: 'Comprehending details', gen: (c) => genReadingSkill('detail', c) },
+  { id: 'readingMainIdea', label: 'Main idea and topic', gen: (c) => genReadingSkill('mainIdea', c) },
+  { id: 'readingDetails', label: 'Supporting details', gen: (c) => genReadingSkill('detail', c) },
   { id: 'readingInference', label: 'Drawing basic inferences', gen: (c) => genReadingSkill('inference', c) },
+  { id: 'readingPurpose', label: 'Identifying the purpose of a passage', gen: (c) => genReadingSkill('purpose', c) },
+  { id: 'readingPOV', label: 'Point of view and tone', gen: (c) => genReadingSkill('pov', c) },
+  { id: 'readingOrganization', label: 'Passage organization', gen: (c) => genReadingSkill('organization', c) },
   { id: 'readingLogic', label: 'Determining the logic of a passage', gen: (c) => genReadingSkill('logic', c) },
 ];
 
-/** Writing topics map to the skills listed in the Kaplan app (WRITING section). */
+/** Writing topics map to the Kaplan app (WRITING section) plus Week 1 of the study plan. */
 export const KAPLAN_WRITING_TOPICS = [
   { id: 'writingMechanics', label: 'Assessing mechanics of writing', gen: genWritingMechanics },
+  { id: 'writingTransitions', label: 'Transitions and logical flow', gen: genWritingTransitions },
   { id: 'writingParagraphLogic', label: 'Assessing paragraph logic', gen: genWritingParagraphLogic },
   { id: 'writingDevelopment', label: 'Assessing passage development', gen: genWritingPassageDevelopment },
 ];

@@ -132,19 +132,19 @@ test.describe('Exam sections & math solutions', () => {
     // --- Reading tab ---
     await page.click('.generate-tab[data-gen-tab="reading"]');
     await expect(page.locator('.generate-tab.active')).toHaveText('Reading');
-    // 4 reading topics checked + recommended per-topic count 6 (4 x 6 = 24)
-    await expect(page.locator('#generate-topics input[type="checkbox"]:checked')).toHaveCount(4);
+    // 7 reading topics checked (Week 1 skills) + recommended per-topic count 6 (7 x 6 = 42)
+    await expect(page.locator('#generate-topics input[type="checkbox"]:checked')).toHaveCount(7);
     await expect(page.locator('#generate-count')).toHaveValue('6');
     // Auto-selects the matching exam section (READING)
     await expect(page.locator('#generate-section option:checked')).toHaveText('READING');
 
     await page.click('#generate-add-btn');
-    await expect(page.locator('#generate-status')).toContainText('Added 24 generated Reading questions');
+    await expect(page.locator('#generate-status')).toContainText('Added 42 generated Reading questions');
     await expect(page.locator('#generate-status')).toContainText('filled 22 empty slots in READING');
 
-    // 24 of 91 slots filled + 2 appended => 93 blocks; READING badge = 24 questions
-    await expect(page.locator('.question-block')).toHaveCount(93);
-    await expect(page.locator('.section-row:has(.section-title-input[value="READING"]) .section-count-badge')).toHaveText('24 questions');
+    // 42 of 91 slots filled + 20 appended => 111 blocks; READING badge = 42 questions
+    await expect(page.locator('.question-block')).toHaveCount(111);
+    await expect(page.locator('.section-row:has(.section-title-input[value="READING"]) .section-count-badge')).toHaveText('42 questions');
 
     // Generated reading blocks have text, category, and a solution
     const readingState = await page.evaluate(() => {
@@ -161,7 +161,7 @@ test.describe('Exam sections & math solutions', () => {
         emptyLeft: blocks.filter((b) => !b.querySelector('textarea[name$="[text]"]').value.trim()).length
       };
     });
-    expect(readingState.count).toBe(24);
+    expect(readingState.count).toBe(42);
     expect(readingState.firstTextLen).toBeGreaterThan(40); // passage embedded
     expect(readingState.category).toBe('Reading');
     expect(readingState.hasSolution).toBe(true);
