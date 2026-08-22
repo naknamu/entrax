@@ -503,11 +503,17 @@
       const examSections = (exam.sections || []).filter(s => s && s.id);
       const sectionIds = new Set(examSections.map(s => s.id));
 
-      // Group questions by section (section order, then unassigned at the end)
-      const groups = new Map(); // key -> html string
+      // Group questions by section (section order, then unassigned at the end).
+      // Within a section, questions sharing a passage sit under ONE passage
+      // block instead of repeating the passage per question.
+      const groups = new Map(); // key -> Map<passageKey, { passage, items: [] }>
       questions.forEach((question, qIndex) => {
         const key = question.sectionId && sectionIds.has(question.sectionId) ? question.sectionId : '__general__';
-        if (!groups.has(key)) groups.set(key, '');
+        if (!groups.has(key)) groups.set(key, new Map());
+        const passageMap = groups.get(key);
+        const passage = (question.passage || '').trim();
+        const pKey = passage ? `passage:${passage}` : `inline:${qIndex}`;
+        if (!passageMap.has(pKey)) passageMap.set(pKey, { passage, items: [] });
 
         const studentAnswer = answers.find(a => a.questionId === question.id);
         const selectedIndex = studentAnswer?.selectedIndex ?? -1;
@@ -569,18 +575,24 @@
         }
 
         itemHtml += '</div></article>';
-        groups.set(key, groups.get(key) + itemHtml);
+        passageMap.get(pKey).items.push(itemHtml);
       });
+
+      const renderPassageGroups = (passageMap) => [...passageMap.values()].map((pg) => {
+        const passageHtml = pg.passage
+          ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${escapeHtml(pg.passage)}</div></div>`
+          : '';
+        return passageHtml + pg.items.join('');
+      }).join('');
 
       examSections.forEach(s => {
         if (groups.has(s.id)) {
-          html += `<h4 class="review-section-title">${escapeHtml(s.title)}</h4>${groups.get(s.id)}`;
+          html += `<h4 class="review-section-title">${escapeHtml(s.title)}</h4>${renderPassageGroups(groups.get(s.id))}`;
         }
       });
-      if (groups.has('__general__') && examSections.length > 0) {
-        html += `<h4 class="review-section-title">General</h4>${groups.get('__general__')}`;
-      } else if (groups.has('__general__')) {
-        html += groups.get('__general__');
+      if (groups.has('__general__')) {
+        const body = renderPassageGroups(groups.get('__general__'));
+        html += (examSections.length > 0 ? '<h4 class="review-section-title">General</h4>' : '') + body;
       }
 
       html += '</div>';

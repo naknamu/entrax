@@ -251,6 +251,11 @@
             <textarea id="question-text-0" name="questions[0][text]" class="input" rows="2" placeholder="Enter your question here..." required></textarea>
           </div>
           <div class="form-group">
+            <label class="label" for="question-passage-0">Passage (optional)</label>
+            <textarea id="question-passage-0" name="questions[0][passage]" class="input passage-input" rows="4" placeholder="For reading questions: the passage text (3-4 paragraphs). It is shown ONCE above all its questions in the exam."></textarea>
+            <div class="help-text">Questions that share the same passage appear under a single passage block in the exam and on the results page.</div>
+          </div>
+          <div class="form-group">
             <label class="label">Category / Tag (optional)</label>
             <input type="text" name="questions[0][category]" class="input category-input" placeholder="e.g., Math, Reading, Science" list="categories-list">
             <datalist id="categories-list"></datalist>
@@ -468,6 +473,8 @@
           if (i >= remaining.length) return;
           const q = remaining[i];
           block.querySelector('textarea[name$="[text]"]').value = q.text;
+          const passageInput = block.querySelector('textarea[name$="[passage]"]');
+          if (passageInput) passageInput.value = q.passage || '';
           const catInput = block.querySelector('input[name$="[category]"]');
           if (catInput) catInput.value = q.category || '';
           const solInput = block.querySelector('textarea[name$="[solution]"]');
@@ -903,6 +910,10 @@
       // Question text
       const textArea = clone.querySelector('textarea[name$="[text]"]');
       if (textArea) textArea.value = question.text || '';
+
+      // Passage (optional, reading questions)
+      const passageInput = clone.querySelector('textarea[name$="[passage]"]');
+      if (passageInput) passageInput.value = question.passage || '';
 
       // Category
       const categoryInput = clone.querySelector('input[name$="[category]"]');
@@ -1386,6 +1397,7 @@
       
       blocks.forEach((block, index) => {
         const text = block.querySelector('textarea[name$="[text]"]').value.trim();
+        const passage = block.querySelector('textarea[name$="[passage]"]')?.value.trim() || '';
         const category = block.querySelector('input[name$="[category]"]').value.trim();
         const solution = block.querySelector('textarea[name$="[solution]"]')?.value.trim() || '';
         const sectionId = block.querySelector('select[name$="[sectionId]"]')?.value || '';
@@ -1397,6 +1409,7 @@
         questions.push({
           id: generateId(),
           text,
+          ...(passage ? { passage } : {}),
           category: category || null,
           choices,
           correctIndex,

@@ -1809,6 +1809,33 @@ pre code {
   font-weight: var(--font-normal);
 }
 
+/* Passage panel: a reading passage rendered ONCE, above all its questions. */
+.passage-panel {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 10px;
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.passage-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.passage-text {
+  white-space: pre-wrap;
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+
+
 .choices-fieldset {
   border: none;
   padding: 0;

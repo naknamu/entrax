@@ -53,7 +53,8 @@ async function createSectionedExam(page) {
       choices: ['London', 'Berlin', 'Paris', 'Madrid'],
       correctIndex: 2,
       section: 'Reading',
-      solution: 'Paris is the capital of France.'
+      solution: 'Paris is the capital of France.',
+      passage: 'The honeybee is a small insect that lives in large colonies. Bees collect nectar from flowers and carry pollen from one bloom to another. This pollination helps many crops grow.'
     },
     {
       text: 'Who wrote "Romeo and Juliet"?',
@@ -61,7 +62,8 @@ async function createSectionedExam(page) {
       choices: ['Dickens', 'Shakespeare', 'Austen', 'Twain'],
       correctIndex: 1,
       section: 'Reading',
-      solution: 'William Shakespeare wrote Romeo and Juliet.'
+      solution: 'William Shakespeare wrote Romeo and Juliet.',
+      passage: 'The honeybee is a small insect that lives in large colonies. Bees collect nectar from flowers and carry pollen from one bloom to another. This pollination helps many crops grow.'
     }
   ];
 
@@ -74,6 +76,9 @@ async function createSectionedExam(page) {
     const block = page.locator('.question-block').nth(i);
 
     await block.locator('textarea[name$="[text]"]').fill(q.text);
+    if (q.passage) {
+      await block.locator('textarea[name$="[passage]"]').fill(q.passage);
+    }
     await block.locator('input[name$="[category]"]').fill(q.category);
     await block.locator('textarea[name$="[solution]"]').fill(q.solution);
     await block.locator('select[name$="[sectionId]"]').selectOption({ label: q.section });
@@ -146,7 +151,7 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('.question-block')).toHaveCount(111);
     await expect(page.locator('.section-row:has(.section-title-input[value="READING"]) .section-count-badge')).toHaveText('42 questions');
 
-    // Generated reading blocks have text, category, and a solution
+    // Generated reading blocks: question stem + SEPARATE passage field
     const readingState = await page.evaluate(() => {
       const blocks = [...document.querySelectorAll('.question-block')].filter((b) => {
         const sel = b.querySelector('select[name$="[sectionId]"]');
@@ -156,13 +161,15 @@ test.describe('Exam sections & math solutions', () => {
       return {
         count: blocks.length,
         firstTextLen: first.querySelector('textarea[name$="[text]"]').value.trim().length,
+        firstPassageLen: first.querySelector('textarea[name$="[passage]"]')?.value.trim().length || 0,
         category: first.querySelector('input[name$="[category]"]').value,
         hasSolution: first.querySelector('textarea[name$="[solution]"]').value.trim().length > 0,
         emptyLeft: blocks.filter((b) => !b.querySelector('textarea[name$="[text]"]').value.trim()).length
       };
     });
     expect(readingState.count).toBe(42);
-    expect(readingState.firstTextLen).toBeGreaterThan(40); // passage embedded
+    expect(readingState.firstTextLen).toBeGreaterThan(10); // question stem, not the passage
+    expect(readingState.firstPassageLen).toBeGreaterThan(40); // passage lives in its own field
     expect(readingState.category).toBe('Reading');
     expect(readingState.hasSolution).toBe(true);
     expect(readingState.emptyLeft).toBe(0);
@@ -264,6 +271,8 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('#question-section')).toBeVisible();
     await expect(page.locator('#question-section')).toHaveText('Math');
     await expect(page.locator('#exam-screen .solution-block')).toHaveCount(0);
+    // No passage on the Math question — panel stays hidden
+    await expect(page.locator('#question-passage')).toBeHidden();
 
     // Sidebar groups question numbers under section headings (Kaplan-style)
     await expect(page.locator('.nav-section-header')).toHaveText(['Math', 'Reading']);
@@ -274,6 +283,9 @@ test.describe('Exam sections & math solutions', () => {
     await page.click('#next-btn');
     await page.waitForTimeout(200);
     await expect(page.locator('#question-section')).toHaveText('Reading');
+    // Passage panel shown once above the reading questions (not embedded)
+    await expect(page.locator('#question-passage')).toBeVisible();
+    await expect(page.locator('#question-passage-text')).toContainText('The honeybee is a small insect');
 
     // Back to the first question, then answer everything
     await page.click('#prev-btn');
@@ -300,6 +312,10 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('.review-section-title')).toHaveText(['Math', 'Reading']);
     await expect(page.locator('.solution-toggle')).toHaveCount(4);
     await expect(page.locator('#solutions-controls')).toBeVisible();
+
+    // Shared reading passage appears ONCE in the review, followed by its questions
+    await expect(page.locator('#submission-screen .review-passage')).toHaveCount(1);
+    await expect(page.locator('#submission-screen .review-passage')).toContainText('The honeybee is a small insect');
 
     // Solutions are hidden until expanded
     await expect(page.locator('.solution-content >> nth=0')).toBeHidden();
@@ -334,6 +350,10 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('#detail-content')).toContainText('Answer Breakdown');
     await expect(page.locator('#detail-content .review-section-title')).toHaveText(['Math', 'Reading']);
     await expect(page.locator('#detail-content .solution-toggle')).toHaveCount(4);
+
+    // Shared reading passage shown once in the admin detail view too
+    await expect(page.locator('#detail-content .review-passage')).toHaveCount(1);
+    await expect(page.locator('#detail-content .review-passage')).toContainText('The honeybee is a small insect');
 
     // Expand a solution
     await page.locator('#detail-content .solution-toggle >> nth=0').click();

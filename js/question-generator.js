@@ -641,7 +641,8 @@ function genWordProblems(count) {
 // kaplan-questions-guideline.txt reference: main idea & topic (D1),
 // supporting details (D2), inferences (D3), purpose & point of view (D4),
 // passage organization (D5), passage logic (D6). Each passage carries one
-// question per skill; the passage text is embedded with the question.
+// question per skill; the passage is emitted once per question as a separate
+// `passage` field and rendered as one block followed by its questions.
 // ---------------------------------------------------------------------------
 
 const READING_PASSAGES = [
@@ -986,7 +987,8 @@ function genReadingSkill(skill, count) {
     const q = shuffled[n % shuffled.length];
     const passage = READING_PASSAGES.find(p => p.questions.includes(q));
     out.push({
-      text: `${passage.text}\n\n${q.text}`,
+      text: q.text,
+      passage: passage.text, // rendered once per passage group, not repeated per question
       category: 'Reading',
       correct: q.correct,
       distractors: q.distractors,
@@ -1518,7 +1520,11 @@ function generateKaplanQuestionsByTopic(topicList, topicIds = null, perTopic = 3
     if (!ids.includes(topic.id)) continue;
     const raw = topic.gen(count);
     for (const q of raw) {
-      questions.push(buildQuestion(q.category, q.text, q.correct, q.distractors, q.solution));
+      const built = buildQuestion(q.category, q.text, q.correct, q.distractors, q.solution);
+      // Reading questions carry a separate `passage` (shown once, then its
+      // questions) instead of embedding the passage inside the question text.
+      if (q.passage) built.passage = q.passage;
+      questions.push(built);
     }
   }
   return questions;

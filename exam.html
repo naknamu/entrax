@@ -134,6 +134,10 @@
         </header>
 
         <div class="question-content">
+          <div class="passage-panel" id="question-passage" hidden>
+            <div class="passage-label">Passage</div>
+            <div class="passage-text" id="question-passage-text"></div>
+          </div>
           <div class="question-text" id="question-text"></div>
           
           <fieldset class="choices-fieldset" id="choices-fieldset" aria-labelledby="choices-legend">
@@ -349,6 +353,8 @@
     const questionCategory = document.getElementById('question-category');
     const questionSection = document.getElementById('question-section');
     const questionText = document.getElementById('question-text');
+    const passagePanel = document.getElementById('question-passage');
+    const passageTextEl = document.getElementById('question-passage-text');
     const choicesGrid = document.getElementById('choices-grid');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
@@ -762,6 +768,15 @@
       }
       questionCategory.textContent = question.category || '';
       questionCategory.hidden = !question.category;
+
+      // Passage panel: shown once above the question for passage-based
+      // reading questions (the passage is a separate field, not embedded).
+      if (passagePanel && passageTextEl) {
+        const hasPassage = !!(question.passage && question.passage.trim());
+        passagePanel.hidden = !hasPassage;
+        if (hasPassage) passageTextEl.textContent = question.passage;
+      }
+
       questionText.innerHTML = escapeHtml(question.text);
 
       // Render choices
@@ -1093,7 +1108,9 @@
       if (!resultsReview || !answerBreakdown) return;
 
       const sectionIds = new Set(examSections.map(s => s.id));
-      const groups = new Map(); // key -> array of review item html + solution info
+      // key -> Map<passageKey, { passage, items: string[] }> so questions that
+      // share a passage render under ONE passage block instead of repeating it.
+      const groups = new Map();
       let hasSolutions = false;
 
       questionOrder.forEach((qIndex, displayIndex) => {
@@ -1174,8 +1191,12 @@
         `;
 
         const key = question.sectionId && sectionIds.has(question.sectionId) ? question.sectionId : '__general__';
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(itemHtml);
+        if (!groups.has(key)) groups.set(key, new Map());
+        const passageMap = groups.get(key);
+        const passage = (question.passage || '').trim();
+        const pKey = passage ? `passage:${passage}` : `inline:${displayIndex}`;
+        if (!passageMap.has(pKey)) passageMap.set(pKey, { passage, items: [] });
+        passageMap.get(pKey).items.push(itemHtml);
       });
 
       const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
@@ -1186,7 +1207,14 @@
         const header = section
           ? `<h4 class="review-section-title">${escapeHtml(section.title)}</h4>`
           : (examSections.length > 0 ? '<h4 class="review-section-title">General</h4>' : '');
-        return `${header}${groups.get(key).join('')}`;
+        const passageGroups = [...groups.get(key).values()];
+        const body = passageGroups.map((pg) => {
+          const passageHtml = pg.passage
+            ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${escapeHtml(pg.passage)}</div></div>`
+            : '';
+          return passageHtml + pg.items.join('');
+        }).join('');
+        return `${header}${body}`;
       }).join('');
 
       answerBreakdown.innerHTML = reviewHtml || '<p class="text-muted">No questions available.</p>';
