@@ -507,6 +507,15 @@
       // Within a section, questions sharing a passage sit under ONE passage
       // block instead of repeating the passage per question.
       const groups = new Map(); // key -> Map<passageKey, { passage, items: [] }>
+
+      /** Render a passage with numbered paragraphs (vault Reading guidelines). */
+      function renderPassageHtml(passage) {
+        const paras = (passage || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+        return paras.map((p, i) =>
+          `<p class="passage-paragraph"><span class="passage-para-num">${i + 1}</span>${escapeHtml(p)}</p>`
+        ).join('');
+      }
+
       questions.forEach((question, qIndex) => {
         const key = question.sectionId && sectionIds.has(question.sectionId) ? question.sectionId : '__general__';
         if (!groups.has(key)) groups.set(key, new Map());
@@ -580,7 +589,7 @@
 
       const renderPassageGroups = (passageMap) => [...passageMap.values()].map((pg) => {
         const passageHtml = pg.passage
-          ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${escapeHtml(pg.passage)}</div></div>`
+          ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${renderPassageHtml(pg.passage)}</div></div>`
           : '';
         return passageHtml + pg.items.join('');
       }).join('');

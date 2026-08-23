@@ -1835,6 +1835,31 @@ pre code {
   font-size: var(--text-base);
 }
 
+.passage-paragraph {
+  margin: 0 0 var(--space-3);
+}
+
+.passage-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.passage-para-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  margin-right: var(--space-2);
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  user-select: none;
+}
+
 
 .choices-fieldset {
   border: none;

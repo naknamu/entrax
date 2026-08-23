@@ -760,6 +760,14 @@
       }
     }
 
+    /** Render a passage with numbered paragraphs (vault Reading guidelines). */
+    function renderPassageHtml(passage) {
+      const paras = (passage || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+      return paras.map((p, i) =>
+        `<p class="passage-paragraph"><span class="passage-para-num">${i + 1}</span>${escapeHtml(p)}</p>`
+      ).join('');
+    }
+
     // Render Question
     function renderQuestion() {
       const qIndex = questionOrder[currentQuestionIndex];
@@ -786,7 +794,7 @@
         const prevPassage = prevQuestion ? (prevQuestion.passage || '').trim() : '';
         const showPassage = !!passage && passage !== prevPassage;
         passagePanel.hidden = !showPassage;
-        if (showPassage) passageTextEl.textContent = passage;
+        if (showPassage) passageTextEl.innerHTML = renderPassageHtml(passage);
       }
 
       questionText.innerHTML = escapeHtml(question.text);
@@ -1222,7 +1230,7 @@
         const passageGroups = [...groups.get(key).values()];
         const body = passageGroups.map((pg) => {
           const passageHtml = pg.passage
-            ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${escapeHtml(pg.passage)}</div></div>`
+            ? `<div class="passage-panel review-passage"><div class="passage-label">Passage</div><div class="passage-text">${renderPassageHtml(pg.passage)}</div></div>`
             : '';
           return passageHtml + pg.items.join('');
         }).join('');
