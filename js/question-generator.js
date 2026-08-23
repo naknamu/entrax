@@ -1001,108 +1001,138 @@ function genReadingSkill(skill, count) {
 // ---------------------------------------------------------------------------
 // WRITING — passage development, paragraph logic, mechanics
 // (Kaplan: 21 questions, 45 min, based on nine short passages).
+// Source of truth: Awesome_vault/Plan/Writing-Section-Questions-Guidelines.txt
+// and kaplan_writing_question_templates.json. All content uses general-
+// interest topics — NOT nursing/medical/healthcare fields. Passages carry
+// numbered sentences so questions can reference specific sentence numbers;
+// questions are 4-option multiple choice (A-D).
 // ---------------------------------------------------------------------------
 
-/** Mechanics: choose the correctly revised sentence. */
+/**
+ * Mechanics of Writing (guidelines §3): subject-verb agreement, verb tense,
+ * pronoun-antecedent agreement, comma/apostrophe/capitalization usage,
+ * commonly confused words, run-ons & comma splices, fragments, misplaced or
+ * dangling modifiers, parallel structure, wordiness, and
+ * quotation/colon/semicolon punctuation.
+ */
 function genWritingMechanics(count) {
   const items = [
     {
-      stem: 'The nurse, along with the residents, were responsible for the evening rounds.',
-      correct: 'The nurse, along with the residents, was responsible for the evening rounds.',
-      distractors: ['The nurse and the residents was responsible for the evening rounds.', 'The nurse, along with the residents, are responsible for the evening rounds.', 'The nurse, along with the residents, were responsible for the evening rounds.'],
-      solution: 'The subject is \u201cthe nurse\u201d (singular); the phrase \u201calong with the residents\u201d does not change the number, so the verb must be \u201cwas.\u201d',
+      text: 'Which sentence contains an error in subject-verb agreement?',
+      correct: 'The list of errands were taped to the refrigerator.',
+      distractors: ['The basket of apples was sitting on the porch.', 'A row of tall maple trees lines the driveway.', 'Each of the players has a clean uniform.'],
+      solution: 'The subject is \u201cthe list\u201d (singular); \u201cerrands\u201d is inside a prepositional phrase, so the verb must be \u201cwas.\u201d',
     },
     {
-      stem: 'The patient was restless, the nurse increased the frequency of observation.',
-      correct: 'Because the patient was restless, the nurse increased the frequency of observation.',
-      distractors: ['The patient was restless the nurse increased the frequency of observation.', 'The patient was restless, the nurse increased, the frequency of observation.', 'The patient was restless and the nurse increasing the frequency of observation.'],
-      solution: 'Two complete sentences joined only by a comma form a comma splice; subordinating with \u201cBecause\u201d fixes it.',
+      text: 'Which revision best corrects the sentence?\n\nThe box of crayons on the shelf are ready to use.',
+      correct: 'The box of crayons on the shelf is ready to use.',
+      distractors: ['The boxes of crayons on the shelf is ready to use.', 'The box of crayons on the shelf are ready to use.', 'The box of crayon on the shelf are ready to use.'],
+      solution: 'The subject is \u201cthe box\u201d (singular), not \u201ccrayons,\u201d so the verb must be \u201cis.\u201d',
     },
     {
-      stem: 'Each nurse must document their assessment before leaving the shift.',
-      correct: 'Each nurse must document his or her assessment before leaving the shift.',
-      distractors: ['Each nurse must document their assessments before leaving the shift.', 'Each nurses must document their assessment before leaving the shift.', 'Each nurse must document themselves assessment before leaving the shift.'],
-      solution: '\u201cEach nurse\u201d is singular, so the pronoun must be singular (\u201chis or her\u201d) to agree.',
+      text: 'Which sentence contains an inconsistent verb tense?',
+      correct: 'The bus arrives at 7:15, and we waited on the platform.',
+      distractors: ['Every morning, Maya walks to the corner bakery for fresh bread.', 'Yesterday the team practiced drills and then ran laps.', 'Last summer we camped beside the lake every weekend.'],
+      solution: 'The verbs in one sentence should agree in tense: either \u201carrives \u2026 wait\u201d or \u201carrived \u2026 waited.\u201d',
     },
     {
-      stem: 'The nurse checks the drip rate, verified the prescription, and then documents the findings.',
-      correct: 'The nurse checks the drip rate, verifies the prescription, and then documents the findings.',
-      distractors: ['The nurse checks the drip rate, verified the prescription, and documents the findings.', 'The nurse checked the drip rate, verifies the prescription, and then documents the findings.', 'The nurse checks the drip rate, verifying the prescription, and then documents the findings.'],
-      solution: 'Items in a list should be parallel: checks, verifies, documents are all present tense.',
+      text: 'Which sentence contains an error in pronoun-antecedent agreement?',
+      correct: 'Each of the dogs wagged their tail eagerly.',
+      distractors: ['Each volunteer brought his or her own water bottle.', 'The committee submitted its report on time.', 'The class wrote its answers in pencil.'],
+      solution: '\u201cEach\u201d is singular, so the pronoun must be singular (\u201cits\u201d); \u201ctheir\u201d does not agree with the singular antecedent.',
     },
     {
-      stem: 'The patients\u2019 vital signs were stable, but the nurses station was empty.',
-      correct: 'The patients\u2019 vital signs were stable, but the nurses\u2019 station was empty.',
-      distractors: ['The patients vital signs were stable, but the nurses\u2019 station was empty.', 'The patient\u2019s vital signs were stable, but the nurses station was empty.', 'The patients\u2019 vital signs were stable, but the nurses station was empty.'],
-      solution: 'The station belongs to more than one nurse, so it needs the plural possessive \u201cnurses\u2019.\u201d',
+      text: 'Which sentence is punctuated correctly?',
+      correct: 'After the rain stopped, we walked to the park.',
+      distractors: ['After the rain stopped we walked to the park.', 'After, the rain stopped we walked to the park.', 'After the rain, stopped we walked to the park.'],
+      solution: 'An introductory phrase such as \u201cAfter the rain stopped\u201d is set off from the main clause with a comma.',
     },
     {
-      stem: 'After reviewing the chart, the medication was administered by the nurse.',
-      correct: 'After reviewing the chart, the nurse administered the medication.',
-      distractors: ['After reviewing the chart, the medication was administered by the nurse.', 'After reviewed the chart, the medication was administered by the nurse.', 'After the chart was reviewed, the medication administering began.'],
-      solution: 'The introductory phrase must modify the sentence subject; the nurse reviews the chart, so the nurse must be the subject.',
+      text: 'Which sentence uses the apostrophe correctly?',
+      correct: 'The dogs\u2019 leashes hang by the back door.',
+      distractors: ['Its time to feed the dogs.', 'The dogs bowl is empty again.', 'The dog\u2019s are barking at the mail carrier.'],
+      solution: 'The leashes belong to more than one dog, so the plural possessive \u201cdogs\u2019\u201d is correct; the other options misuse \u201cits/it\u2019s\u201d or add an apostrophe where none belongs.',
     },
     {
-      stem: 'The technician prepares the tray and then he labels every medication.',
-      correct: 'The technician prepares the tray and then labels every medication.',
-      distractors: ['The technician prepares the tray and then he labels every medication.', 'The technician prepare the tray and then labels every medication.', 'The technician prepares the tray and then he label every medication.'],
-      solution: 'With a single subject, the second verb should not repeat the pronoun; \u201cprepares \u2026 labels\u201d is concise and correct.',
+      text: 'Which sentence contains a capitalization error?',
+      correct: 'We drove to the grand canyon last spring.',
+      distractors: ['The mayor spoke at the town hall meeting on Tuesday.', 'My favorite class is American History.', 'The library opens at nine o\u2019clock.'],
+      solution: '\u201cGrand Canyon\u201d is a proper noun and must be capitalized.',
     },
     {
-      stem: 'There is many reasons why the wound should be kept clean and dry.',
-      correct: 'There are many reasons why the wound should be kept clean and dry.',
-      distractors: ['There is many reasons why the wound should be kept clean and dry.', 'There are many reason why the wound should be kept clean and dry.', 'There is many reason why the wound should be kept clean and dry.'],
-      solution: '\u201cReasons\u201d is plural, so the verb must be \u201care.\u201d',
+      text: 'Which word correctly completes the sentence?\n\nThe long drought began to ___ the crops in the valley.',
+      correct: 'affect',
+      distractors: ['effect', 'than', 'then'],
+      solution: '\u201cAffect\u201d is a verb meaning \u201cto influence\u201d; \u201ceffect\u201d is usually a noun meaning \u201cresult.\u201d',
     },
     {
-      stem: 'The nurse asked the patient how was he feeling after the procedure.',
-      correct: 'The nurse asked the patient how he was feeling after the procedure.',
-      distractors: ['The nurse asked the patient how was he feeling after the procedure.', 'The nurse ask the patient how he was feeling after the procedure.', 'The nurse asked the patient how he were feeling after the procedure.'],
-      solution: 'An indirect question uses statement word order: \u201chow he was feeling,\u201d not \u201chow was he feeling.\u201d',
+      text: 'Which word correctly completes the sentence?\n\n___ going to be a cold winter, so the birds have already flown south.',
+      correct: 'It\u2019s',
+      distractors: ['Its', 'They\u2019re', 'Their'],
+      solution: '\u201cIt\u2019s\u201d is the contraction of \u201cit is\u201d; \u201cits\u201d is the possessive form.',
     },
     {
-      stem: 'Because the patient\u2019s blood pressure dropped suddenly. The nurse called the rapid response team.',
-      correct: 'Because the patient\u2019s blood pressure dropped suddenly, the nurse called the rapid response team.',
-      distractors: ['Because the patient\u2019s blood pressure dropped suddenly the nurse called the rapid response team.', 'Because the patient\u2019s blood pressure dropped suddenly, and the nurse called the rapid response team.', 'The patient\u2019s blood pressure dropped suddenly, because the nurse called the rapid response team.'],
-      solution: 'The first group of words is a fragment \u2014 a subordinate clause punctuated as a sentence. Joining it to the main clause with a comma fixes it.',
+      text: 'Which word correctly completes the sentence?\n\nWe packed more food ___ we could possibly eat on the hike.',
+      correct: 'than',
+      distractors: ['then', 'their', 'there'],
+      solution: '\u201cThan\u201d is used for comparisons; \u201cthen\u201d refers to time.',
     },
     {
-      stem: 'The medication was due at noon the nurse administered it at 12:15.',
-      correct: 'The medication was due at noon, so the nurse administered it at 12:15.',
-      distractors: ['The medication was due at noon the nurse administered it at 12:15.', 'The medication was due at noon, the nurse administered it at 12:15.', 'The medication was due at noon the nurse administered, it at 12:15.'],
-      solution: 'Two complete sentences run together with no punctuation form a run-on; joining them with a comma and the conjunction \u201cso\u201d fixes it.',
+      text: 'Which of the following is the best revision of the sentence?\n\nThe museum closed at five the gift shop stayed open until six.',
+      correct: 'The museum closed at five; the gift shop stayed open until six.',
+      distractors: ['The museum closed at five the gift shop stayed open until six.', 'The museum closed at five, the gift shop stayed open until six.', 'The museum closed at five and, the gift shop stayed open until six.'],
+      solution: 'Two complete sentences joined with no punctuation form a run-on; a semicolon separates them correctly.',
     },
     {
-      stem: 'The nurse checked the IV site, the dressing and the drainage bag.',
-      correct: 'The nurse checked the IV site, the dressing, and the drainage bag.',
-      distractors: ['The nurse checked the IV site the dressing and the drainage bag.', 'The nurse checked the IV site, the dressing and the drainage, bag.', 'The nurse checked the IV site, the dressing and, the drainage bag.'],
-      solution: 'Items in a series of three or more are separated by commas, including before \u201cand\u201d (the serial comma).',
+      text: 'Which of the following is the best revision of the fragment?\n\nBecause the power went out during the storm.',
+      correct: 'Because the power went out during the storm, the basement flooded.',
+      distractors: ['Because the power went out during the storm.', 'Because the power went out, during the storm.', 'The power went out during the storm, because.'],
+      solution: 'A subordinate clause punctuated as a sentence is a fragment; joining it to a main clause with a comma completes the thought.',
     },
     {
-      stem: 'After the procedure the patient was moved to the recovery room.',
-      correct: 'After the procedure, the patient was moved to the recovery room.',
-      distractors: ['After the procedure the patient, was moved to the recovery room.', 'After, the procedure the patient was moved to the recovery room.', 'After the procedure, the patient, was moved to the recovery room.'],
-      solution: 'An introductory phrase such as \u201cAfter the procedure\u201d is set off from the main clause with a comma.',
+      text: 'Which sentence contains a misplaced or dangling modifier?',
+      correct: 'Walking to the bus stop, the rain began to pour.',
+      distractors: ['Riding her bike, Priya waved to her neighbor.', 'After stirring the soup, the chef added salt.', 'Sleeping in the sun, the cat stretched lazily.'],
+      solution: 'The phrase \u201cWalking to the bus stop\u201d should modify a person, but the subject is \u201cthe rain\u201d; the sentence needs a human subject, e.g., \u201cWalking to the bus stop, Nina felt the first drops of rain.\u201d',
     },
     {
-      stem: 'The first dose was given at 8 a.m. the second dose was scheduled for 8 p.m.',
-      correct: 'The first dose was given at 8 a.m.; the second dose was scheduled for 8 p.m.',
-      distractors: ['The first dose was given at 8 a.m., the second dose was scheduled for 8 p.m.', 'The first dose was given at 8 a.m. the second dose was scheduled for 8 p.m.', 'The first dose was given at 8 a.m. and, the second dose was scheduled for 8 p.m.'],
-      solution: 'Two closely related complete sentences can be joined with a semicolon; a comma alone would create a comma splice.',
+      text: 'Which sentence lacks parallel structure?',
+      correct: 'She enjoys hiking, biking, and to swim.',
+      distractors: ['The recipe calls for flour, sugar, and eggs.', 'The campers pitched tents, gathered wood, and built a fire.', 'The report was clear, concise, and accurate.'],
+      solution: 'Items in a list should take the same form: \u201chiking, biking, and swimming\u201d (all gerunds), not a mix of gerunds and an infinitive.',
     },
     {
-      stem: 'The admission kit contained the following items a gown, toiletries, and a patient ID band.',
-      correct: 'The admission kit contained the following items: a gown, toiletries, and a patient ID band.',
-      distractors: ['The admission kit contained the following items; a gown, toiletries, and a patient ID band.', 'The admission kit contained the following items a gown, toiletries, and a patient ID band.', 'The admission kit contained the following items, a gown, toiletries, and a patient ID band.'],
-      solution: 'A colon introduces a list after a complete sentence such as \u201cthe following items.\u201d',
+      text: 'Which of the following is the most concise and correct revision of the sentence?\n\nThe reason why the game was canceled is because of the heavy rain.',
+      correct: 'The game was canceled because of the heavy rain.',
+      distractors: ['The reason why the game was canceled is because of the heavy rain.', 'The game was canceled due to the fact that the heavy rain happened.', 'The game, which was canceled, happened because of the heavy rain.'],
+      solution: 'The original repeats the idea (\u201cthe reason why \u2026 is because\u201d); the concise version states the cause once.',
+    },
+    {
+      text: 'Which sentence uses the colon correctly?',
+      correct: 'The pantry held exactly what we needed: flour, sugar, and vanilla.',
+      distractors: ['The pantry held: flour, sugar, and vanilla.', 'The pantry held flour, sugar, and vanilla: for baking.', 'The pantry held flour sugar, and vanilla.'],
+      solution: 'A colon introduces a list after a complete sentence (\u201cThe pantry held exactly what we needed\u201d); it should not follow a verb or sit inside a fragment.',
+    },
+    {
+      text: 'Which sentence uses the semicolon correctly?',
+      correct: 'The sky cleared by noon; the picnic went on as planned.',
+      distractors: ['The sky cleared by noon; the picnic, went on as planned.', 'The sky cleared by noon the picnic; went on as planned.', 'The sky cleared by noon, the picnic went on as planned.'],
+      solution: 'A semicolon joins two closely related complete sentences; joining them with only a comma would create a comma splice.',
+    },
+    {
+      text: 'Which sentence uses quotation marks correctly?',
+      correct: 'The librarian asked, \u201cHave you returned your books?\u201d',
+      distractors: ['The librarian asked, \u201cHave you returned your books\u201d?', 'The librarian asked \u201chave you returned your books?\u201d', '\u201cHave you returned your books\u201d? the librarian asked.'],
+      solution: 'A direct question goes inside the quotation marks, and a comma separates the speaker tag from the quote.',
     },
   ];
   const out = [];
   const shuffled = shuffle(items);
-  for (let n = 0; n < count; n++) {
+  const pick = Math.min(count, items.length); // never repeat a question in one exam
+  for (let n = 0; n < pick; n++) {
     const it = shuffled[n % shuffled.length];
     out.push({
-      text: `Which revision best corrects the sentence?\n\n${it.stem}`,
+      text: it.text,
       category: 'Writing',
       correct: it.correct,
       distractors: it.distractors,
@@ -1112,88 +1142,70 @@ function genWritingMechanics(count) {
   return out;
 }
 
-/** Paragraph logic: order sentences, find the topic/concluding/odd sentence. */
+/**
+ * Paragraph Logic (guidelines §2): best order of sentences, best transition
+ * word/phrase, splitting a paragraph, best concluding sentence, and the
+ * purpose/main idea of a paragraph. Sentences are numbered so questions can
+ * reference specific sentence numbers.
+ */
 function genWritingParagraphLogic(count) {
   const items = [
     {
-      sentences: [
-        'Patients who understand their discharge instructions are less likely to be readmitted.',
-        'Nurses should review each instruction and ask the patient to repeat it back.',
-        'A family member may also attend the teaching session.',
-        'Discharge planning begins on the day of admission.',
-      ],
-      ask: 'Which sentence should be FIRST as the topic sentence?',
-      correct: 'Patients who understand their discharge instructions are less likely to be readmitted.',
-      distractors: ['Nurses should review each instruction and ask the patient to repeat it back.', 'A family member may also attend the teaching session.', 'Discharge planning begins on the day of admission.'],
-      solution: 'The topic sentence states the general claim (understanding instructions reduces readmissions) that the other sentences support.',
+      text: 'Read the sentences:\n\n(1) Shoppers fill the aisles between the stalls.\n(2) Every Saturday morning, the town square becomes a farmers market.\n(3) Local bakers and growers sell their goods there.\n(4) By noon, the fresh bread is usually sold out.\n\nWhich sentence should be FIRST as the topic sentence?',
+      correct: 'Every Saturday morning, the town square becomes a farmers market.',
+      distractors: ['Shoppers fill the aisles between the stalls.', 'Local bakers and growers sell their goods there.', 'By noon, the fresh bread is usually sold out.'],
+      solution: 'The topic sentence introduces the subject (the Saturday farmers market); the other sentences supply details about it.',
     },
     {
-      sentences: [
-        'Some medications require refrigeration.',
-        'Insulin should be stored in the refrigerator until it is opened.',
-        'Once opened, it may be kept at room temperature for up to 28 days.',
-        'Always check the manufacturer\u2019s storage guidance.',
-      ],
-      ask: 'Which sentence should come LAST as the concluding sentence?',
-      correct: 'Always check the manufacturer\u2019s storage guidance.',
-      distractors: ['Some medications require refrigeration.', 'Insulin should be stored in the refrigerator until it is opened.', 'Once opened, it may be kept at room temperature for up to 28 days.'],
-      solution: 'The final sentence gives the general rule that wraps up the specific examples about storage.',
+      text: 'Read the sentences:\n\n(1) Plastic bottles pile up quickly in most households.\n(2) Recycling them keeps them out of landfills.\n(3) Many towns now collect bottles at curbside.\n(4) A simple rinse prepares a bottle for the bin.\n\nWhich sentence would best conclude the paragraph?',
+      correct: 'With a small effort, every household can keep plastic out of the waste stream.',
+      distractors: ['Plastic bottles were first used in the 1940s.', 'Some bottles are made of thicker plastic than others.', 'Recycling trucks run on diesel fuel.'],
+      solution: 'A concluding sentence wraps up the paragraph\u2019s point about recycling effort; the other options introduce new or unrelated facts.',
     },
     {
-      sentences: [
-        'The call light was placed within reach.',
-        'The bed was set to its lowest position.',
-        'The nurse implemented several measures to prevent falls.',
-        'Nonskid socks were provided.',
-      ],
-      ask: 'Which sentence best serves as the topic sentence?',
-      correct: 'The nurse implemented several measures to prevent falls.',
-      distractors: ['The call light was placed within reach.', 'The bed was set to its lowest position.', 'Nonskid socks were provided.'],
-      solution: 'The topic sentence introduces the list; the other sentences are the specific measures.',
+      text: 'Read the sentences:\n\n(1) The book club meets on the first Tuesday of every month.\n(2) Members take turns choosing the next title.\n(3) Discussions usually last about an hour.\n(4) The public pool opens in mid-June.\n\nWhich sentence does NOT belong in the paragraph?',
+      correct: 'Sentence 4',
+      distractors: ['Sentence 1', 'Sentence 2', 'Sentence 3'],
+      solution: 'Sentences 1\u20133 all describe the book club; sentence 4 introduces an unrelated topic that breaks the paragraph\u2019s focus.',
     },
     {
-      sentences: [
-        'The night nurse reported the patient\u2019s status to the day nurse.',
-        'The report included vital signs, medications, and recent events.',
-        'The day nurse asked clarifying questions.',
-        'Handoffs are most effective when they are structured and complete.',
-      ],
-      ask: 'Which sentence should be FIRST?',
-      correct: 'Handoffs are most effective when they are structured and complete.',
-      distractors: ['The night nurse reported the patient\u2019s status to the day nurse.', 'The report included vital signs, medications, and recent events.', 'The day nurse asked clarifying questions.'],
-      solution: 'The general principle about handoffs should open the paragraph, followed by the example of one handoff.',
+      text: 'Read the sentences:\n\n(1) Composting turns kitchen scraps into rich soil.\n(2) First, collect fruit and vegetable peels in a bin.\n(3) Then add dry leaves and stir the pile weekly.\n(4) In a few months, dark crumbly compost is ready for the garden.\n\nWhat is the main purpose of this paragraph?',
+      correct: 'To explain the basic process of composting',
+      distractors: ['To persuade readers to stop gardening', 'To compare composting with recycling', 'To describe the history of farming'],
+      solution: 'The paragraph walks through the steps of making compost, so its purpose is to explain the process.',
     },
     {
-      sentences: [
-        'The wound was cleaned with sterile saline.',
-        'A new dressing was applied over the wound.',
-        'The patient\u2019s hemoglobin was 13.2 g/dL.',
-        'The nurse documented the procedure.',
-      ],
-      ask: 'Which sentence does NOT belong in the paragraph?',
-      correct: 'The patient\u2019s hemoglobin was 13.2 g/dL.',
-      distractors: ['The wound was cleaned with sterile saline.', 'A new dressing was applied over the wound.', 'The nurse documented the procedure.'],
-      solution: 'The other sentences describe one wound-care procedure; the hemoglobin value is unrelated to that sequence.',
+      text: 'Read the sentences:\n\n(1) The high school drama club stages three plays a year.\n(2) The spring musical is always the biggest production.\n(3) Auditions are held in January.\n(4) Rehearsals run for eight weeks.\n\nWhere is the best place to add this sentence?\n\n\u201cThe fall show, by contrast, is a smaller one-act play.\u201d',
+      correct: 'After sentence 2.',
+      distractors: ['Before sentence 1.', 'After sentence 3.', 'Before sentence 4.'],
+      solution: 'The new sentence contrasts with the spring musical described in sentence 2, so it belongs immediately after it.',
     },
     {
-      sentences: [
-        'Hand washing removes transient bacteria from the skin.',
-        'Alcohol rubs are effective when hands are not visibly soiled.',
-        'Barriers such as gloves provide additional protection.',
-        'Together, these practices greatly reduce the spread of infection.',
-      ],
-      ask: 'Which sentence best concludes the paragraph?',
-      correct: 'Together, these practices greatly reduce the spread of infection.',
-      distractors: ['Hand washing removes transient bacteria from the skin.', 'Alcohol rubs are effective when hands are not visibly soiled.', 'Barriers such as gloves provide additional protection.'],
-      solution: 'The concluding sentence summarizes and synthesizes the three practices described.',
+      text: 'Read the sentences:\n\n(1) The seeds sprout within two weeks.\n(2) First, fill the pots with potting soil.\n(3) Then press two seeds into each pot and water them.\n(4) Finally, move the pots to a sunny windowsill.\n\nWhich of the following is the most logical order for the sentences?',
+      correct: '2, 3, 4, 1',
+      distractors: ['1, 2, 3, 4', '3, 1, 2, 4', '2, 1, 3, 4'],
+      solution: 'The paragraph follows the steps of planting: fill the pots, plant the seeds, move them to the sun, and then the sprouts appear.',
+    },
+    {
+      text: 'Read the sentences:\n\n(1) The town library offers reading programs for children.\n(2) Story time for toddlers happens every Wednesday morning.\n(3) Summer reading clubs reward kids with small prizes.\n(4) For adults, the library hosts book discussions once a month.\n(5) It also runs a popular film series on Friday nights.\n\nWhich is the best way to divide this paragraph into two paragraphs?',
+      correct: 'After sentence 3.',
+      distractors: ['After sentence 1.', 'After sentence 2.', 'After sentence 4.'],
+      solution: 'Sentences 1\u20133 focus on children\u2019s programs and sentences 4\u20135 on adult programs, so the natural split comes after sentence 3.',
+    },
+    {
+      text: 'Read the sentences:\n\n(1) Volunteers clear the trails every spring.\n(2) They repair benches and post new maps.\n(3) Last year the group planted two hundred native trees.\n\nWhich of the following would be the best topic sentence for this paragraph?',
+      correct: 'A dedicated team of volunteers keeps the city park in shape.',
+      distractors: ['Volunteers must wear sturdy boots at all times.', 'The park was designed by a famous architect.', 'Tree planting is popular in many countries.'],
+      solution: 'The topic sentence states the paragraph\u2019s general subject (volunteers caring for the park); the other options are too specific, off-topic, or too broad.',
     },
   ];
   const out = [];
   const shuffled = shuffle(items);
-  for (let n = 0; n < count; n++) {
+  const pick = Math.min(count, items.length); // never repeat a question in one exam
+  for (let n = 0; n < pick; n++) {
     const it = shuffled[n % shuffled.length];
     out.push({
-      text: `Read the sentences:\n\n${it.sentences.map((s, i) => `(${i + 1}) ${s}`).join('\n')}\n\n${it.ask}`,
+      text: it.text,
       category: 'Writing',
       correct: it.correct,
       distractors: it.distractors,
@@ -1203,65 +1215,71 @@ function genWritingParagraphLogic(count) {
   return out;
 }
 
-/** Transitions: choose the word that best links two sentences (Week 1 Day 5/6). */
+/** Transitions (guidelines §2): the word that best connects two sentences. */
 function genWritingTransitions(count) {
   const items = [
     {
-      context: 'Patients are told to report chest pain immediately. _____ , some people wait to see whether the pain passes before calling for help.',
-      ask: 'Which transition word best fills the blank?',
+      text: 'The forecast called for sunshine. _____, by noon the sky was full of clouds.\n\nWhich transition word best fills the blank?',
       correct: 'However',
-      distractors: ['Therefore', 'For example', 'Consequently'],
+      distractors: ['Therefore', 'For example', 'In addition'],
       solution: 'The second sentence contrasts with the first, so a contrast word such as \u201cHowever\u201d is needed.',
     },
     {
-      context: 'The wound showed no signs of healing after two weeks. _____, the care team ordered a wound culture.',
-      ask: 'Which transition word best fills the blank?',
+      text: 'The trail was washed out after the flood. _____, the rangers closed the path for the season.\n\nWhich transition word best fills the blank?',
       correct: 'Therefore',
-      distractors: ['However', 'For example', 'Meanwhile'],
+      distractors: ['However', 'Meanwhile', 'For example'],
       solution: 'The second sentence states a result of the first, so a consequence word such as \u201cTherefore\u201d is needed.',
     },
     {
-      context: 'The nurse explained each step of the procedure. _____, she demonstrated the steps on a mannequin.',
-      ask: 'Which transition word best fills the blank?',
-      correct: 'Next',
-      distractors: ['However', 'Similarly', 'As a result'],
-      solution: 'The second sentence continues the sequence, so a sequencing word such as \u201cNext\u201d is needed.',
+      text: 'The community garden grows tomatoes and peppers. _____, it has a small herb bed near the gate.\n\nWhich transition word best fills the blank?',
+      correct: 'In addition',
+      distractors: ['However', 'Therefore', 'For example'],
+      solution: 'The second sentence adds another detail about the same garden, so an addition phrase such as \u201cIn addition\u201d is needed.',
     },
     {
-      context: 'Hand washing removes most transient bacteria from the skin. _____, alcohol-based rubs protect when hands are not visibly soiled.',
-      ask: 'Which transition word best fills the blank?',
-      correct: 'Similarly',
-      distractors: ['However', 'Therefore', 'Finally'],
-      solution: 'The second sentence makes a comparable point about another hygiene method, so \u201cSimilarly\u201d is needed.',
+      text: 'Many local parks offer free summer activities. _____, the lakeside park hosts a concert every Friday.\n\nWhich transition word best fills the blank?',
+      correct: 'For example',
+      distractors: ['Therefore', 'However', 'In contrast'],
+      solution: 'The second sentence gives a specific instance of the first, so \u201cFor example\u201d is needed.',
     },
     {
-      context: 'The patient\u2019s potassium level was dangerously low. _____, the physician ordered an IV potassium infusion.',
-      ask: 'Which transition word best fills the blank?',
+      text: 'First the dough is kneaded, then it rises for an hour. _____, it is shaped and baked.\n\nWhich transition word best fills the blank?',
+      correct: 'Finally',
+      distractors: ['However', 'Therefore', 'In addition'],
+      solution: 'The sentence marks the last step in a sequence, so \u201cFinally\u201d is needed.',
+    },
+    {
+      text: 'The old bridge could not support heavy trucks. _____, drivers were rerouted through town.\n\nWhich transition word best fills the blank?',
       correct: 'Consequently',
       distractors: ['Nevertheless', 'For example', 'Meanwhile'],
-      solution: 'The low potassium caused the order, so a result word such as \u201cConsequently\u201d is needed.',
+      solution: 'The second sentence gives the outcome of the bridge\u2019s limits, so a result word such as \u201cConsequently\u201d is needed.',
     },
     {
-      context: 'Vital signs were checked on admission, again at 4 p.m., and once more at 8 p.m. _____, the nurse recorded the last set on the flow sheet.',
-      ask: 'Which transition word best fills the blank?',
-      correct: 'Finally',
-      distractors: ['However', 'In contrast', 'For example'],
-      solution: 'The sentence marks the end of a sequence of checks, so \u201cFinally\u201d is needed.',
+      text: 'Dad painted the fence in the backyard. _____, the kids washed the car in the driveway.\n\nWhich transition word best fills the blank?',
+      correct: 'Meanwhile',
+      distractors: ['Therefore', 'However', 'For example'],
+      solution: 'The two actions happen at the same time, so \u201cMeanwhile\u201d is needed.',
     },
     {
-      context: 'The patient tolerated the first dose of the medication well. _____, the second dose caused nausea.',
-      ask: 'Which transition word best fills the blank?',
-      correct: 'However',
-      distractors: ['Therefore', 'Furthermore', 'For example'],
-      solution: 'The second sentence contrasts with the first, so a contrast word such as \u201cHowever\u201d is needed.',
+      text: 'The team lost its first three games. _____, the players never gave up hope.\n\nWhich transition word best fills the blank?',
+      correct: 'Nevertheless',
+      distractors: ['Therefore', 'For example', 'Similarly'],
+      solution: 'The second sentence states a surprising contrast to the first, so a concession word such as \u201cNevertheless\u201d is needed.',
+    },
+    {
+      text: 'The blue jays build their nests high in the oak. _____, the crows choose the tops of the pines.\n\nWhich transition word best fills the blank?',
+      correct: 'Similarly',
+      distractors: ['However', 'Therefore', 'Finally'],
+      solution: 'The second sentence makes a comparable point about another bird, so \u201cSimilarly\u201d is needed.',
     },
   ];
   const out = [];
   const shuffled = shuffle(items);
-  for (let n = 0; n < count; n++) {
+  const pick = Math.min(count, items.length); // never repeat a question in one exam
+  for (let n = 0; n < pick; n++) {
     const it = shuffled[n % shuffled.length];
     out.push({
-      text: `${it.context}\n\n${it.ask}`,
+      text: it.text,
       category: 'Writing',
       correct: it.correct,
       distractors: it.distractors,
@@ -1271,65 +1289,64 @@ function genWritingTransitions(count) {
   return out;
 }
 
-/** Passage development: pick the sentence that best supports the paragraph. */
+/**
+ * Passage Development (guidelines §1): missing subject, unnecessary or
+ * redundant word, best sentence placement, sentence that doesn't belong,
+ * best topic sentence, and best supporting detail. Passages carry numbered
+ * sentences so questions can reference specific sentence numbers.
+ */
 function genWritingPassageDevelopment(count) {
   const items = [
     {
-      text: 'Vaccination programs protect communities as well as individuals. When enough people are immunized, the spread of disease slows dramatically, which shields even those who cannot be vaccinated.',
-      ask: 'Which sentence, if added, would best support the main idea?',
-      correct: 'Immunizations protect both the individual and the community through herd immunity.',
-      distractors: ['The clinic opens at 8 a.m. on weekdays.', 'Most vaccines are injected into the upper arm.', 'Cold packs should be available after vaccination.'],
-      solution: 'A sentence explaining herd immunity directly supports the claim about community protection.',
+      text: 'Which sentence is missing a subject?',
+      correct: 'And have a good sense of rhythm and timing.',
+      distractors: ['The band practices in the garage on Saturdays.', 'The drummer sets the tempo for the whole group.', 'Their first show is next month at the community center.'],
+      solution: 'This group of words has a verb (\u201chave\u201d) but no subject, so it is a fragment missing a subject.',
     },
     {
-      text: 'Adequate sleep is essential for healing and recovery. Patients who sleep poorly often have higher pain levels and slower wound healing.',
-      ask: 'Which sentence, if added, would best support the main idea?',
-      correct: 'A consistent bedtime routine helps the body prepare for rest.',
-      distractors: ['Hospitals usually serve breakfast by 7 a.m.', 'Some patients prefer warm blankets.', 'Night shift schedules vary by unit.'],
-      solution: 'A practical strategy that improves sleep supports the passage\u2019s point about the importance of sleep.',
+      text: 'Read the paragraph:\n\n(1) The train that leaves at nine stops at every town.\n(2) The express that runs at ten goes straight to the city.\n(3) We basically decided to take the early train.\n(4) The seats that we chose were near the window.\n\nWhich sentence includes an unnecessary word?',
+      correct: 'Sentence 3',
+      distractors: ['Sentence 1', 'Sentence 2', 'Sentence 4'],
+      solution: 'In sentence 3, \u201cbasically\u201d adds no meaning and can be deleted; the \u201cthat\u201d clauses in the other sentences are necessary.',
     },
     {
-      text: 'Monitoring fluid balance is a core nursing responsibility. Small shifts in body water can signal serious problems before other signs appear.',
-      ask: 'Which sentence, if added, would best support the main idea?',
-      correct: 'Measuring daily weight is a reliable way to detect fluid changes.',
-      distractors: ['Most hospital scales are digital now.', 'Patients often ask about their diet.', 'Water makes up about 60% of body weight.'],
-      solution: 'A method for detecting fluid changes directly supports the claim that monitoring matters.',
+      text: 'Read the paragraph:\n\n(1) Regular reading keeps the mind sharp at any age.\n(2) People who read often build a larger vocabulary.\n(3) Stories also help readers understand others\u2019 experiences.\n\nWhich sentence best supports the main idea stated in sentence 1?',
+      correct: 'A daily habit of reading has been linked to better memory and focus.',
+      distractors: ['Books are printed on paper or read on screens.', 'Libraries lend millions of books each year.', 'Some readers finish a book in a single evening.'],
+      solution: 'Sentence 1 claims that reading keeps the mind sharp; the correct option offers concrete evidence for that claim, while the others state unrelated facts.',
     },
     {
-      text: 'Unrelieved pain can slow a patient\u2019s recovery. Pain interferes with sleep, appetite, and the willingness to move, which are all needed for healing.',
-      ask: 'Which sentence, if added, would best support the main idea?',
-      correct: 'Patients with well-managed pain are often discharged sooner.',
-      distractors: ['Pain scales use numbers from zero to ten.', 'Some patients close their eyes when in pain.', 'Nurses chart pain at each shift.'],
-      solution: 'A statement linking pain management to faster recovery strengthens the passage\u2019s main idea.',
+      text: 'Read the paragraph:\n\n(1) The community center added several new classes this fall.\n(2) A pottery workshop fills up within days of registration.\n(3) An evening dance workshop draws a steady crowd.\n(4) The staff plans to expand the schedule again in the spring.\n\nWhere is the best place to add this sentence?\n\n\u201cThe photography class, which is new this year, has a waiting list.\u201d',
+      correct: 'After sentence 3.',
+      distractors: ['Before sentence 1.', 'After sentence 2.', 'After sentence 4.'],
+      solution: 'The new sentence is another example of a popular class, so it belongs with the examples in sentences 2\u20133, before the wrap-up in sentence 4.',
     },
     {
-      text: 'Nurses often check a patient\u2019s temperature, pulse, and blood pressure on admission. These first measurements provide a baseline for comparing later readings.',
-      ask: 'Which sentence would provide the best introduction to this paragraph?',
-      correct: 'Vital signs taken on admission give a snapshot of a patient\u2019s condition.',
-      distractors: ['The hospital cafeteria closes at 7 p.m.', 'Most thermometers are electronic now.', 'Patients may feel nervous on the first day.'],
-      solution: 'A general statement about why admission vital signs matter sets up the specific points that follow.',
+      text: 'Read the paragraph:\n\n(1) The town\u2019s annual harvest fair fills the fairgrounds every October.\n(2) Local farms compete for the biggest pumpkin prize.\n(3) Kids race through a straw maze while parents watch.\n(4) The county courthouse was built in 1887.\n\nWhich sentence does NOT belong in the paragraph?',
+      correct: 'Sentence 4',
+      distractors: ['Sentence 1', 'Sentence 2', 'Sentence 3'],
+      solution: 'Sentences 1\u20133 all describe the harvest fair; sentence 4 is an unrelated fact about the courthouse.',
     },
     {
-      text: 'Washing hands with soap and water removes dirt and most germs. Alcohol-based rubs are convenient when hands are not visibly soiled. Gloves provide a barrier when touching body fluids.',
-      ask: 'Which sentence would provide the most effective conclusion?',
-      correct: 'Using these measures consistently greatly reduces the spread of infection.',
-      distractors: ['Some sinks have automatic faucets.', 'Soap comes in liquid and bar forms.', 'Gloves are made of latex or vinyl.'],
-      solution: 'A concluding sentence summarizes the three hygiene measures and states their shared benefit.',
+      text: 'Read the paragraph:\n\n(1) Volunteers sort donated clothes by size and season.\n(2) Shoppers can take what they need at no cost.\n(3) Leftover items are sent to a regional clothing drive.\n\nWhich of the following would be the best topic sentence for this paragraph?',
+      correct: 'The community clothing exchange helps families outfit themselves for free.',
+      distractors: ['Donations are accepted only on weekday mornings.', 'Clothing has been worn by humans for thousands of years.', 'The nearest mall is about twenty minutes away.'],
+      solution: 'The topic sentence captures the paragraph\u2019s main idea (a free community clothing exchange); the distractors are too specific, too broad, or off-topic.',
     },
     {
-      text: 'The nurse prepared the patient for a blood transfusion. First, she verified the patient\u2019s identity against the order. Then she checked the blood product label with a second nurse. The hospital\u2019s gift shop closes at 6 p.m.',
-      ask: 'Which sentence should be removed because it does not support the paragraph?',
-      correct: 'The hospital\u2019s gift shop closes at 6 p.m.',
-      distractors: ['The nurse prepared the patient for a blood transfusion.', 'First, she verified the patient\u2019s identity against the order.', 'Then she checked the blood product label with a second nurse.'],
-      solution: 'The gift shop detail is unrelated to the transfusion procedure and breaks the paragraph\u2019s focus.',
+      text: 'Read the paragraph:\n\n(1) Starting a backyard compost pile is easier than most people think.\n(2) A simple bin and a few basic ingredients are all it takes.\n(3) Finished compost enriches the soil for next season\u2019s garden.\n\nWhich sentence best supports the main idea stated in sentence 1?',
+      correct: 'Kitchen scraps, dry leaves, and a weekly stir are the only requirements.',
+      distractors: ['Compost bins are sold at hardware stores.', 'Some gardens are planted in raised beds.', 'Autumn is the busiest season for yard work.'],
+      solution: 'Sentence 1 claims composting is easy; the correct option lists the simple requirements, while the others are only loosely related.',
     },
   ];
   const out = [];
   const shuffled = shuffle(items);
-  for (let n = 0; n < count; n++) {
+  const pick = Math.min(count, items.length); // never repeat a question in one exam
+  for (let n = 0; n < pick; n++) {
     const it = shuffled[n % shuffled.length];
     out.push({
-      text: `${it.text}\n\n${it.ask}`,
+      text: it.text,
       category: 'Writing',
       correct: it.correct,
       distractors: it.distractors,
