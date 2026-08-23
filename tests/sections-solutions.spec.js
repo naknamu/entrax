@@ -287,7 +287,15 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('#question-passage')).toBeVisible();
     await expect(page.locator('#question-passage-text')).toContainText('The honeybee is a small insect');
 
+    // 2nd question of the SAME passage: panel is not repeated
+    await page.click('#next-btn');
+    await page.waitForTimeout(200);
+    await expect(page.locator('#question-section')).toHaveText('Reading');
+    await expect(page.locator('#question-passage')).toBeHidden();
+
     // Back to the first question, then answer everything
+    await page.click('#prev-btn');
+    await page.waitForTimeout(150);
     await page.click('#prev-btn');
     await page.waitForTimeout(150);
     await page.click('#prev-btn');

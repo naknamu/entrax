@@ -510,23 +510,30 @@
      */
     function buildRandomizedOrder() {
       const sectionIds = new Set(examSections.map(s => s.id));
-      const groups = new Map(); // key -> array of question indices
+      // Within each section, questions sharing a passage stay adjacent:
+      // group by passage, shuffle the groups, keep each group's internal
+      // (natural) question order. Non-passage questions are their own group.
+      const sectionGroups = new Map(); // key -> Map<passageKey, indices[]>
       questions.forEach((q, i) => {
         const key = q.sectionId && sectionIds.has(q.sectionId) ? q.sectionId : '__general__';
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(i);
+        if (!sectionGroups.has(key)) sectionGroups.set(key, new Map());
+        const passageMap = sectionGroups.get(key);
+        const passage = (q.passage || '').trim();
+        const pKey = passage ? `passage:${passage}` : `inline:${i}`;
+        if (!passageMap.has(pKey)) passageMap.set(pKey, []);
+        passageMap.get(pKey).push(i);
       });
-      const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
-      if (groups.has('__general__')) orderedKeys.push('__general__');
+      const orderedKeys = examSections.map(s => s.id).filter(k => sectionGroups.has(k));
+      if (sectionGroups.has('__general__')) orderedKeys.push('__general__');
 
       const order = [];
       for (const key of orderedKeys) {
-        const indices = groups.get(key);
-        for (let i = indices.length - 1; i > 0; i--) {
+        const groups = [...sectionGroups.get(key).values()];
+        for (let i = groups.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [indices[i], indices[j]] = [indices[j], indices[i]];
+          [groups[i], groups[j]] = [groups[j], groups[i]];
         }
-        order.push(...indices);
+        order.push(...groups.flat());
       }
       return order;
     }
@@ -769,12 +776,17 @@
       questionCategory.textContent = question.category || '';
       questionCategory.hidden = !question.category;
 
-      // Passage panel: shown once above the question for passage-based
-      // reading questions (the passage is a separate field, not embedded).
+      // Passage panel: shown only when the passage CHANGES from the previous
+      // question, so the 2nd+ question of the same passage (adjacent after
+      // generation) doesn't repeat the panel. Non-passage questions hide it.
       if (passagePanel && passageTextEl) {
-        const hasPassage = !!(question.passage && question.passage.trim());
-        passagePanel.hidden = !hasPassage;
-        if (hasPassage) passageTextEl.textContent = question.passage;
+        const passage = (question.passage || '').trim();
+        const prevIndex = currentQuestionIndex > 0 ? questionOrder[currentQuestionIndex - 1] : -1;
+        const prevQuestion = prevIndex >= 0 ? questions[prevIndex] : null;
+        const prevPassage = prevQuestion ? (prevQuestion.passage || '').trim() : '';
+        const showPassage = !!passage && passage !== prevPassage;
+        passagePanel.hidden = !showPassage;
+        if (showPassage) passageTextEl.textContent = passage;
       }
 
       questionText.innerHTML = escapeHtml(question.text);

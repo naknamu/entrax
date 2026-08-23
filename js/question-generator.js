@@ -1456,13 +1456,13 @@ export const KAPLAN_MATH_TOPICS = [
 
 /** Reading topics map to Week 1 of the vault study plan (Kaplan READING section, 22 questions). */
 export const KAPLAN_READING_TOPICS = [
-  { id: 'readingMainIdea', label: 'Main idea and topic', gen: (c) => genReadingSkill('mainIdea', c) },
-  { id: 'readingDetails', label: 'Supporting details', gen: (c) => genReadingSkill('detail', c) },
-  { id: 'readingInference', label: 'Drawing basic inferences', gen: (c) => genReadingSkill('inference', c) },
-  { id: 'readingPurpose', label: 'Identifying the purpose of a passage', gen: (c) => genReadingSkill('purpose', c) },
-  { id: 'readingPOV', label: 'Point of view and tone', gen: (c) => genReadingSkill('pov', c) },
-  { id: 'readingOrganization', label: 'Passage organization', gen: (c) => genReadingSkill('organization', c) },
-  { id: 'readingLogic', label: 'Determining the logic of a passage', gen: (c) => genReadingSkill('logic', c) },
+  { id: 'readingMainIdea', label: 'Main idea and topic', skill: 'mainIdea', gen: (c) => genReadingSkill('mainIdea', c) },
+  { id: 'readingDetails', label: 'Supporting details', skill: 'detail', gen: (c) => genReadingSkill('detail', c) },
+  { id: 'readingInference', label: 'Drawing basic inferences', skill: 'inference', gen: (c) => genReadingSkill('inference', c) },
+  { id: 'readingPurpose', label: 'Identifying the purpose of a passage', skill: 'purpose', gen: (c) => genReadingSkill('purpose', c) },
+  { id: 'readingPOV', label: 'Point of view and tone', skill: 'pov', gen: (c) => genReadingSkill('pov', c) },
+  { id: 'readingOrganization', label: 'Passage organization', skill: 'organization', gen: (c) => genReadingSkill('organization', c) },
+  { id: 'readingLogic', label: 'Determining the logic of a passage', skill: 'logic', gen: (c) => genReadingSkill('logic', c) },
 ];
 
 /** Writing topics map to the Kaplan app (WRITING section) plus Week 1 of the study plan. */
@@ -1532,11 +1532,38 @@ function generateKaplanQuestionsByTopic(topicList, topicIds = null, perTopic = 3
 
 /**
  * Generate Kaplan-style READING comprehension questions (passage-based).
+ *
+ * Questions are grouped BY PASSAGE so every question about the same passage
+ * appears consecutively (in the passage's natural reading order) instead of
+ * being scattered by skill: `perTopic` passages are picked in random order and
+ * each contributes one question per selected skill, so each skill still yields
+ * `perTopic` questions overall.
  * @param {string[]} topicIds - subset of KAPLAN_READING_TOPICS ids (default: all)
- * @param {number} perTopic - questions per topic (default 3)
+ * @param {number} perTopic - questions per topic (default 3; capped at the number of passages)
  */
 export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3) {
-  return generateKaplanQuestionsByTopic(KAPLAN_READING_TOPICS, topicIds, perTopic);
+  // Capped at the number of passages so a passage never appears twice.
+  const count = Math.min(Math.max(1, Math.min(10, perTopic)), READING_PASSAGES.length);
+  const ids = topicIds && topicIds.length
+    ? topicIds
+    : KAPLAN_READING_TOPICS.map((t) => t.id);
+  const skills = new Set(
+    KAPLAN_READING_TOPICS.filter((t) => ids.includes(t.id)).map((t) => t.skill)
+  );
+  if (!skills.size) return [];
+
+  const passages = shuffle(READING_PASSAGES);
+  const questions = [];
+  for (let n = 0; n < count; n++) {
+    const passage = passages[n % passages.length];
+    for (const q of passage.questions) {
+      if (!skills.has(q.skill)) continue;
+      const built = buildQuestion('Reading', q.text, q.correct, q.distractors, q.solution);
+      built.passage = passage.text;
+      questions.push(built);
+    }
+  }
+  return questions;
 }
 
 /**
