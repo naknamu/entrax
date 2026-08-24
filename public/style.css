@@ -1295,7 +1295,7 @@ pre code {
 /* --- Tablet: 769px-1024px --- */
 @media (min-width: 769px) and (max-width: 1024px) {
   .question-nav {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 
   .question-content {
@@ -1344,7 +1344,7 @@ pre code {
 /* --- Exam Main Layout: Mobile --- */
 @media (max-width: 768px) {
   .question-nav {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 
   /* Question area full width */
@@ -1678,10 +1678,32 @@ pre code {
   text-align: center;
 }
 
+/* Section heading above each group of nav buttons (Kaplan-style sidebar) */
+.nav-section-header {
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.nav-section-header:first-child {
+  margin-top: 0;
+}
+
 .question-nav {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--space-2);
+}
+
+/* The sidebar's <nav id="question-nav"> is the CONTAINER for the per-section
+   question grids rendered by JS. It must stack those groups vertically — the
+   shared .question-nav class (grid) made the nav itself a grid and laid the
+   section subsections out horizontally, forcing horizontal scrolling. */
+#question-nav {
+  display: block;
 }
 
 .nav-btn {
@@ -2911,7 +2933,7 @@ pre code {
   }
 
   .question-nav {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -2964,7 +2986,7 @@ pre code {
   }
   
   .question-nav {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
   
   .choices-grid {
