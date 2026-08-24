@@ -16,6 +16,8 @@
  * All questions are original — nothing is copied from Kaplan's material.
  */
 
+import { generateProceduralReadingPassage } from './reading-generator.js';
+
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
@@ -1789,10 +1791,11 @@ export function readingPassageTitleFromText(text) {
  * each contributes one question per selected skill, so each skill still yields
  * `perTopic` questions overall.
  * @param {string[]} topicIds - subset of KAPLAN_READING_TOPICS ids (default: all)
- * @param {number} perTopic - questions per topic (default 3; capped at the number of passages)
+ * @param {number} perTopic - questions per topic (default 3; capped at 10)
  * @param {string[]} excludeTitles - passage titles already used by other generated
- *   exams; excluded so no passage repeats across exams. If fewer passages remain
- *   than requested, questions are generated from whatever is left.
+ *   exams; excluded so no passage repeats across exams. Once the fixed passage
+ *   bank is exhausted, the shortfall is filled with procedurally generated
+ *   passages (js/reading-generator.js), which are unique on every call.
  */
 export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3, excludeTitles = []) {
   const ids = topicIds && topicIds.length
@@ -1803,26 +1806,45 @@ export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3, ex
   );
   if (!skills.size) return [];
 
-  // Drop passages already used by other generated exams; cap the requested
-  // count at the number of passages so a passage never appears twice.
+  // Drop passages already used by other generated exams. The fixed bank is
+  // used first; any shortfall is filled with unique procedurally generated
+  // passages, so generation never runs out.
   const exclude = new Set(excludeTitles || []);
   const pool = READING_PASSAGES.filter((p) => !exclude.has(p.title));
-  if (!pool.length) return [];
-  const requested = Math.min(Math.max(1, Math.min(10, perTopic)), READING_PASSAGES.length);
-  const count = Math.min(requested, pool.length);
+  const requested = Math.max(1, Math.min(10, perTopic));
+  const staticCount = Math.min(requested, pool.length);
 
-  const passages = shuffle(pool);
   const questions = [];
-  for (let n = 0; n < count; n++) {
-    const passage = passages[n % passages.length];
-    for (const q of passage.questions) {
-      if (!skills.has(q.skill)) continue;
-      const built = buildQuestion('Reading', q.text, q.correct, q.distractors, q.solution);
-      built.passage = passage.text;
-      questions.push(built);
-    }
+  const usedTitles = new Set(exclude);
+  const passages = shuffle(pool);
+  for (let n = 0; n < staticCount; n++) {
+    appendPassageQuestions(questions, passages[n % passages.length], skills);
+    usedTitles.add(passages[n % passages.length].title);
+  }
+
+  // Fill the shortfall with procedurally generated passages (always unique).
+  let remaining = requested - staticCount;
+  let guard = 0;
+  while (remaining > 0 && guard < 40) {
+    guard++;
+    const procedural = generateProceduralReadingPassage(skills, [...usedTitles]);
+    if (!procedural) break;
+    appendPassageQuestions(questions, procedural, skills);
+    usedTitles.add(procedural.title);
+    remaining--;
   }
   return questions;
+}
+
+/** Build a passage's questions and append them (tagged with title + text). */
+function appendPassageQuestions(questions, passage, skills) {
+  for (const q of passage.questions) {
+    if (!skills.has(q.skill)) continue;
+    const built = buildQuestion('Reading', q.text, q.correct, q.distractors, q.solution);
+    built.passage = passage.text;
+    built.passageTitle = passage.title;
+    questions.push(built);
+  }
 }
 
 /**

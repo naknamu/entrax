@@ -1,16 +1,19 @@
 /**
- * E2E: reading passages must be unique across generated exams.
+ * E2E: reading passages must be unique across generated exams — the fixed
+ * bank is used first, then procedural generation fills in with unique
+ * passages (generation never blocks and no passage or story repeats).
  * Usage: node tests/verify-passage-uniqueness.cjs
  * Requires: emulators + dev server running, admin@test.com seeded.
  *
- * Exam A: generate reading (42q / 6 passages) -> save
- * Exam B: generate reading (28q / 4 remaining + warning) -> generate again
- *         (error, pool exhausted by form) -> save
- * Exam C: generate reading -> error (pool empty), nothing added
- * Asserts: A ∩ B = ∅, A ∪ B = all 10 passages, saved docs carry readingPassages.
- * CLEANS UP: deletes the 3 verification exams so the pool is restored.
+ * Exam A: generate reading (42q / 6 fixed passages) -> save
+ * Exam B: generate reading (42q / 4 fixed + 2 procedural) -> save
+ * Exam C: generate reading (42q / 6 procedural) -> save
+ * Asserts: A ∩ B ∩ C = ∅ for passage texts AND titles; procedural passages
+ * have 4 paragraphs; each saved exam carries its readingPassages titles.
+ * CLEANS UP: deletes the verification exams so the pool is restored.
  */
 const { chromium } = require('playwright');
+const admin = require('firebase-admin');
 
 const BASE = 'http://localhost:8080';
 const ADMIN = { email: 'admin@test.com', password: 'password123' };
@@ -37,111 +40,86 @@ const createdExamIds = [];
     await page.fill('#title', title);
     await page.fill('#timeLimitMinutes', '30');
     await page.fill('#passingPercent', '70');
-    // Add a READING section so generated questions are assigned to it
     await page.click('#add-section-btn');
-    const sectionTitle = page.locator('.section-title-input').last();
-    await sectionTitle.fill('READING');
-    return page;
+    await page.locator('.section-title-input').last().fill('READING');
   }
 
   async function generateReading() {
     await page.click('.generate-tab[data-gen-tab="reading"]');
     await page.waitForTimeout(300);
     await page.click('#generate-add-btn');
-    await page.waitForTimeout(600);
-    const status = (await page.locator('#generate-status').textContent().catch(() => '')).trim();
+    // Wait until generation completes (status text is set at the end)
+    await page.waitForFunction(
+      () => document.getElementById('generate-status')?.textContent.includes('Added 42'),
+      null, { timeout: 20000 }
+    );
+    const status = (await page.locator('#generate-status').textContent()).trim();
     const alertText = (await page.locator('#alert-container').textContent().catch(() => '')).trim();
     return { status, alertText };
   }
 
-  async function passagesInForm() {
-    return await page.evaluate(async () => {
-      const { readingPassageTitleFromText } = await import('/js/question-generator.js');
-      const titles = new Set();
-      document.querySelectorAll('textarea[name$="[passage]"]').forEach((ta) => {
-        const t = readingPassageTitleFromText((ta.value || '').trim());
-        if (t) titles.add(t);
-      });
-      return [...titles];
-    });
-  }
-
   async function saveAndGetId() {
     await page.click('#submit-btn');
-    await page.waitForSelector('.alert-success', { timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(800);
-    const url = page.url();
-    const id = new URL(url).searchParams.get('examId');
+    await page.waitForSelector('.alert-success', { timeout: 15000 });
+    let id = null;
+    for (let i = 0; i < 10 && !id; i++) {
+      await page.waitForTimeout(500);
+      id = new URL(page.url()).searchParams.get('examId');
+    }
     if (id) createdExamIds.push(id);
     return id;
   }
 
-  // ---- Exam A: 6 passages, 42 questions ----
-  await createExam('Uniqueness Check A');
-  const genA = await generateReading();
-  console.log('EXAM A generate:', genA.status, '| alert:', genA.alertText || '(none)');
-  const titlesA = await passagesInForm();
-  console.log('EXAM A passages:', titlesA.length, titlesA);
-  const idA = await saveAndGetId();
-  console.log('EXAM A saved:', idA);
+  // ---- Exam A (6 fixed), Exam B (4 fixed + 2 procedural), Exam C (6 procedural) ----
+  const results = [];
+  for (const title of ['Uniqueness A', 'Uniqueness B', 'Uniqueness C']) {
+    await createExam(title);
+    const gen = await generateReading();
+    const id = await saveAndGetId();
+    console.log(`${title}: saved ${id} | status: ${gen.status} | alert: ${gen.alertText || '(none)'}`);
+    results.push({ title, id, status: gen.status, alertText: gen.alertText });
+  }
 
-  // ---- Exam B: 4 remaining, 28 questions + warning; 2nd click errors ----
-  await createExam('Uniqueness Check B');
-  const genB = await generateReading();
-  console.log('EXAM B generate:', genB.status, '| alert:', genB.alertText || '(none)');
-  const titlesB = await passagesInForm();
-  console.log('EXAM B passages:', titlesB.length, titlesB);
-  const countAfterB = await page.locator('.question-block').count();
-  // Second generate click in the same form: pool exhausted by form passages
-  await page.click('#generate-add-btn');
-  await page.waitForTimeout(600);
-  const errText = (await page.locator('#alert-container').textContent().catch(() => '')).trim();
-  const countAfter2nd = await page.locator('.question-block').count();
-  console.log('EXAM B 2nd click alert:', errText || '(none)', '| blocks:', countAfterB, '->', countAfter2nd);
-  const idB = await saveAndGetId();
-  console.log('EXAM B saved:', idB);
+  await browser.close();
 
-  // ---- Exam C: pool exhausted ----
-  await createExam('Uniqueness Check C');
-  const genC = await generateReading();
-  console.log('EXAM C generate:', genC.status, '| alert:', genC.alertText || '(none)');
-  const countC = await page.locator('.question-block').count();
-  console.log('EXAM C blocks (default empty question only):', countC);
+  // ---- Verify saved exams via admin SDK ----
+  process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8081';
+  const app = admin.initializeApp({ projectId: 'demo-test' }, 'uniq-check');
+  const saved = [];
+  for (const r of results) {
+    const doc = await app.firestore().collection('exams').doc(r.id).get();
+    const data = doc.data();
+    const questions = data.questions || [];
+    const passages = [...new Set(questions.map((q) => q.passage).filter(Boolean))];
+    const titles = [...new Set(questions.map((q) => q.passageTitle).filter(Boolean))];
+    const field = data.readingPassages || [];
+    const fourParas = passages.every((p) => p.split('\n\n').length === 4);
+    saved.push({ id: r.id, passages, titles, field, fourParas });
+    console.log(`${r.title}: ${passages.length} passages | ${titles.length} titles | readingPassages field ${field.length} | all 4-para: ${fourParas}`);
+  }
 
   // ---- Assertions ----
-  const overlap = titlesA.filter((t) => titlesB.includes(t));
-  const union = [...new Set([...titlesA, ...titlesB])];
-  console.log('\n=== ASSERTIONS ===');
-  console.log('A ∩ B overlap:', overlap.length, overlap);
-  console.log('A ∪ B size:', union.length, '(10 expected)');
-  console.log('A = 6 passages:', titlesA.length === 6);
-  console.log('B = 4 passages:', titlesB.length === 4);
-  console.log('A count 42:', genA.status.includes('Added 42'));
-  console.log('B count 28:', genB.status.includes('Added 28'));
-  console.log('B warning shown:', genB.alertText.includes('unused reading passage'));
-  console.log('B 2nd click blocked:', errText.includes('already been used') && countAfter2nd === countAfterB);
-  console.log('C blocked:', genC.alertText.includes('already been used') && countC === 1);
+  const allTexts = saved.flatMap((s) => s.passages);
+  const allTitles = saved.flatMap((s) => s.titles);
+  const textUnique = new Set(allTexts).size === allTexts.length;
+  const titleUnique = new Set(allTitles).size === allTitles.length;
+  const allHaveSix = saved.every((s) => s.passages.length === 6 && s.titles.length === 6 && s.field.length === 6);
+  const fieldMatchesTitles = saved.every((s) => s.field.every((t) => s.titles.includes(t)));
+  const allFourParas = saved.every((s) => s.fourParas);
+  const countsOk = results.every((r) => r.status.includes('Added 42'));
 
-  const pass =
-    overlap.length === 0 &&
-    union.length === 10 &&
-    titlesA.length === 6 &&
-    titlesB.length === 4 &&
-    genA.status.includes('Added 42') &&
-    genB.status.includes('Added 28') &&
-    genB.alertText.includes('unused reading passage') &&
-    errText.includes('already been used') &&
-    countAfter2nd === countAfterB &&
-    genC.alertText.includes('already been used') &&
-    countC === 1 &&
-    idA && idB;
+  console.log('\n=== ASSERTIONS ===');
+  console.log('passage texts unique across A+B+C:', textUnique, `(${allTexts.length})`);
+  console.log('passage titles unique across A+B+C:', titleUnique, `(${allTitles.length})`);
+  console.log('each exam: 6 passages, 6 titles, 6 readingPassages:', allHaveSix);
+  console.log('readingPassages field matches question titles:', fieldMatchesTitles);
+  console.log('all procedural/fixed passages have 4 paragraphs:', allFourParas);
+  console.log('each generation added 42 questions:', countsOk);
+
+  const pass = textUnique && titleUnique && allHaveSix && fieldMatchesTitles && allFourParas && countsOk;
   console.log(`RESULT: ${pass ? 'PASS' : 'FAIL'}`);
 
-  // Clean up: delete verification exams so the passage pool is restored
-  await browser.close();
-  const admin = require('firebase-admin');
-  process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8081';
-  const app = admin.initializeApp({ projectId: 'demo-test' }, 'uniq-cleanup');
+  // ---- Clean up verification exams ----
   for (const id of createdExamIds) {
     await app.firestore().collection('exams').doc(id).delete().catch(() => {});
     console.log('cleaned up exam', id);

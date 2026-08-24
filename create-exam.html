@@ -253,6 +253,7 @@
           <div class="form-group">
             <label class="label" for="question-passage-0">Passage (optional)</label>
             <textarea id="question-passage-0" name="questions[0][passage]" class="input passage-input" rows="4" placeholder="For reading questions: the passage text (3-4 paragraphs). It is shown ONCE above all its questions in the exam."></textarea>
+            <input type="hidden" name="questions[0][passageTitle]" class="passage-title-input" aria-hidden="true">
             <div class="help-text">Questions that share the same passage appear under a single passage block in the exam and on the results page.</div>
           </div>
           <div class="form-group">
@@ -400,6 +401,7 @@
           const exam = d.data() || {};
           (exam.readingPassages || []).forEach((t) => { if (t) used.add(t); });
           (exam.questions || []).forEach((q) => {
+            if (q.passageTitle) used.add(q.passageTitle);
             const title = readingPassageTitleFromText(q.passage);
             if (title) used.add(title);
           });
@@ -499,6 +501,8 @@
           block.querySelector('textarea[name$="[text]"]').value = q.text;
           const passageInput = block.querySelector('textarea[name$="[passage]"]');
           if (passageInput) passageInput.value = q.passage || '';
+          const passageTitleInput = block.querySelector('input[name$="[passageTitle]"]');
+          if (passageTitleInput) passageTitleInput.value = q.passageTitle || '';
           const catInput = block.querySelector('input[name$="[category]"]');
           if (catInput) catInput.value = q.category || '';
           const solInput = block.querySelector('textarea[name$="[solution]"]');
@@ -534,13 +538,14 @@
               const title = readingPassageTitleFromText((ta.value || '').trim());
               if (title) used.add(title);
             });
+            questionsContainer.querySelectorAll('.passage-title-input').forEach((inp) => {
+              if (inp.value) used.add(inp.value);
+            });
             const available = getReadingPassageTitles().filter((t) => !used.has(t));
             if (available.length === 0) {
-              showAlert(alertContainer, 'All reading passages have already been used in other exams. Add new passages to READING_PASSAGES in js/question-generator.js to generate more reading questions.', 'error');
-              return;
-            }
-            if (available.length < perTopic) {
-              shortageWarning = `Only ${available.length} unused reading passage${available.length === 1 ? '' : 's'} remain (${perTopic} requested) — generated questions from what is left. Add more passages to READING_PASSAGES in js/question-generator.js to keep the pool from running out.`;
+              shortageWarning = 'All fixed reading passages are already in use — this exam will use procedurally generated passages, which are unique.';
+            } else if (available.length < perTopic) {
+              shortageWarning = `Only ${available.length} fixed reading passage${available.length === 1 ? '' : 's'} remain unused (${perTopic} requested) — the rest will be procedurally generated. No passage repeats across exams.`;
             }
             questions = g.fn(checked, perTopic, [...used]);
           } else {
@@ -963,6 +968,10 @@
       // Passage (optional, reading questions)
       const passageInput = clone.querySelector('textarea[name$="[passage]"]');
       if (passageInput) passageInput.value = question.passage || '';
+
+      // Passage title (optional — used to keep generated passages unique)
+      const passageTitleInput = clone.querySelector('input[name$="[passageTitle]"]');
+      if (passageTitleInput) passageTitleInput.value = question.passageTitle || '';
 
       // Category
       const categoryInput = clone.querySelector('input[name$="[category]"]');
@@ -1447,6 +1456,7 @@
       blocks.forEach((block, index) => {
         const text = block.querySelector('textarea[name$="[text]"]').value.trim();
         const passage = block.querySelector('textarea[name$="[passage]"]')?.value.trim() || '';
+        const passageTitle = block.querySelector('input[name$="[passageTitle]"]')?.value.trim() || '';
         const category = block.querySelector('input[name$="[category]"]').value.trim();
         const solution = block.querySelector('textarea[name$="[solution]"]')?.value.trim() || '';
         const sectionId = block.querySelector('select[name$="[sectionId]"]')?.value || '';
@@ -1459,6 +1469,7 @@
           id: generateId(),
           text,
           ...(passage ? { passage } : {}),
+          ...(passageTitle ? { passageTitle } : {}),
           category: category || null,
           choices,
           correctIndex,
@@ -1474,7 +1485,7 @@
       // generated exams can exclude them — no passage repeats across exams.
       const readingPassages = [];
       questions.forEach((q) => {
-        const title = readingPassageTitleFromText(q.passage);
+        const title = q.passageTitle || readingPassageTitleFromText(q.passage);
         if (title && !readingPassages.includes(title)) readingPassages.push(title);
       });
 
