@@ -1769,6 +1769,17 @@ function generateKaplanQuestionsByTopic(topicList, topicIds = null, perTopic = 3
   return questions;
 }
 
+/** Titles of all available reading passages (for pool-size checks / UI warnings). */
+export function getReadingPassageTitles() {
+  return READING_PASSAGES.map((p) => p.title);
+}
+
+/** Title of the reading passage whose text matches the given passage text, or null. */
+export function readingPassageTitleFromText(text) {
+  if (!text) return null;
+  return READING_PASSAGES.find((p) => p.text === text)?.title ?? null;
+}
+
 /**
  * Generate Kaplan-style READING comprehension questions (passage-based).
  *
@@ -1779,10 +1790,11 @@ function generateKaplanQuestionsByTopic(topicList, topicIds = null, perTopic = 3
  * `perTopic` questions overall.
  * @param {string[]} topicIds - subset of KAPLAN_READING_TOPICS ids (default: all)
  * @param {number} perTopic - questions per topic (default 3; capped at the number of passages)
+ * @param {string[]} excludeTitles - passage titles already used by other generated
+ *   exams; excluded so no passage repeats across exams. If fewer passages remain
+ *   than requested, questions are generated from whatever is left.
  */
-export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3) {
-  // Capped at the number of passages so a passage never appears twice.
-  const count = Math.min(Math.max(1, Math.min(10, perTopic)), READING_PASSAGES.length);
+export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3, excludeTitles = []) {
   const ids = topicIds && topicIds.length
     ? topicIds
     : KAPLAN_READING_TOPICS.map((t) => t.id);
@@ -1791,7 +1803,15 @@ export function generateKaplanReadingQuestions(topicIds = null, perTopic = 3) {
   );
   if (!skills.size) return [];
 
-  const passages = shuffle(READING_PASSAGES);
+  // Drop passages already used by other generated exams; cap the requested
+  // count at the number of passages so a passage never appears twice.
+  const exclude = new Set(excludeTitles || []);
+  const pool = READING_PASSAGES.filter((p) => !exclude.has(p.title));
+  if (!pool.length) return [];
+  const requested = Math.min(Math.max(1, Math.min(10, perTopic)), READING_PASSAGES.length);
+  const count = Math.min(requested, pool.length);
+
+  const passages = shuffle(pool);
   const questions = [];
   for (let n = 0; n < count; n++) {
     const passage = passages[n % passages.length];

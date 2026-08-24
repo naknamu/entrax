@@ -318,6 +318,7 @@
     import {
       generateKaplanMathQuestions, KAPLAN_MATH_TOPICS,
       generateKaplanReadingQuestions, KAPLAN_READING_TOPICS,
+      getReadingPassageTitles, readingPassageTitleFromText,
       generateKaplanWritingQuestions, KAPLAN_WRITING_TOPICS,
       generateKaplanScienceQuestions, KAPLAN_SCIENCE_TOPICS
     } from '/js/question-generator.js';
@@ -384,6 +385,29 @@
       if (!g) return;
       const match = examSections.find((s) => g.match.test(s.title || ''));
       select.value = match ? match.id : '';
+    }
+
+    /**
+     * Collect reading passage titles already used by ANY saved exam (from each
+     * exam's recorded readingPassages field, plus derived from question passage
+     * texts so exams saved before this tracking existed are counted too).
+     */
+    async function getUsedReadingPassageTitles() {
+      const used = new Set();
+      try {
+        const snapshot = await getDocs(collection(db, 'exams'));
+        snapshot.docs.forEach((d) => {
+          const exam = d.data() || {};
+          (exam.readingPassages || []).forEach((t) => { if (t) used.add(t); });
+          (exam.questions || []).forEach((q) => {
+            const title = readingPassageTitleFromText(q.passage);
+            if (title) used.add(title);
+          });
+        });
+      } catch (error) {
+        console.error('Error loading used reading passages:', error);
+      }
+      return used;
     }
 
     // Initialize event listeners immediately (not waiting for auth)
@@ -490,7 +514,7 @@
       }
 
       if (generateAddBtn) {
-        generateAddBtn.addEventListener('click', () => {
+        generateAddBtn.addEventListener('click', async () => {
           const g = GENERATOR_SECTIONS[currentGenSection];
           if (!g) return;
           const checked = [...generateTopicsEl.querySelectorAll('input:checked')].map((i) => i.value);
@@ -499,7 +523,29 @@
             return;
           }
           const perTopic = Math.max(1, Math.min(10, parseInt(generateCount.value) || 3));
-          const questions = g.fn(checked, perTopic);
+          let questions;
+          let shortageWarning = '';
+          if (currentGenSection === 'reading') {
+            // Keep reading passages unique across generated exams: exclude
+            // passages already used by any saved exam, plus passages already
+            // present in this form (so one exam never reuses a passage).
+            const used = await getUsedReadingPassageTitles();
+            questionsContainer.querySelectorAll('textarea[name$="[passage]"]').forEach((ta) => {
+              const title = readingPassageTitleFromText((ta.value || '').trim());
+              if (title) used.add(title);
+            });
+            const available = getReadingPassageTitles().filter((t) => !used.has(t));
+            if (available.length === 0) {
+              showAlert(alertContainer, 'All reading passages have already been used in other exams. Add new passages to READING_PASSAGES in js/question-generator.js to generate more reading questions.', 'error');
+              return;
+            }
+            if (available.length < perTopic) {
+              shortageWarning = `Only ${available.length} unused reading passage${available.length === 1 ? '' : 's'} remain (${perTopic} requested) — generated questions from what is left. Add more passages to READING_PASSAGES in js/question-generator.js to keep the pool from running out.`;
+            }
+            questions = g.fn(checked, perTopic, [...used]);
+          } else {
+            questions = g.fn(checked, perTopic);
+          }
           const targetSection = generateSectionSelect?.value || '';
           removeDefaultEmptyQuestion();
           const leftovers = fillEmptySlots(targetSection, questions);
@@ -516,6 +562,9 @@
             generateStatus.classList.remove('hidden');
           }
           clearAlert();
+          if (shortageWarning) {
+            showAlert(alertContainer, shortageWarning, 'warning');
+          }
           scrollTo({ top: document.getElementById('questions-heading').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
         });
       }
@@ -1421,6 +1470,14 @@
       const startDate = document.getElementById('startDate').value;
       const endDate = document.getElementById('endDate').value;
 
+      // Track which reading passages this exam uses (by title) so future
+      // generated exams can exclude them — no passage repeats across exams.
+      const readingPassages = [];
+      questions.forEach((q) => {
+        const title = readingPassageTitleFromText(q.passage);
+        if (title && !readingPassages.includes(title)) readingPassages.push(title);
+      });
+
       return {
         title: document.getElementById('title').value.trim(),
         description: document.getElementById('description').value.trim(),
@@ -1432,6 +1489,7 @@
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         questions,
+        ...(readingPassages.length ? { readingPassages } : {}),
         sections: examSections
           .filter(s => s.title && s.title.trim())
           .map(s => ({ id: s.id, title: s.title.trim(), description: (s.description || '').trim() })),
