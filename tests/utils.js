@@ -253,3 +253,16 @@ export async function waitForLoading(page) {
     return !loading;
   }, { timeout: 10000 }).catch(() => {}); // Ignore timeout
 }
+/**
+ * Expand a create-exam accordion section (by its data-accordion name) when it
+ * is collapsed. Header action buttons stay visible either way; only the body
+ * controls are hidden, so tests that interact with body elements need this.
+ */
+export async function expandAccordion(page, name) {
+  const section = page.locator(`.accordion-section:has(.accordion-toggle[data-accordion="${name}"])`);
+  const isOpen = await section.evaluate((el) => el.classList.contains('open'));
+  if (!isOpen) {
+    await page.locator(`.accordion-toggle[data-accordion="${name}"]`).click();
+    await page.waitForTimeout(350); // allow the open transition to finish
+  }
+}

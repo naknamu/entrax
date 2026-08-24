@@ -42,11 +42,14 @@
 
       <form id="exam-form" novalidate>
         <!-- Exam Basic Info -->
-        <section class="card section-card" aria-labelledby="exam-info-heading">
-          <header class="card-header">
-            <h2 class="card-title" id="exam-info-heading">Exam Information</h2>
+        <section class="card section-card accordion-section open" aria-labelledby="exam-info-heading">
+          <header class="card-header accordion-header">
+            <div class="accordion-toggle" data-accordion="exam-info" role="button" tabindex="0" aria-expanded="true" aria-controls="exam-info-body">
+              <h2 class="card-title" id="exam-info-heading">Exam Information</h2>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </header>
-          <div class="card-body">
+          <div class="card-body accordion-body open" id="exam-info-body">
             <div class="grid grid-2 gap-4">
               <div class="form-group">
                 <label class="label" for="title">Exam Title <span class="text-danger" aria-hidden="true">*</span></label>
@@ -103,11 +106,14 @@
         </section>
 
         <!-- Exam Sections -->
-        <section class="card section-card" aria-labelledby="sections-heading">
-          <header class="card-header">
-            <div class="flex items-center justify-between flex-wrap gap-3">
+        <section class="card section-card accordion-section" aria-labelledby="sections-heading">
+          <header class="card-header accordion-header">
+            <div class="accordion-toggle" data-accordion="sections" role="button" tabindex="0" aria-expanded="false" aria-controls="sections-body">
               <h2 class="card-title" id="sections-heading">Exam Sections</h2>
-              <div class="flex items-center gap-2 flex-wrap">
+              <span class="badge badge-outline" id="sections-count-badge" hidden></span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
                 <button type="button" class="btn btn-primary btn-sm" id="kaplan-template-btn" title="Load the official Kaplan Entrance Exam structure: 4 sections, 91 questions, 165 minutes">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                   Load Kaplan Template
@@ -116,10 +122,9 @@
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Add Section
                 </button>
-              </div>
             </div>
           </header>
-          <div class="card-body">
+          <div class="card-body accordion-body" id="sections-body">
             <p class="help-text mb-3">
               Organize questions into named sections like the Kaplan Entrance Exam.
               Students see section headings during the exam and on the results page.
@@ -132,11 +137,14 @@
         </section>
 
         <!-- Import Questions -->
-        <section class="card section-card" aria-labelledby="import-heading">
-          <header class="card-header">
-            <h2 class="card-title" id="import-heading">Import Questions</h2>
+        <section class="card section-card accordion-section" aria-labelledby="import-heading">
+          <header class="card-header accordion-header">
+            <div class="accordion-toggle" data-accordion="import" role="button" tabindex="0" aria-expanded="false" aria-controls="import-body">
+              <h2 class="card-title" id="import-heading">Import Questions</h2>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </header>
-          <div class="card-body">
+          <div class="card-body accordion-body" id="import-body">
             <div class="form-group">
               <label class="label" for="import-file">Upload Question File (.txt, .csv, .json, .docx)</label>
               <input type="file" id="import-file" class="input" accept=".txt,.csv,.json,.docx" aria-describedby="import-help">
@@ -166,11 +174,14 @@
         </section>
 
         <!-- Generate Kaplan Questions -->
-        <section class="card section-card" aria-labelledby="generate-heading">
-          <header class="card-header">
-            <h2 class="card-title" id="generate-heading">Generate Kaplan Questions</h2>
+        <section class="card section-card accordion-section" aria-labelledby="generate-heading">
+          <header class="card-header accordion-header">
+            <div class="accordion-toggle" data-accordion="generate" role="button" tabindex="0" aria-expanded="false" aria-controls="generate-body">
+              <h2 class="card-title" id="generate-heading">Generate Kaplan Questions</h2>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </header>
-          <div class="card-body">
+          <div class="card-body accordion-body" id="generate-body">
             <p class="help-text mb-3">
               Instantly create original, randomized questions for every Kaplan Entrance Exam
               section. Pick a section, choose topics, and click
@@ -203,17 +214,21 @@
         </section>
 
         <!-- Questions Section -->
-        <section class="card section-card" aria-labelledby="questions-heading">
-          <header class="card-header">
-            <div class="flex items-center justify-between flex-wrap gap-3">
+        <section class="card section-card accordion-section open" aria-labelledby="questions-heading">
+          <header class="card-header accordion-header">
+            <div class="accordion-toggle" data-accordion="questions" role="button" tabindex="0" aria-expanded="true" aria-controls="questions-body">
               <h2 class="card-title" id="questions-heading">Questions</h2>
+              <span class="badge badge-outline" id="questions-count-badge" hidden></span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
               <button type="button" class="btn btn-primary" id="add-question-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Question
               </button>
             </div>
           </header>
-          <div class="card-body">
+          <div class="card-body accordion-body open" id="questions-body">
             <div id="questions-container"></div>
             <p id="no-questions-msg" class="text-center text-muted py-8 hidden">No questions added yet. Click "Add Question" or import from file.</p>
           </div>
@@ -559,6 +574,7 @@
             addQuestion(q);
           });
           renderSections(); // refresh per-section count badges
+          openAccordionSection('questions');
           if (generateStatus) {
             const filled = questions.length - leftovers.length;
             const sectionName = targetSection ? (examSections.find((s) => s.id === targetSection)?.title || '') : '';
@@ -610,6 +626,52 @@
 
     // Call init immediately
     initEventListeners();
+
+    // ============ ACCORDION SECTIONS ============
+
+    /** Expand a section by its data-accordion name (used after content lands). */
+    function openAccordionSection(name) {
+      const toggle = document.querySelector(`.accordion-toggle[data-accordion="${name}"]`);
+      if (toggle && !toggle.closest('.accordion-section').classList.contains('open')) toggle.click();
+    }
+
+    /** Open or close an accordion section with a measured-height animation. */
+    function setAccordion(toggle, open) {
+      const section = toggle.closest('.accordion-section');
+      const body = section.querySelector('.accordion-body');
+      if (!body) return;
+      section.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      body.classList.toggle('open', open);
+      if (open) {
+        body.style.maxHeight = 'none';
+        const h = body.scrollHeight;
+        body.style.maxHeight = '0px';
+        void body.offsetHeight; // force reflow so the transition starts from 0
+        body.style.maxHeight = h + 'px';
+        const done = () => { body.style.maxHeight = 'none'; body.removeEventListener('transitionend', done); };
+        body.addEventListener('transitionend', done);
+      } else {
+        body.style.maxHeight = body.scrollHeight + 'px';
+        void body.offsetHeight;
+        body.style.maxHeight = '0px';
+      }
+    }
+
+    function initAccordions() {
+      document.querySelectorAll('.accordion-toggle').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+          setAccordion(toggle, !toggle.closest('.accordion-section').classList.contains('open'));
+        });
+        toggle.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle.click();
+          }
+        });
+      });
+    }
+    initAccordions();
 
     // Auth check
     onAuthStateChanged(auth, async (user) => {
@@ -727,6 +789,7 @@
         renderSections(); // refresh per-section question count badges
         toggleNoQuestionsMsg();
         clearAlert();
+        openAccordionSection('questions');
         showAlert(alertContainer, `Kaplan template loaded: 4 sections, 91 questions (READING 22, MATH 28, WRITING 21, SCIENCE 20), 165 minutes. Fill in the question text and choices, or import questions and assign them to sections.`, 'success');
         scrollTo({ top: document.getElementById('questions-heading').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
       });
@@ -750,6 +813,11 @@
 
     function renderSections() {
       if (!sectionsContainer) return;
+      const sectionsCountBadge = document.getElementById('sections-count-badge');
+      if (sectionsCountBadge) {
+        sectionsCountBadge.textContent = `${examSections.length} section${examSections.length === 1 ? '' : 's'}`;
+        sectionsCountBadge.hidden = examSections.length === 0;
+      }
       if (noSectionsMsg) noSectionsMsg.classList.toggle('hidden', examSections.length > 0);
       const counts = countQuestionsPerSection();
       sectionsContainer.innerHTML = examSections.map((s, i) => `
@@ -1032,6 +1100,12 @@
 
     function updateQuestionNumbers() {
       const blocks = questionsContainer.querySelectorAll('.question-block');
+      const questionsCountBadge = document.getElementById('questions-count-badge');
+      if (questionsCountBadge) {
+        const n = blocks.length;
+        questionsCountBadge.textContent = `${n} question${n === 1 ? '' : 's'}`;
+        questionsCountBadge.hidden = n === 0;
+      }
       blocks.forEach((block, index) => {
         block.dataset.questionIndex = index;
         const numberEl = block.querySelector('.question-number');
@@ -1396,6 +1470,7 @@
       const statusEl = document.getElementById('import-status');
       if (statusEl) statusEl.classList.add('hidden');
       showAlert(alertContainer, 'Questions added successfully!', 'success');
+      openAccordionSection('questions');
     }
 
     // ============ FORM HANDLING ============

@@ -40,11 +40,25 @@ const createdExamIds = [];
     await page.fill('#title', title);
     await page.fill('#timeLimitMinutes', '30');
     await page.fill('#passingPercent', '70');
+    await expandAccordion('sections');
     await page.click('#add-section-btn');
     await page.locator('.section-title-input').last().fill('READING');
   }
 
+  /** Open a create-exam accordion section by name if it is collapsed. */
+  async function expandAccordion(name) {
+    const open = await page.evaluate((n) => {
+      const s = document.querySelector(`.accordion-section:has(.accordion-toggle[data-accordion="${n}"])`);
+      return s ? s.classList.contains('open') : true;
+    }, name);
+    if (!open) {
+      await page.locator(`.accordion-toggle[data-accordion="${name}"]`).click();
+      await page.waitForTimeout(350);
+    }
+  }
+
   async function generateReading() {
+    await expandAccordion('generate');
     await page.click('.generate-tab[data-gen-tab="reading"]');
     await page.waitForTimeout(300);
     await page.click('#generate-add-btn');

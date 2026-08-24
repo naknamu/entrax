@@ -13,6 +13,18 @@ const BASE = 'http://localhost:8080';
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
 
+  /** Open a create-exam accordion section by name if it is collapsed. */
+  async function expandAccordion(name) {
+    const open = await page.evaluate((n) => {
+      const s = document.querySelector(`.accordion-section:has(.accordion-toggle[data-accordion="${n}"])`);
+      return s ? s.classList.contains('open') : true;
+    }, name);
+    if (!open) {
+      await page.locator(`.accordion-toggle[data-accordion="${name}"]`).click();
+      await page.waitForTimeout(350);
+    }
+  }
+
   await page.goto(`${BASE}/index.html?test=true`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#login-form', { state: 'visible', timeout: 30000 });
   await page.fill('#email', 'admin@test.com');
@@ -25,9 +37,11 @@ const BASE = 'http://localhost:8080';
   await page.fill('#title', 'Passage Tracking Check');
   await page.fill('#timeLimitMinutes', '30');
   await page.fill('#passingPercent', '70');
+  await expandAccordion('sections');
   await page.click('#add-section-btn');
   await page.locator('.section-title-input').last().fill('READING');
 
+  await expandAccordion('generate');
   await page.click('.generate-tab[data-gen-tab="reading"]');
   await page.waitForTimeout(300);
   await page.click('#generate-add-btn');
@@ -53,14 +67,12 @@ const BASE = 'http://localhost:8080';
   const withPassage = (data.questions || []).filter(q => q.passage).length;
   console.log('questions with passage:', withPassage);
 
-  // Assert: field has 6 unique titles; each maps back to a question passage
-  const path = require('path');
-  const { pathToFileURL } = require('url');
-  const { readingPassageTitleFromText, getReadingPassageTitles } = await import(pathToFileURL(path.join(__dirname, '..', 'js', 'question-generator.js')).href);
-  const allTitles = new Set(getReadingPassageTitles());
-  const valid = field.every((t) => allTitles.has(t));
-  const formTitles = new Set((data.questions || []).map(q => readingPassageTitleFromText(q.passage)).filter(Boolean));
-  const match = formTitles.size === field.length && field.every((t) => formTitles.has(t));
+  // Assert: the readingPassages field holds 6 unique titles and exactly
+  // matches the passageTitle carried by the saved questions (static or
+  // procedurally generated — both are tagged at generation time).
+  const qTitles = new Set((data.questions || []).map(q => q.passageTitle).filter(Boolean));
+  const valid = field.every((t) => typeof t === 'string' && t.length > 0);
+  const match = qTitles.size === field.length && field.every((t) => qTitles.has(t));
   const pass = field.length === 6 && valid && match && withPassage === 42;
   console.log(`RESULT: ${pass ? 'PASS' : 'FAIL'} (field=${field.length}, valid=${valid}, match=${match}, withPassage=${withPassage})`);
 

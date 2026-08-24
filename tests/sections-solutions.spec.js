@@ -12,7 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { waitForFirebase, signInAsAdmin } from './utils.js';
+import { waitForFirebase, signInAsAdmin, expandAccordion } from './utils.js';
 
 async function createSectionedExam(page) {
   await page.goto('/create-exam.html?test=true');
@@ -25,6 +25,7 @@ async function createSectionedExam(page) {
   await page.fill('#passingPercent', '70');
 
   // Add two sections: Math and Reading
+  await expandAccordion(page, 'sections');
   await page.click('#add-section-btn');
   await page.fill('.section-title-input >> nth=0', 'Math');
   await page.click('#add-section-btn');
@@ -135,6 +136,7 @@ test.describe('Exam sections & math solutions', () => {
     await expect(page.locator('.question-block')).toHaveCount(91);
 
     // --- Reading tab ---
+    await expandAccordion(page, 'generate');
     await page.click('.generate-tab[data-gen-tab="reading"]');
     await expect(page.locator('.generate-tab.active')).toHaveText('Reading');
     // 7 reading topics checked (Week 1 skills) + recommended per-topic count 6 (7 x 6 = 42)
