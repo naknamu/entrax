@@ -422,14 +422,14 @@ export async function getSubmissionsByStudent(db, studentUid, options = {}) {
   let q = query(
     collection(db, 'submissions'),
     where('studentUid', '==', studentUid),
-    where('submittedAt', '!=', null),
     orderBy('submittedAt', 'desc')
   );
   if (limitCount) {
     q = query(q, limit(limitCount));
   }
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(s => s.submittedAt != null);
 }
 
 /**
