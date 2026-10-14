@@ -141,6 +141,26 @@ service cloud.firestore {
     }
 
     // ==========================================================================
+    // STUDENTS COLLECTION
+    // ==========================================================================
+    match /students/{uid} {
+      // Students can read their own profile
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+
+      // Students can create their own profile (first sign-in)
+      allow create: if isAuthenticated() && request.auth.uid == uid;
+
+      // Students can update their own profile
+      allow update: if isAuthenticated() && request.auth.uid == uid;
+
+      // Students can delete their own profile
+      allow delete: if isAuthenticated() && request.auth.uid == uid;
+
+      // Admins can read all student profiles
+      allow read: if isAdmin();
+    }
+
+    // ==========================================================================
     // DEFAULT DENY
     // ==========================================================================
     match /{document=**} {

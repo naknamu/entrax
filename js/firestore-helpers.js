@@ -372,3 +372,167 @@ export async function subscribeToSubmission(db, submissionId, callback) {
     callback(doc.exists() ? { id: doc.id, ...doc.data() } : null);
   });
 }
+
+// ==========================================================================
+// STUDENT PORTAL HELPERS
+// ==========================================================================
+
+/**
+ * Get student profile
+ * @param {Firestore} db - Firestore instance
+ * @param {string} uid - Student UID
+ * @returns {Promise<Object|null>} Student profile or null
+ */
+export async function getStudentProfile(db, uid) {
+  const ref = doc(db, 'students', uid);
+  const snap = await getDoc(ref);
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+/**
+ * Create or update student profile (merge)
+ * @param {Firestore} db - Firestore instance
+ * @param {string} uid - Student UID
+ * @param {Object} data - Profile fields to set/update
+ * @returns {Promise<void>}
+ */
+export async function createOrUpdateStudentProfile(db, uid, data) {
+  const ref = doc(db, 'students', uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, { ...data, lastLoginAt: serverTimestamp() });
+  } else {
+    await setDoc(ref, {
+      ...data,
+      createdAt: serverTimestamp(),
+      lastLoginAt: serverTimestamp(),
+    });
+  }
+}
+
+/**
+ * Get all submissions for a student (by UID), most recent first
+ * @param {Firestore} db - Firestore instance
+ * @param {string} studentUid - Student UID
+ * @param {Object} options - { limitCount }
+ * @returns {Promise<Array>} Array of submissions
+ */
+export async function getSubmissionsByStudent(db, studentUid, options = {}) {
+  const { limitCount = null } = options;
+  let q = query(
+    collection(db, 'submissions'),
+    where('studentUid', '==', studentUid),
+    where('submittedAt', '!=', null),
+    orderBy('submittedAt', 'desc')
+  );
+  if (limitCount) {
+    q = query(q, limit(limitCount));
+  }
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Get all published exams that are currently open for students
+ * @param {Firestore} db - Firestore instance
+ * @returns {Promise<Array>} Array of open exams
+ */
+export async function getAvailableExams(db) {
+  const examsQuery = query(
+    collection(db, 'exams'),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(examsQuery);
+  const now = new Date();
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(exam => {
+      if (!exam.questions || exam.questions.length === 0) return false;
+      if (exam.startDate && toDate(exam.startDate) > now) return false;
+      if (exam.endDate && toDate(exam.endDate) < now) return false;
+      return true;
+    });
+}
+
+/**
+ * Compute dashboard statistics for a student
+ * @param {Firestore} db - Firestore instance
+ * @param {string} studentUid - Student UID
+ * @returns {Promise<Object>} Dashboard stats
+ */
+export async function getStudentDashboardStats(db, studentUid) {
+  const [submissions, availableExams] = await Promise.all([
+    getSubmissionsByStudent(db, studentUid),
+    getAvailableExams(db),
+  ]);
+
+  const examsTaken = submissions.length;
+  const passed = submissions.filter(s => s.passed).length;
+  const percentages = submissions.map(s => s.percentage || 0);
+  const avgScore = examsTaken > 0
+    ? percentages.reduce((a, b) => a + b, 0) / examsTaken
+    : 0;
+  const passRate = examsTaken > 0 ? (passed / examsTaken) * 100 : 0;
+  const bestScore = examsTaken > 0 ? Math.max(...percentages) : 0;
+  const totalTimeMs = submissions.reduce((sum, s) => sum + (s.timeTakenMs || 0), 0);
+
+  // Study streak: consecutive days (up to today) with at least one submission
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const submissionDays = new Set(
+    submissions
+      .filter(s => s.submittedAt)
+      .map(s => { const d = toDate(s.submittedAt); d.setHours(0,0,0,0); return d.getTime(); })
+  );
+  let streak = 0;
+  let checkDay = new Date(today);
+  // Only count streak if today has a submission, otherwise start from yesterday
+  if (!submissionDays.has(checkDay.getTime())) {
+    checkDay.setDate(checkDay.getDate() - 1);
+  }
+  while (submissionDays.has(checkDay.getTime())) {
+    streak++;
+    checkDay.setDate(checkDay.getDate() - 1);
+  }
+
+  // Unique exams taken (by examId)
+  const uniqueExamsTaken = new Set(submissions.map(s => s.examId)).size;
+
+  // Total available exams
+  const totalAvailable = availableExams.length;
+
+  // Recent submissions (last 5)
+  const recentSubmissions = submissions.slice(0, 5);
+
+  // Score trend (last 10 submissions, oldest first)
+  const scoreTrend = submissions.slice(0, 10).reverse().map(s => ({
+    examId: s.examId,
+    percentage: s.percentage || 0,
+    passed: s.passed,
+    submittedAt: s.submittedAt,
+  }));
+
+  return {
+    examsTaken: uniqueExamsTaken,
+    totalSubmissions: examsTaken,
+    avgScore: Math.round(avgScore),
+    passRate: Math.round(passRate),
+    bestScore: Math.round(bestScore),
+    totalTimeMs,
+    streak,
+    totalAvailable,
+    recentSubmissions,
+    scoreTrend,
+    availableExams,
+  };
+}
+
+/**
+ * Delete a student profile
+ * @param {Firestore} db - Firestore instance
+ * @param {string} uid - Student UID
+ * @returns {Promise<void>}
+ */
+export async function deleteStudentProfile(db, uid) {
+  await deleteDoc(doc(db, 'students', uid));
+}

@@ -17,6 +17,7 @@ export default defineConfig({
         'create-exam': resolve(__dirname, 'create-exam.html'),
         exam: resolve(__dirname, 'exam.html'),
         'exam-results': resolve(__dirname, 'exam-results.html'),
+        student: resolve(__dirname, 'student.html'),
       },
     },
   },
