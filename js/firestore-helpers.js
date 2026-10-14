@@ -419,17 +419,25 @@ export async function createOrUpdateStudentProfile(db, uid, data) {
  */
 export async function getSubmissionsByStudent(db, studentUid, options = {}) {
   const { limitCount = null } = options;
-  let q = query(
+  // Use only where() — no orderBy to avoid requiring a composite index.
+  // Sort by submittedAt client-side instead.
+  const q = query(
     collection(db, 'submissions'),
-    where('studentUid', '==', studentUid),
-    orderBy('submittedAt', 'desc')
+    where('studentUid', '==', studentUid)
   );
-  if (limitCount) {
-    q = query(q, limit(limitCount));
-  }
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(s => s.submittedAt != null);
+  let results = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(s => s.submittedAt != null)
+    .sort((a, b) => {
+      const ta = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : 0;
+      const tb = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : 0;
+      return tb - ta;
+    });
+  if (limitCount) {
+    results = results.slice(0, limitCount);
+  }
+  return results;
 }
 
 /**
@@ -438,14 +446,17 @@ export async function getSubmissionsByStudent(db, studentUid, options = {}) {
  * @returns {Promise<Array>} Array of open exams
  */
 export async function getAvailableExams(db) {
-  const examsQuery = query(
-    collection(db, 'exams'),
-    orderBy('createdAt', 'desc')
-  );
+  // No orderBy — avoids composite index requirement; sort client-side
+  const examsQuery = query(collection(db, 'exams'));
   const snap = await getDocs(examsQuery);
   const now = new Date();
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => {
+      const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    })
     .filter(exam => {
       if (!exam.questions || exam.questions.length === 0) return false;
       if (exam.startDate && toDate(exam.startDate) > now) return false;
