@@ -431,10 +431,18 @@
       document.getElementById('exam-closed-message').textContent = 'Invalid exam link. Please check the URL.';
     }
 
-    // Auth anonymously
-    signInAnonymously(auth).catch(console.error);
-
+    // Auth — restore session first; only sign in anonymously if no user exists.
+    // (Don't overwrite a student's portal session with an anonymous one.)
+    let authResolved = false;
     onAuthStateChanged(auth, async (user) => {
+      if (!authResolved) {
+        authResolved = true;
+        if (!user) {
+          // No existing session — create anonymous one for direct-link access
+          try { await signInAnonymously(auth); } catch (e) { console.error(e); }
+          return; // will re-fire onAuthStateChanged with the anonymous user
+        }
+      }
       if (user) {
         await loadExam();
       }

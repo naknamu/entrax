@@ -8,7 +8,7 @@
  */
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 // Firebase config from Vite env vars (defined in .env.development / .env.production / .env.example)
@@ -26,6 +26,9 @@ const app = initializeApp(firebaseConfig);
 
 // Auth & Firestore instances
 export const auth = getAuth(app);
+
+// Ensure auth sessions persist across browser sessions (survive page reloads and tab closes)
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 export const db = getFirestore(app);
 
 // Connect to emulators in development (controlled by VITE_USE_EMULATOR env var)
