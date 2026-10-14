@@ -4156,14 +4156,21 @@ th[aria-sort="descending"] .sort-icon::after {
   background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-gray-50) 50%, var(--color-primary-100) 100%);
 }
 
+@media (prefers-color-scheme: dark) {
+  .student-signin-view {
+    background: linear-gradient(135deg, var(--color-gray-950) 0%, var(--color-gray-900) 50%, var(--color-primary-900) 100%);
+  }
+}
+
 .student-signin-card {
   width: 100%;
   max-width: 420px;
-  background: var(--color-white);
+  background: var(--color-bg-elevated);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   padding: var(--space-8);
   text-align: center;
+  color: var(--color-text);
 }
 
 .student-signin-logo {
@@ -4222,6 +4229,7 @@ th[aria-sort="descending"] .sort-icon::after {
   font-size: var(--text-xl);
   font-weight: 600;
   margin: 0 0 var(--space-2);
+  color: var(--color-text);
 }
 
 .student-signin-success p {
@@ -4235,6 +4243,32 @@ th[aria-sort="descending"] .sort-icon::after {
   padding: var(--space-6) 0;
   text-align: center;
   color: var(--color-text-secondary);
+}
+
+.student-signin-dev-link {
+  background: var(--color-warning-50, #fffbeb);
+  border: 1px solid var(--color-warning-200, #fde68a);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  text-align: left;
+  font-size: var(--text-xs);
+  color: var(--color-gray-800);
+  word-break: break-all;
+}
+
+.student-signin-dev-link p {
+  margin: 0 0 var(--space-2);
+  color: var(--color-gray-700);
+}
+
+.student-signin-dev-link a {
+  color: var(--color-primary-600);
+  font-weight: 500;
+  text-decoration: underline;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .student-signin-loading .spinner {

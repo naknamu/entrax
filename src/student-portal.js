@@ -12,6 +12,7 @@
 import { db } from '@/firebase.js';
 import {
   sendMagicLink,
+  getEmulatorMagicLink,
   isMagicLink,
   completeMagicLinkSignIn,
   onStudentAuthStateChanged,
@@ -224,6 +225,23 @@ $signinForm.addEventListener('submit', async (e) => {
     $signinForm.hidden = true;
     $signinSuccess.hidden = false;
     $signinSentEmail.textContent = email;
+
+    // In emulator mode, show the sign-in link directly (no email is sent)
+    const $devLink = document.getElementById('signin-dev-link');
+    const $devLinkAnchor = document.getElementById('signin-dev-link-anchor');
+    if ($devLink && $devLinkAnchor) {
+      $devLink.hidden = true;
+      $devLinkAnchor.textContent = '';
+      $devLinkAnchor.href = '#';
+      try {
+        const link = await getEmulatorMagicLink();
+        if (link) {
+          $devLinkAnchor.href = link;
+          $devLinkAnchor.textContent = link;
+          $devLink.hidden = false;
+        }
+      } catch { /* ignore */ }
+    }
   } catch (err) {
     console.error('Failed to send magic link:', err);
     showError(err.message || 'Failed to send magic link. Please try again.');

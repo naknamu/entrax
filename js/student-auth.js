@@ -49,6 +49,31 @@ export async function sendMagicLink(email) {
 }
 
 /**
+ * When using the Firebase Auth emulator, emails are not sent — the sign-in
+ * link is available from the emulator's OOB code API. Fetch and return it
+ * so the UI can display it directly.
+ * @returns {Promise<string|null>} The sign-in link, or null if not in emulator mode
+ */
+export async function getEmulatorMagicLink() {
+  if (import.meta.env.VITE_USE_EMULATOR !== 'true') return null;
+  try {
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-test';
+    const resp = await fetch(
+      `http://127.0.0.1:9099/emulator/v1/projects/${projectId}/oobCodes`
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const codes = data.oobCodes || [];
+    if (codes.length === 0) return null;
+    // Get the most recent one
+    const latest = codes[codes.length - 1];
+    return latest.oobLink || latest.signInLink || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check if the current URL is a sign-in email link
  * @returns {boolean}
  */
