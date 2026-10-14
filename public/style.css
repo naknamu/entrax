@@ -4130,6 +4130,11 @@ th[aria-sort="descending"] .sort-icon::after {
    STUDENT PORTAL
    ========================================================================== */
 
+/* Ensure [hidden] attribute always wins over display properties */
+[hidden] {
+  display: none !important;
+}
+
 /* ── Body & Layout ────────────────────────────────────────────────────── */
 
 .student-portal-body {

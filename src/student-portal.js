@@ -182,6 +182,10 @@ function showSigningInLoader() {
   $signinForm.hidden = true;
   $signinSuccess.hidden = true;
   $signinError.hidden = true;
+  $signinView.style.display = '';
+  $signinView.hidden = false;
+  $portalView.style.display = 'none';
+  $portalView.hidden = true;
   // Show a simple loading message
   const loader = document.createElement('div');
   loader.id = 'signin-loader';
@@ -191,7 +195,9 @@ function showSigningInLoader() {
 }
 
 function showSigninView() {
+  $signinView.style.display = '';
   $signinView.hidden = false;
+  $portalView.style.display = 'none';
   $portalView.hidden = true;
   $signinForm.hidden = false;
   $signinSuccess.hidden = true;
@@ -202,7 +208,9 @@ function showSigninView() {
 }
 
 function showPortalView() {
+  $signinView.style.display = 'none';
   $signinView.hidden = true;
+  $portalView.style.display = '';
   $portalView.hidden = false;
 }
 
