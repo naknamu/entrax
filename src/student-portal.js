@@ -252,7 +252,15 @@ $signinForm.addEventListener('submit', async (e) => {
     }
   } catch (err) {
     console.error('Failed to send magic link:', err);
-    showError(err.message || 'Failed to send magic link. Please try again.');
+    const code = err.code || '';
+    if (code === 'auth/unauthorized-continue-uri') {
+      showError(
+        'This domain is not authorized in Firebase. ' +
+        'Add "' + window.location.hostname + '" to Firebase Console → Authentication → Settings → Authorized domains.'
+      );
+    } else {
+      showError(err.message || 'Failed to send magic link. Please try again.');
+    }
   } finally {
     $signinBtn.disabled = false;
     $signinBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Send Magic Link';
