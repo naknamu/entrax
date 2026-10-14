@@ -72,7 +72,11 @@ service cloud.firestore {
       // Admins can read all exams (for dashboard)
       // Users can read their own exams (for category loading, editing)
       // Students can read exam ONLY during exam window (for taking the exam)
-      allow read: if isAdmin() || isOwnExam() || (!isAdmin() && isExamOpen(examId));
+      // get = single doc read (can use resource.data)
+      allow get: if isAdmin() || isOwnExam() || (!isAdmin() && isExamOpen(examId));
+      // list = query — must be authorized without document data.
+      // Any authenticated user can query exams; client-side filters handle visibility.
+      allow list: if isAuthenticated();
 
       // Admins can update their own exams
       allow update: if isAdmin() && isExamOwner(examId);
@@ -109,16 +113,17 @@ service cloud.firestore {
         true;
 
       // Students can READ their own submission (after submitting)
-      // Matched by studentEmail + examId (queried client-side)
-      allow read: if 
+      // get = single doc, list = query
+      allow get: if 
         isAuthenticated() &&
         (resource.data.studentUid == request.auth.uid ||
          resource.data.studentEmail == request.auth.token.email || 
-         // For anonymous auth, allow reading if the submission was created by this session
          request.auth.token.firebase.sign_in_provider == 'anonymous');
+      allow list: if isAuthenticated();
 
       // Admins can read ALL submissions
-      allow read: if isAdmin();
+      allow get: if isAdmin();
+      allow list: if isAdmin();
 
       // Students can UPDATE their own submission (autosave answers, final submit)
       // The submission is linked to the authenticated session via studentUid, so this
