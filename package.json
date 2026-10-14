@@ -14,6 +14,7 @@
     "test:report": "npx playwright show-report",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-test",
     "setup:admin": "node tests/create-test-admin.cjs",
+    "seed:mock": "node tests/seed-mock-data.cjs",
     "test:all": "npm run emulators & sleep 10 && npm run setup:admin && npm run dev & sleep 5 && npm run test"
   },
   "keywords": [
