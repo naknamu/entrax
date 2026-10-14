@@ -16,7 +16,11 @@
   <!-- ======================================================================
        SIGN-IN VIEW (shown when not authenticated)
        ====================================================================== -->
-  <div id="signin-view" class="student-signin-view">
+  <div id="auth-loading" class="student-auth-loading">
+    <div class="spinner"></div>
+    <p>Checking your session…</p>
+  </div>
+  <div id="signin-view" class="student-signin-view" hidden>
     <div class="student-signin-card">
       <div class="student-signin-logo">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

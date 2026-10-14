@@ -179,6 +179,7 @@ async function handleMagicLinkOnLoad() {
 }
 
 function showSigningInLoader() {
+  hideAuthLoading();
   $signinForm.hidden = true;
   $signinSuccess.hidden = true;
   $signinError.hidden = true;
@@ -194,7 +195,13 @@ function showSigningInLoader() {
   $signinView.querySelector('.student-signin-card').appendChild(loader);
 }
 
+function hideAuthLoading() {
+  const el = document.getElementById('auth-loading');
+  if (el) el.remove();
+}
+
 function showSigninView() {
+  hideAuthLoading();
   $signinView.style.display = '';
   $signinView.hidden = false;
   $portalView.style.display = 'none';
@@ -208,6 +215,7 @@ function showSigninView() {
 }
 
 function showPortalView() {
+  hideAuthLoading();
   $signinView.style.display = 'none';
   $signinView.hidden = true;
   $portalView.style.display = '';
