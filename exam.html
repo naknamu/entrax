@@ -490,6 +490,25 @@
         // otherwise the session would be initialized from empty questions.
         startExamBtn.disabled = false;
         showScreen('start-screen');
+
+        // Auto-start for authenticated students (from the student portal)
+        // so they skip the name/email form and go straight into the exam.
+        const user = auth.currentUser;
+        if (user && !user.isAnonymous) {
+          try {
+            const profileSnap = await getDoc(doc(db, 'students', user.uid));
+            const profile = profileSnap.exists() ? profileSnap.data() : {};
+            studentNameInput.value = user.displayName || profile.displayName || user.email?.split('@')[0] || '';
+            studentEmailInput.value = user.email || '';
+            studentName = studentNameInput.value;
+            studentEmail = studentEmailInput.value;
+            if (studentName && studentEmail) {
+              startExamBtn.click();
+            }
+          } catch (e) {
+            console.warn('Auto-start failed, showing start screen:', e);
+          }
+        }
       } catch (error) {
         console.error('Error loading exam:', error);
         showScreen('exam-closed-screen');
