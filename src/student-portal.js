@@ -97,7 +97,7 @@ let allExams = [];
 let studentSubmissions = [];
 let currentFilter = 'all';
 let examPage = 1;
-let examPageSize = 12;
+let examPageSize = 10;
 let confirmResolve = null;
 
 const MOTIVATIONAL_QUOTES = [
