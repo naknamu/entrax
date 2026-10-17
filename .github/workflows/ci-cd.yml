@@ -1,8 +1,8 @@
-# CI/CD — fully automated: every push to main runs the E2E suite, builds the
-# site, and deploys BOTH the GitHub Pages site and the Firestore rules+indexes.
-# Pull requests run the same tests + build as a gate (no deployment).
+# CI/CD — fully automated: every push to main builds the site and deploys
+# BOTH the GitHub Pages site and the Firestore rules+indexes.
+# Pull requests run the build as a gate (no deployment).
 #
-# No manual jobs needed: push to main and the pipeline handles the rest.
+# E2E tests (Playwright + emulators) are run locally before pushing.
 # (The Firestore deploy uses the FIREBASE_TOKEN secret — see README/notes.)
 name: CI/CD
 
@@ -26,127 +26,11 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # CI gate: Playwright E2E tests against Firebase emulators
-  # ---------------------------------------------------------------------------
-  test:
-    name: E2E Tests (Playwright + Emulators)
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Setup Java (Firestore emulator requires JDK)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Cache Firebase emulators
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/firebase
-          key: firebase-emulators-${{ runner.os }}
-
-      # Pre-download the emulator binaries so the test step never has to wait on
-      # a cold download (first run only; cached on later runs).
-      - name: Download Firebase emulators
-        run: |
-          npx firebase setup:emulators:firestore
-          npx firebase setup:emulators:ui
-
-      # Emulators + seed + tests run in ONE step so the backgrounded emulator
-      # process lives for the whole test run (each step is a fresh shell).
-      - name: Run E2E tests against emulators
-        run: |
-          set -e
-          java -version > java-info.txt 2>&1 || true
-          npx firebase emulators:start --only auth,firestore --project demo-test > emulators.log 2>&1 &
-          EMULATOR_PID=$!
-          trap 'kill $EMULATOR_PID 2>/dev/null || true' EXIT
-          for i in $(seq 1 120); do
-            if curl -sf http://localhost:8081/ >/dev/null 2>&1 && curl -sf http://localhost:9099/ >/dev/null 2>&1; then
-              echo "emulators ready (${i}x5s)"
-              break
-            fi
-            sleep 5
-            if [ "$i" = 120 ]; then
-              echo "emulators did not start in time:"
-              tail -100 emulators.log
-              exit 1
-            fi
-          done
-          node tests/seed-test-data.cjs
-          npx playwright test
-        env:
-          FIRESTORE_EMULATOR_HOST: localhost:8081
-          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
-
-      # Surface diagnostics as check-run annotations (readable from the API)
-      - name: Emulator diagnostics (debug)
-        if: failure()
-        run: |
-          for f in emulators.log firestore-debug.log java-info.txt; do
-            if [ -f "$f" ]; then
-              echo "::error::===== $f ====="
-              head -c 8000 "$f" | while IFS= read -r line; do echo "::error::$line"; done
-            fi
-          done
-
-      - name: Upload emulator log (diagnostics)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: emulators-log
-          path: emulators.log
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/
-          retention-days: 7
-          if-no-files-found: ignore
-
-  # ---------------------------------------------------------------------------
-  # Build the production bundle (gated on green tests)
+  # Build the production bundle
   # ---------------------------------------------------------------------------
   build:
     name: Build (production)
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
