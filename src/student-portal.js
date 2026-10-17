@@ -373,6 +373,11 @@ async function loadDashboardData() {
   try {
     dashboardStats = await getStudentDashboardStats(db, currentUser.uid);
     studentSubmissions = dashboardStats.recentSubmissions;
+    // Re-render dashboard now that data is available
+    const currentView = document.querySelector('.view:not([hidden])');
+    if (currentView?.dataset.view === 'dashboard') {
+      renderDashboard();
+    }
   } catch (err) {
     console.error('Failed to load dashboard data:', err);
     dashboardStats = null;
