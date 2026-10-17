@@ -523,6 +523,25 @@ export async function getStudentDashboardStats(db, studentUid) {
     submittedAt: s.submittedAt,
   }));
 
+  // Aggregate per-category performance across all submissions
+  const catAgg = {};
+  submissions.forEach(s => {
+    if (!s.categoryStats) return;
+    Object.entries(s.categoryStats).forEach(([cat, data]) => {
+      if (!catAgg[cat]) catAgg[cat] = { total: 0, correct: 0 };
+      catAgg[cat].total += data.total || 0;
+      catAgg[cat].correct += data.correct || 0;
+    });
+  });
+  const weakAreas = Object.entries(catAgg)
+    .map(([category, data]) => ({
+      category,
+      total: data.total,
+      correct: data.correct,
+      percentage: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+    }))
+    .sort((a, b) => a.percentage - b.percentage);
+
   return {
     examsTaken: uniqueExamsTaken,
     totalSubmissions: examsTaken,
@@ -535,6 +554,7 @@ export async function getStudentDashboardStats(db, studentUid) {
     recentSubmissions,
     scoreTrend,
     availableExams,
+    weakAreas,
   };
 }
 

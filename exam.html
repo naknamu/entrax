@@ -254,6 +254,15 @@
           </div>
         </div>
 
+        <!-- Category Breakdown (weak-area analysis) -->
+        <div class="card category-breakdown-card" id="category-breakdown-card" hidden>
+          <div class="card-body">
+            <h3 class="results-title">Performance by Category</h3>
+            <p class="text-sm text-muted mb-4">See which topics you need to focus on. Weakest areas are shown first.</p>
+            <div id="category-breakdown" class="category-breakdown"></div>
+          </div>
+        </div>
+
         <!-- Answer Review (question-by-question results) -->
         <div class="card results-review" id="results-review" hidden>
           <div class="card-body">
@@ -322,7 +331,7 @@
     import { auth, db } from '/src/firebase.js';
     import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-    import { gradeExam } from '/js/grading.js';
+    import { gradeExam, getCategoryStatistics } from '/js/grading.js';
     import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
 
     // DOM Elements - Start Screen
@@ -393,6 +402,8 @@
     const verdictTitle = document.getElementById('verdict-title');
     const verdictDetail = document.getElementById('verdict-detail');
     const verdictIcon = document.getElementById('verdict-icon');
+    const categoryBreakdownCard = document.getElementById('category-breakdown-card');
+    const categoryBreakdownEl = document.getElementById('category-breakdown');
 
     // DOM Elements - Already Submitted
     const prevSubmittedDate = document.getElementById('prev-submitted-date');
@@ -421,6 +432,7 @@
     let passingPercent = 70;
     let randomizeQuestions = false;
     let questionOrder = []; // randomized order indices
+    let categoryStats = {}; // per-category performance after submission
 
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -1070,6 +1082,25 @@
 
       const { score, totalQuestions, percentage, passed } = gradeExam(questions, gradedAnswers, passingPercent);
 
+      // Compute per-category performance for weak-area analysis
+      categoryStats = {};
+      const catMap = new Map();
+      questions.forEach((q, i) => {
+        if (!q.category) return;
+        if (!catMap.has(q.category)) catMap.set(q.category, { total: 0, correct: 0 });
+        const entry = catMap.get(q.category);
+        entry.total++;
+        const ans = gradedAnswers.find(a => a.questionId === q.id);
+        if (ans && ans.selectedIndex === q.correctIndex) entry.correct++;
+      });
+      catMap.forEach((data, category) => {
+        categoryStats[category] = {
+          total: data.total,
+          correct: data.correct,
+          percentage: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0
+        };
+      });
+
       // Save final submission
       try {
         await updateDoc(doc(db, 'submissions', submissionId), {
@@ -1082,7 +1113,8 @@
           passed,
           autoSubmitted,
           timeTakenMs: timeTaken,
-          tabSwitchCount
+          tabSwitchCount,
+          categoryStats
         });
       } catch (error) {
         console.error('Error submitting exam:', error);
@@ -1130,6 +1162,12 @@
 
         resultsReview.hidden = false;
         renderAnswerReview();
+
+        // Category breakdown
+        if (categoryStats && Object.keys(categoryStats).length > 0) {
+          categoryBreakdownCard.hidden = false;
+          renderCategoryBreakdown(categoryStats);
+        }
 
         // Prominent pass/fail verdict
         resultsVerdict.hidden = false;
@@ -1272,6 +1310,39 @@
         showAllSolutionsBtn.hidden = false;
         hideAllSolutionsBtn.hidden = true;
       }
+    }
+
+    /**
+     * Render per-category performance bars on the results screen.
+     * Categories are sorted weakest-first so the student sees where to focus.
+     */
+    function renderCategoryBreakdown(stats) {
+      if (!categoryBreakdownEl || !stats) return;
+
+      const entries = Object.entries(stats).sort((a, b) => a[1].percentage - b[1].percentage);
+
+      categoryBreakdownEl.innerHTML = entries.map(([category, data]) => {
+        const pct = data.percentage;
+        const barColor = pct >= 80 ? 'var(--color-success)' : pct >= 60 ? 'var(--color-warning)' : 'var(--color-danger)';
+        const label = pct >= 80 ? 'Strong' : pct >= 60 ? 'Fair' : 'Needs Work';
+        const labelClass = pct >= 80 ? 'badge-success' : pct >= 60 ? 'badge-warning' : 'badge-danger';
+
+        return `
+          <div class="category-row">
+            <div class="category-row-header">
+              <span class="category-row-name">${escapeHtml(category)}</span>
+              <span class="badge ${labelClass}">${label}</span>
+            </div>
+            <div class="category-bar-track">
+              <div class="category-bar-fill" style="width: ${pct}%; background: ${barColor};"></div>
+            </div>
+            <div class="category-row-footer">
+              <span class="category-row-score">${data.correct}/${data.total} correct</span>
+              <span class="category-row-pct" style="color: ${barColor};">${pct}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     // Solution expand/collapse (event delegation)

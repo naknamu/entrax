@@ -2957,6 +2957,59 @@ pre code {
   color: var(--color-text);
 }
 
+/* Category Breakdown (weak-area analysis) */
+.category-breakdown-card {
+  margin-top: var(--space-4);
+}
+
+.category-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.category-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.category-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-row-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.category-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-gray-200);
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease-out;
+}
+
+.category-row-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.category-row-pct {
+  font-weight: 700;
+}
+
 .answer-breakdown {
   padding: var(--space-6);
 }
@@ -4927,6 +4980,92 @@ th[aria-sort="descending"] .sort-icon::after {
   font-size: 10px;
   color: var(--color-text-muted);
   padding-right: var(--space-2);
+}
+
+/* ── Focus Areas (Weak-Area Analysis) ──────────────────────────────── */
+
+.student-focus-card {
+  padding: var(--space-5);
+}
+
+.student-focus-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-1);
+}
+
+.student-focus-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+}
+
+.student-focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.student-focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.student-focus-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  margin-top: 2px;
+}
+
+.student-focus-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-focus-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.student-focus-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.student-focus-pct {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.student-focus-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-gray-200);
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.student-focus-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease-out;
+}
+
+.student-focus-detail {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
 }
 
 /* ── Recent Activity ──────────────────────────────────────────────────── */

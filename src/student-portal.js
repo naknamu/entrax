@@ -60,6 +60,8 @@ const $statStreak      = document.getElementById('stat-streak');
 const $statBest        = document.getElementById('stat-best');
 const $scoreTrendChart = document.getElementById('score-trend-chart');
 const $recentActivity  = document.getElementById('recent-activity-list');
+const $focusAreasCard  = document.getElementById('focus-areas-card');
+const $focusAreasList  = document.getElementById('focus-areas-list');
 const $navExamBadge    = document.getElementById('nav-exam-badge');
 
 const $examList        = document.getElementById('exam-list');
@@ -432,6 +434,9 @@ function renderDashboard() {
 
   // Recent activity
   renderRecentActivity(s.recentSubmissions, s.availableExams);
+
+  // Focus areas (weak-area analysis)
+  renderFocusAreas(s.weakAreas);
 }
 
 function renderScoreChart(trend) {
@@ -496,6 +501,49 @@ function renderRecentActivity(submissions, availableExams) {
         <span class="badge ${badgeClass}">${badgeText}</span>
         <a href="exam.html?examId=${sub.examId}&review=true" class="btn btn-ghost btn-sm" title="View results">Review</a>
       </div>`;
+  }).join('');
+}
+
+function renderFocusAreas(weakAreas) {
+  if (!$focusAreasCard || !$focusAreasList) return;
+
+  if (!weakAreas || weakAreas.length === 0) {
+    $focusAreasCard.hidden = true;
+    return;
+  }
+
+  // Show only categories below 80%, max 5
+  const needsWork = weakAreas.filter(a => a.percentage < 80);
+  if (needsWork.length === 0) {
+    $focusAreasCard.hidden = true;
+    return;
+  }
+
+  $focusAreasCard.hidden = false;
+  const toShow = needsWork.slice(0, 5);
+
+  $focusAreasList.innerHTML = toShow.map(area => {
+    const pct = area.percentage;
+    const barColor = pct >= 60 ? 'var(--color-warning)' : 'var(--color-danger)';
+    const icon = pct >= 60
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+    return `
+      <div class="student-focus-item">
+        <div class="student-focus-icon" style="color: ${barColor};">${icon}</div>
+        <div class="student-focus-info">
+          <div class="student-focus-row">
+            <span class="student-focus-name">${escapeHtml(area.category)}</span>
+            <span class="student-focus-pct" style="color: ${barColor};">${pct}%</span>
+          </div>
+          <div class="student-focus-bar-track">
+            <div class="student-focus-bar-fill" style="width: ${pct}%; background: ${barColor};"></div>
+          </div>
+          <span class="student-focus-detail">${area.correct}/${area.total} correct</span>
+        </div>
+      </div>
+    `;
   }).join('');
 }
 
