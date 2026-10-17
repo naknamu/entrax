@@ -14,48 +14,103 @@
 <body class="student-portal-body">
 
   <!-- ======================================================================
-       SIGN-IN VIEW (shown when not authenticated)
+       SIGN-IN VIEW / LANDING PAGE (shown when not authenticated)
        ====================================================================== -->
   <div id="auth-loading" class="student-auth-loading">
     <div class="spinner"></div>
     <p>Checking your session…</p>
   </div>
   <div id="signin-view" class="student-signin-view" hidden>
-    <div class="student-signin-card">
-      <div class="student-signin-logo">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-        </svg>
+    <div class="landing-container">
+      <!-- Left: Hero -->
+      <div class="landing-hero">
+        <div class="landing-brand">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+          <span>Entrax</span>
+        </div>
+        <h1 class="landing-headline">Master Your<br><span class="landing-headline-accent">Kaplan Entrance Exam</span></h1>
+        <p class="landing-subheadline">Practice with 3,900+ questions across Math, Reading, Writing, and Science — designed to mirror the real Kaplan Nursing Entrance Exam.</p>
+        <div class="landing-features">
+          <div class="landing-feature">
+            <div class="landing-feature-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+              <strong>Full-Length Mocks</strong>
+              <span>91-question exams simulating the real test format</span>
+            </div>
+          </div>
+          <div class="landing-feature">
+            <div class="landing-feature-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div>
+              <strong>Track Your Progress</strong>
+              <span>See your scores, pass rates, and improvement over time</span>
+            </div>
+          </div>
+          <div class="landing-feature">
+            <div class="landing-feature-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <strong>Detailed Explanations</strong>
+              <span>Learn why each answer is correct after every question</span>
+            </div>
+          </div>
+        </div>
+        <div class="landing-stats">
+          <div class="landing-stat">
+            <span class="landing-stat-value">3,900+</span>
+            <span class="landing-stat-label">Questions</span>
+          </div>
+          <div class="landing-stat">
+            <span class="landing-stat-value">100+</span>
+            <span class="landing-stat-label">Practice Sets</span>
+          </div>
+          <div class="landing-stat">
+            <span class="landing-stat-value">5</span>
+            <span class="landing-stat-label">Sections</span>
+          </div>
+        </div>
       </div>
-      <h1 class="student-signin-title">Welcome Back</h1>
-      <p class="student-signin-subtitle">Sign in to your student portal with your email. We'll send you a magic link — no password needed.</p>
 
-      <form id="signin-form" class="student-signin-form" autocomplete="off">
-        <div class="form-group">
-          <label for="signin-email" class="form-label">Email address</label>
-          <input type="email" id="signin-email" class="input" placeholder="you@example.com" required autocomplete="email">
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg student-signin-btn" id="signin-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Send Magic Link
-        </button>
-      </form>
+      <!-- Right: Sign-in card -->
+      <div class="landing-auth">
+        <div class="student-signin-card">
+          <h1 class="student-signin-title">Welcome Back</h1>
+          <p class="student-signin-subtitle">Enter your email to sign in or create an account. We'll send you a magic link — no password needed.</p>
 
-      <div id="signin-success" class="student-signin-success" hidden>
-        <div class="student-signin-success-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 8 10 16 7 13"/></svg>
+          <form id="signin-form" class="student-signin-form" autocomplete="off">
+            <div class="form-group">
+              <label for="signin-email" class="form-label">Email address</label>
+              <input type="email" id="signin-email" class="input" placeholder="you@example.com" required autocomplete="email">
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg student-signin-btn" id="signin-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Send Magic Link
+            </button>
+          </form>
+
+          <div id="signin-success" class="student-signin-success" hidden>
+            <div class="student-signin-success-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 8 10 16 7 13"/></svg>
+            </div>
+            <h2>Check your email</h2>
+            <p>We sent a magic link to <strong id="signin-sent-email"></strong>. Click the link to sign in.</p>
+            <div id="signin-dev-link" class="student-signin-dev-link" hidden>
+              <p><strong>🔧 Dev mode:</strong> Email is not sent with the Auth emulator. Use this link:</p>
+              <a id="signin-dev-link-anchor" href="#" target="_blank" rel="noopener">Loading…</a>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="signin-back-btn" type="button">Back to sign in</button>
+          </div>
+
+          <div id="signin-error" class="alert alert-danger" hidden></div>
         </div>
-        <h2>Check your email</h2>
-        <p>We sent a magic link to <strong id="signin-sent-email"></strong>. Click the link to sign in.</p>
-        <div id="signin-dev-link" class="student-signin-dev-link" hidden>
-          <p><strong>🔧 Dev mode:</strong> Email is not sent with the Auth emulator. Use this link:</p>
-          <a id="signin-dev-link-anchor" href="#" target="_blank" rel="noopener">Loading…</a>
-        </div>
-        <button class="btn btn-ghost btn-sm" id="signin-back-btn" type="button">Back to sign in</button>
       </div>
-
-      <div id="signin-error" class="alert alert-danger" hidden></div>
     </div>
   </div>
 

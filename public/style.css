@@ -4152,42 +4152,156 @@ th[aria-sort="descending"] .sort-icon::after {
 
 /* ── Sign-in View ─────────────────────────────────────────────────────── */
 
+/* ─── Landing Page ────────────────────────────────────────────────────────── */
+
 .student-signin-view {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.landing-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Hero side */
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-12) var(--space-12) var(--space-12) var(--space-16);
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-gray-50) 50%, var(--color-primary-100) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(3deg); }
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-10);
+}
+
+.landing-headline {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.15;
+  margin: 0 0 var(--space-5);
+  letter-spacing: -0.02em;
+}
+
+.landing-headline-accent {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-subheadline {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin: 0 0 var(--space-8);
+  max-width: 480px;
+}
+
+/* Features */
+.landing-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-10);
+}
+
+.landing-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.landing-feature-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: var(--space-4);
-  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-gray-50) 50%, var(--color-primary-100) 100%);
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
-@media (prefers-color-scheme: dark) {
-  .student-signin-view {
-    background: linear-gradient(135deg, var(--color-gray-950) 0%, var(--color-gray-900) 50%, var(--color-primary-900) 100%);
-  }
+.landing-feature div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.landing-feature strong {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.landing-feature span {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Stats bar */
+.landing-stats {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.landing-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.landing-stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.landing-stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Auth card side */
+.landing-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  background: var(--color-bg);
 }
 
 .student-signin-card {
   width: 100%;
-  max-width: 420px;
-  background: var(--color-bg-elevated);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-8);
-  text-align: center;
+  max-width: 400px;
   color: var(--color-text);
-}
-
-.student-signin-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  margin-bottom: var(--space-4);
 }
 
 .student-signin-title {
@@ -4195,6 +4309,7 @@ th[aria-sort="descending"] .sort-icon::after {
   font-weight: 700;
   color: var(--color-text);
   margin: 0 0 var(--space-2);
+  text-align: left;
 }
 
 .student-signin-subtitle {
@@ -4202,6 +4317,7 @@ th[aria-sort="descending"] .sort-icon::after {
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-6);
   line-height: 1.6;
+  text-align: left;
 }
 
 .student-signin-form {
@@ -4298,6 +4414,32 @@ th[aria-sort="descending"] .sort-icon::after {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto var(--space-3);
+}
+
+/* Landing page responsive */
+@media (max-width: 768px) {
+  .landing-container {
+    grid-template-columns: 1fr;
+  }
+  .landing-hero {
+    padding: var(--space-8) var(--space-6);
+    min-height: auto;
+  }
+  .landing-headline {
+    font-size: 1.75rem;
+  }
+  .landing-subheadline {
+    font-size: var(--text-sm);
+  }
+  .landing-features {
+    gap: var(--space-3);
+  }
+  .landing-stats {
+    gap: var(--space-5);
+  }
+  .landing-auth {
+    padding: var(--space-6);
+  }
 }
 
 .spinner-sm {
