@@ -374,7 +374,7 @@ async function loadDashboardData() {
     dashboardStats = await getStudentDashboardStats(db, currentUser.uid);
     studentSubmissions = dashboardStats.recentSubmissions;
     // Re-render dashboard now that data is available
-    const currentView = document.querySelector('.view:not([hidden])');
+    const currentView = document.querySelector('.student-view:not([hidden])');
     if (currentView?.dataset.view === 'dashboard') {
       renderDashboard();
     }
