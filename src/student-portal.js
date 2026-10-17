@@ -68,6 +68,10 @@ const $examEmptyTitle  = document.getElementById('exam-empty-title');
 const $examEmptyText   = document.getElementById('exam-empty-text');
 const $examSearch      = document.getElementById('exam-search');
 const $filterTabs      = document.getElementById('exam-filter-tabs');
+const $examPagBar      = document.getElementById('exam-pagination-bar');
+const $examPagInfo     = document.getElementById('exam-pagination-info');
+const $examPagNav      = document.getElementById('exam-pagination-nav');
+const $examPageSize    = document.getElementById('exam-page-size');
 
 const $settingsForm    = document.getElementById('settings-profile-form');
 const $settingsName    = document.getElementById('settings-name');
@@ -92,6 +96,8 @@ let dashboardStats = null;
 let allExams = [];
 let studentSubmissions = [];
 let currentFilter = 'all';
+let examPage = 1;
+let examPageSize = 12;
 let confirmResolve = null;
 
 const MOTIVATIONAL_QUOTES = [
@@ -554,13 +560,21 @@ function applyExamFilter(submissionMap) {
     }
   });
 
-  renderExamCards(filtered, submissionMap);
+  // Paginate
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / examPageSize));
+  if (examPage > pages) examPage = pages;
+  const start = (examPage - 1) * examPageSize;
+  const pageExams = filtered.slice(start, start + examPageSize);
+
+  renderExamCards(pageExams, submissionMap, total, pages, start);
 }
 
-function renderExamCards(exams, submissionMap) {
-  if (exams.length === 0) {
+function renderExamCards(exams, submissionMap, total, pages, start) {
+  if (total === 0) {
     $examList.innerHTML = '';
     $examListEmpty.hidden = false;
+    $examPagBar.hidden = true;
     switch (currentFilter) {
       case 'available':
         $examEmptyTitle.textContent = 'No available exams';
@@ -660,6 +674,39 @@ function renderExamCards(exams, submissionMap) {
         </div>
       </article>`;
   }).join('');
+
+  // Pagination controls
+  $examPagBar.hidden = pages <= 1;
+  const from = start + 1;
+  const to = Math.min(start + examPageSize, total);
+  $examPagInfo.textContent = `Showing ${from}\u2013${to} of ${total}`;
+  renderExamPagination(pages);
+}
+
+function renderExamPagination(pages) {
+  if (pages <= 1) { $examPagNav.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" data-page="prev" ${examPage === 1 ? 'disabled' : ''}>\u2039</button>`;
+
+  // Sliding window of up to 7 page buttons
+  let pStart = Math.max(1, examPage - 3);
+  let pEnd = Math.min(pages, pStart + 6);
+  if (pEnd - pStart < 6) pStart = Math.max(1, pEnd - 6);
+
+  if (pStart > 1) {
+    html += `<button class="page-btn" data-page="1">1</button>`;
+    if (pStart > 2) html += `<span class="pagination-ellipsis">\u2026</span>`;
+  }
+  for (let p = pStart; p <= pEnd; p++) {
+    html += `<button class="page-btn${p === examPage ? ' active' : ''}" data-page="${p}">${p}</button>`;
+  }
+  if (pEnd < pages) {
+    if (pEnd < pages - 1) html += `<span class="pagination-ellipsis">\u2026</span>`;
+    html += `<button class="page-btn" data-page="${pages}">${pages}</button>`;
+  }
+
+  html += `<button class="page-btn" data-page="next" ${examPage === pages ? 'disabled' : ''}>\u203a</button>`;
+  $examPagNav.innerHTML = html;
 }
 
 // Filter tab clicks
@@ -667,6 +714,7 @@ $filterTabs.addEventListener('click', (e) => {
   const tab = e.target.closest('.student-filter-tab');
   if (!tab) return;
   currentFilter = tab.dataset.filter;
+  examPage = 1;
   $filterTabs.querySelectorAll('.student-filter-tab').forEach(t =>
     t.classList.toggle('active', t === tab)
   );
@@ -675,6 +723,26 @@ $filterTabs.addEventListener('click', (e) => {
 
 // Search input
 $examSearch.addEventListener('input', () => {
+  examPage = 1;
+  applyExamFilter();
+});
+
+// Pagination clicks
+$examPagNav.addEventListener('click', (e) => {
+  const btn = e.target.closest('.page-btn');
+  if (!btn || btn.disabled) return;
+  const page = btn.dataset.page;
+  if (page === 'prev') examPage--;
+  else if (page === 'next') examPage++;
+  else examPage = parseInt(page, 10);
+  applyExamFilter();
+  $examList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// Page size change
+$examPageSize.addEventListener('change', () => {
+  examPageSize = parseInt($examPageSize.value, 10);
+  examPage = 1;
   applyExamFilter();
 });
 

@@ -239,6 +239,22 @@
             <h3 id="exam-empty-title">No exams found</h3>
             <p id="exam-empty-text">Check back later for new exams.</p>
           </div>
+
+          <div class="student-pagination-bar" id="exam-pagination-bar" hidden>
+            <span class="pagination-info" id="exam-pagination-info"></span>
+            <div class="student-pagination-controls">
+              <label class="student-page-size-label">
+                Per page:
+                <select id="exam-page-size" class="student-page-size-select">
+                  <option value="12" selected>12</option>
+                  <option value="24">24</option>
+                  <option value="48">48</option>
+                  <option value="96">96</option>
+                </select>
+              </label>
+              <nav class="pagination" id="exam-pagination-nav" aria-label="Exam pagination"></nav>
+            </div>
+          </div>
         </section>
 
         <!-- SETTINGS VIEW -->
