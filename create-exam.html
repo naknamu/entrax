@@ -195,21 +195,37 @@
               <button type="button" class="generate-tab" data-gen-tab="writing" role="tab" aria-selected="false">Writing</button>
               <button type="button" class="generate-tab" data-gen-tab="science" role="tab" aria-selected="false">Science</button>
             </div>
+            <p id="generate-hint" class="generate-hint" aria-live="polite"></p>
 
-            <div id="generate-topics" class="flex flex-wrap gap-3 mt-3"></div>
-            <div class="flex items-center gap-3 mt-3 flex-wrap">
-              <label class="label mb-0" for="generate-count">Per topic:</label>
-              <input type="number" id="generate-count" class="input" min="1" max="10" value="3" style="max-width: 90px" aria-label="Questions per topic">
-              <label class="label mb-0" for="generate-section">Add to section:</label>
-              <select id="generate-section" class="input" style="max-width: 220px" aria-label="Add generated questions to section">
-                <option value="">— No section —</option>
-              </select>
+            <div class="generate-topics-header">
+              <span class="generate-topics-label">Topics</span>
+              <div class="generate-topics-actions">
+                <button type="button" class="btn-link-style" id="generate-check-all">Select all</button>
+                <button type="button" class="btn-link-style" id="generate-clear-all">Clear</button>
+              </div>
+            </div>
+            <div id="generate-topics" class="generate-topics"></div>
+
+            <p id="generate-preview" class="generate-preview" aria-live="polite"></p>
+
+            <div class="generate-controls">
+              <div class="form-group">
+                <label class="label" for="generate-count">Questions per topic</label>
+                <input type="number" id="generate-count" class="input" min="1" max="10" value="3" aria-label="Questions per topic">
+              </div>
+              <div class="form-group">
+                <label class="label" for="generate-section">Add to section</label>
+                <select id="generate-section" class="input" aria-label="Add generated questions to section">
+                  <option value="">— No section —</option>
+                </select>
+              </div>
               <button type="button" class="btn btn-primary" id="generate-add-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Generated Questions
+                <span class="generate-btn-label">Add Generated Questions</span>
+                <span class="spinner spinner-sm hidden" id="generate-spinner" aria-hidden="true"></span>
               </button>
             </div>
-            <p id="generate-status" class="help-text mt-2 text-success hidden"></p>
+            <p id="generate-status" class="generate-status hidden"></p>
           </div>
         </section>
 
@@ -379,10 +395,10 @@
 
     // Kaplan question generators keyed by exam section (Reading/Math/Writing/Science)
     const GENERATOR_SECTIONS = {
-      reading: { label: 'Reading', topics: KAPLAN_READING_TOPICS, fn: generateKaplanReadingQuestions, match: /reading/i, recommended: 6 },
-      math: { label: 'Math', topics: KAPLAN_MATH_TOPICS, fn: generateKaplanMathQuestions, match: /math/i, recommended: 4 },
-      writing: { label: 'Writing', topics: KAPLAN_WRITING_TOPICS, fn: generateKaplanWritingQuestions, match: /writing/i, recommended: 7 },
-      science: { label: 'Science', topics: KAPLAN_SCIENCE_TOPICS, fn: generateKaplanScienceQuestions, match: /science/i, recommended: 2 }
+      reading: { label: 'Reading', hint: 'Passage-based comprehension questions — main idea, details, inference, purpose, tone, organization, and logic.', topics: KAPLAN_READING_TOPICS, fn: generateKaplanReadingQuestions, match: /reading/i, recommended: 6 },
+      math: { label: 'Math', hint: 'Original, randomized arithmetic and problem-solving questions.', topics: KAPLAN_MATH_TOPICS, fn: generateKaplanMathQuestions, match: /math/i, recommended: 4 },
+      writing: { label: 'Writing', hint: 'Mechanics, paragraph logic, and passage development questions.', topics: KAPLAN_WRITING_TOPICS, fn: generateKaplanWritingQuestions, match: /writing/i, recommended: 7 },
+      science: { label: 'Science', hint: 'Physiology and health-science questions from the Kaplan study plan.', topics: KAPLAN_SCIENCE_TOPICS, fn: generateKaplanScienceQuestions, match: /science/i, recommended: 2 }
     };
     let currentGenSection = 'math';
 
@@ -469,17 +485,56 @@
       const generateStatus = document.getElementById('generate-status');
       const generateCount = document.getElementById('generate-count');
       const generateSectionSelect = document.getElementById('generate-section');
+      const generatePreview = document.getElementById('generate-preview');
+      const generateHint = document.getElementById('generate-hint');
 
-      /** Render topic checkboxes for the active generator section. */
+      /** Live preview of how many questions the current selection will add. */
+      function updateGeneratePreview() {
+        if (!generatePreview) return;
+        const n = generateTopicsEl ? generateTopicsEl.querySelectorAll('input:checked').length : 0;
+        const per = Math.max(0, parseInt(generateCount?.value) || 0);
+        if (n === 0) {
+          generatePreview.innerHTML = '<span class="preview-note">No topics selected — nothing will be generated.</span>';
+        } else if (per <= 0) {
+          generatePreview.textContent = `${n} topic${n === 1 ? '' : 's'} selected`;
+        } else {
+          const total = n * per;
+          generatePreview.textContent = `${n} topic${n === 1 ? '' : 's'} × ${per} per topic = ${total} question${total === 1 ? '' : 's'}`;
+        }
+      }
+
+      /** Render topic chips + section hint + live preview for the active tab. */
       function renderGenerateTopics() {
         const g = GENERATOR_SECTIONS[currentGenSection];
         if (!generateTopicsEl || !g) return;
         generateTopicsEl.innerHTML = g.topics.map((t) =>
-          `<label class="checkbox-group flex items-center gap-2"><input type="checkbox" value="${escapeHtml(t.id)}" checked> ${escapeHtml(t.label)}</label>`
+          `<label class="topic-chip"><input type="checkbox" value="${escapeHtml(t.id)}" checked> <span>${escapeHtml(t.label)}</span></label>`
         ).join('');
+        if (generateHint) generateHint.textContent = g.hint || '';
         autoSelectGenerateSection();
         // Recommended per-topic count (so the Kaplan distribution is easy to hit)
         if (generateCount) generateCount.value = g.recommended;
+        updateGeneratePreview();
+      }
+
+      // Keep the preview in sync as topics or the per-topic count change
+      if (generateTopicsEl) generateTopicsEl.addEventListener('change', updateGeneratePreview);
+      if (generateCount) generateCount.addEventListener('input', updateGeneratePreview);
+
+      // Select all / clear topic chips
+      const generateCheckAll = document.getElementById('generate-check-all');
+      const generateClearAll = document.getElementById('generate-clear-all');
+      if (generateCheckAll) {
+        generateCheckAll.addEventListener('click', () => {
+          generateTopicsEl.querySelectorAll('input[type="checkbox"]').forEach((i) => { i.checked = true; });
+          updateGeneratePreview();
+        });
+      }
+      if (generateClearAll) {
+        generateClearAll.addEventListener('click', () => {
+          generateTopicsEl.querySelectorAll('input[type="checkbox"]').forEach((i) => { i.checked = false; });
+          updateGeneratePreview();
+        });
       }
 
       // Section tabs
@@ -534,6 +589,7 @@
 
       if (generateAddBtn) {
         generateAddBtn.addEventListener('click', async () => {
+          if (generateAddBtn.disabled) return; // ignore double clicks while generating
           const g = GENERATOR_SECTIONS[currentGenSection];
           if (!g) return;
           const checked = [...generateTopicsEl.querySelectorAll('input:checked')].map((i) => i.value);
@@ -542,9 +598,14 @@
             return;
           }
           const perTopic = Math.max(1, Math.min(10, parseInt(generateCount.value) || 3));
-          let questions;
-          let shortageWarning = '';
-          if (currentGenSection === 'reading') {
+          const spinner = document.getElementById('generate-spinner');
+          generateAddBtn.disabled = true;
+          generateAddBtn.classList.add('btn-loading');
+          if (spinner) spinner.classList.remove('hidden');
+          try {
+            let questions;
+            let shortageWarning = '';
+            if (currentGenSection === 'reading') {
             // Keep reading passages unique across generated exams: exclude
             // passages already used by any saved exam, plus passages already
             // present in this form (so one exam never reuses a passage).
@@ -582,11 +643,16 @@
             generateStatus.textContent = `Added ${questions.length} generated ${g.label} questions (${checked.length} topic${checked.length > 1 ? 's' : ''}, ${perTopic} per topic).${fillNote}`;
             generateStatus.classList.remove('hidden');
           }
-          clearAlert();
-          if (shortageWarning) {
-            showAlert(alertContainer, shortageWarning, 'warning');
+            clearAlert();
+            if (shortageWarning) {
+              showAlert(alertContainer, shortageWarning, 'warning');
+            }
+            scrollTo({ top: document.getElementById('questions-heading').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+          } finally {
+            generateAddBtn.disabled = false;
+            generateAddBtn.classList.remove('btn-loading');
+            if (spinner) spinner.classList.add('hidden');
           }
-          scrollTo({ top: document.getElementById('questions-heading').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
         });
       }
       
