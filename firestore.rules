@@ -26,13 +26,26 @@ service cloud.firestore {
     //
     // This is a known limitation of client-side-only Firebase apps.
     // For production high-stakes exams, use Cloud Functions.
+    //
+    // PHASE 0.2 NOTE (post-close review):
+    // Published exams stay readable via `get` after their endDate so
+    // `exam.html?review=true` can re-render a past attempt (it needs the exam
+    // doc + correctIndex). Drafts are NOT readable, and not-yet-open exams are
+    // not readable via `get`. However, `list` only checks `status`, so any
+    // signed-in user can still list published exams — including future/closed
+    // ones — and read correctIndex. That exposure is deferred to Phase 0.3
+    // (server-side grading / correctIndex key separation).
     // ==========================================================================
 
     // Helper functions
     function isAdmin() {
-      // For development: any authenticated user is an admin
-      // In production, change to: request.auth != null && request.auth.token.email_verified == true
-      return request.auth != null;
+      // Admins are identified by a custom claim granted with the Admin SDK
+      // (scripts/set-admin-claim.cjs). A student account can never grant this
+      // to itself, and rules stay cheap: no extra document lookup.
+      // .get() avoids a rule-evaluation error when the claim is absent
+      // (dot access on a missing map key aborts evaluation instead of
+      // returning null).
+      return request.auth != null && request.auth.token.get('role', '') == 'admin';
     }
 
     function isAuthenticated() {
@@ -43,23 +56,42 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/exams/$(examId));
     }
 
+    // A published exam with questions that has started (open or already closed).
+    // Used for `get`: review=true must still work after the window closes, so
+    // this deliberately ignores endDate. Drafts stay hidden; published
+    // future/closed exams remain `list`able (see the 0.2/0.3 note above).
+    function isExamReadable(examId) {
+      let exam = get(/databases/$(database)/documents/exams/$(examId));
+      let start = exam.data.get('startDate', null);
+      return exam.data.get('status', '') == 'published' &&
+             exam.data.get('questions', []).size() > 0 &&
+             (start == null || start <= request.time);
+    }
+
+    // A published exam with questions that is inside its availability window.
+    // Used for starting/submitting attempts.
     function isExamOpen(examId) {
       let exam = get(/databases/$(database)/documents/exams/$(examId));
       let now = request.time;
-      // Check if exam is published (has questions) and within date window
-      return exam.data.questions != null && exam.data.questions.size() > 0 &&
-             (exam.data.startDate == null || exam.data.startDate <= now) &&
-             (exam.data.endDate == null || exam.data.endDate >= now);
-    }
-
-    function isExamOwner(examId) {
-      let exam = get(/databases/$(database)/documents/exams/$(examId));
-      return exam.data.createdBy == request.auth.uid;
+      let start = exam.data.get('startDate', null);
+      let end = exam.data.get('endDate', null);
+      // .get() keeps legacy docs without these fields from aborting evaluation.
+      return exam.data.get('status', '') == 'published' &&
+             exam.data.get('questions', []).size() > 0 &&
+             (start == null || start <= now) &&
+             (end == null || end >= now);
     }
 
     // Allow users to read their own exams (for category loading, dashboard, etc.)
     function isOwnExam() {
-      return request.auth != null && resource.data.createdBy == request.auth.uid;
+      return request.auth != null && resource.data.get('createdBy', '') == request.auth.uid;
+    }
+
+    // True when the submission belongs to the caller (uid, or legacy email).
+    function isSubmissionOwner() {
+      return resource.data.get('studentUid', '') == request.auth.uid ||
+             (request.auth.token.get('email', '') != '' &&
+              resource.data.get('studentEmail', '') == request.auth.token.get('email', ''));
     }
 
     // ==========================================================================
@@ -71,18 +103,23 @@ service cloud.firestore {
 
       // Admins can read all exams (for dashboard)
       // Users can read their own exams (for category loading, editing)
-      // Students can read exam ONLY during exam window (for taking the exam)
+      // Students can `get` a started, published exam (taking it, or reviewing a
+      // past attempt after the window closes). Drafts and not-yet-open exams are
+      // not gettable.
       // get = single doc read (can use resource.data)
-      allow get: if isAdmin() || isOwnExam() || (!isAdmin() && isExamOpen(examId));
-      // list = query — must be authorized without document data.
-      // Any authenticated user can query exams; client-side filters handle visibility.
-      allow list: if isAuthenticated();
+      allow get: if isAdmin() || isOwnExam() || (!isAdmin() && isExamReadable(examId));
+      // list = query — rules are not filters, so the client query must be
+      // provable from the constraints. Students can list every published exam,
+      // including future/closed ones; drafts are admin-only. correctIndex in
+      // those documents is only closed by Phase 0.3 key separation.
+      allow list: if isAdmin() || (isAuthenticated() && resource.data.get('status', '') == 'published');
 
-      // Admins can update their own exams
-      allow update: if isAdmin() && isExamOwner(examId);
-
-      // Admins can delete their own exams
-      allow delete: if isAdmin() && isExamOwner(examId);
+      // Admins manage ALL exam content. Ownership is deliberately not checked:
+      // legacy production exams carry a hardcoded foreign `createdBy` uid
+      // (scripts/batch-create-exams.cjs), and a single-tenant product trusts
+      // its admins. New exams must still be created under the caller's uid.
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ==========================================================================
@@ -112,37 +149,29 @@ service cloud.firestore {
         // Note: This requires a composite index or client-side check
         true;
 
-      // Students can READ their own submission (after submitting)
-      // get = single doc, list = query
-      allow get: if 
-        isAuthenticated() &&
-        (resource.data.studentUid == request.auth.uid ||
-         resource.data.studentEmail == request.auth.token.email || 
-         request.auth.token.firebase.sign_in_provider == 'anonymous');
-      allow list: if isAuthenticated();
-
-      // Admins can read ALL submissions
-      allow get: if isAdmin();
-      allow list: if isAdmin();
+      // Students can READ their own submission (after submitting).
+      // Admins can read everything. Legacy submissions that predate
+      // `studentUid` are still readable by their auth email, but only when the
+      // token actually carries an email (anonymous sessions have none).
+      allow get: if isAdmin() || (isAuthenticated() && isSubmissionOwner());
+      allow list: if isAdmin() || (isAuthenticated() && isSubmissionOwner());
 
       // Students can UPDATE their own submission (autosave answers, final submit)
       // The submission is linked to the authenticated session via studentUid, so this
       // works for BOTH anonymous and email/password students (their typed exam email
       // may legitimately differ from their auth account email).
-      // Legacy fallbacks keep older submissions (created before studentUid) working:
-      //  - email/password users whose auth email matches the submission's studentEmail
-      //  - anonymous sessions (studentEmail is retained across updates)
+      // Legacy fallback: email/password users whose auth email matches the
+      // submission's studentEmail.
       allow update: if 
-        isAuthenticated() &&
-        (resource.data.studentUid == request.auth.uid ||
-         resource.data.studentEmail == request.auth.token.email ||
-         (request.auth.token.firebase.sign_in_provider == 'anonymous' && 
-          request.resource.data.studentEmail == resource.data.studentEmail));
+        isAdmin() ||
+        (isAuthenticated() && isSubmissionOwner());
 
-      // No deletes for submissions (audit trail) — except: an authenticated
-      // student may remove their own abandoned DRAFT (submittedAt null) so a
-      // crashed session doesn't lock them out of retaking the exam.
-      allow delete: if isAuthenticated() && resource.data.submittedAt == null;
+      // No deletes for submissions (audit trail) — admins may clean up, and a
+      // student may remove their own draft. Submitted attempts stay immutable.
+      allow delete: if isAdmin() ||
+        (isAuthenticated() &&
+         resource.data.get('studentUid', '') == request.auth.uid &&
+         resource.data.get('submittedAt', null) == null);
     }
 
     // ==========================================================================

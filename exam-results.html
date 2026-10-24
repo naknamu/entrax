@@ -184,9 +184,10 @@
 
   <script type="module">
     import { auth, db } from '/src/firebase.js';
-    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { signOut } from 'firebase/auth';
     import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
     import { formatDate, formatDateTime, formatDuration, formatPercent, escapeHtml, showAlert } from '/js/admin.js';
+    import { ensureAdmin, failClosed } from '/js/admin-guard.js';
 
     // DOM Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -229,12 +230,9 @@
       window.location.href = 'admin-dashboard.html';
     }
 
-    // Auth check
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = 'index.html';
-        return;
-      }
+    // Auth check — admin claim required (rules also deny non-admin reads).
+    ensureAdmin().then(async (user) => {
+      if (!user) return; // redirected to sign-in / student portal
       currentUser = user;
       editExamLink.href = `create-exam.html?examId=${examId}`;
       
@@ -262,7 +260,7 @@
       }
       
       await loadExamAndSubmissions();
-    });
+    }).catch(failClosed);
 
     // Logout
     logoutBtn.addEventListener('click', async () => {

@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --port 8080",
     "test": "npx playwright test",
+    "test:ci": "firebase emulators:exec --only auth,firestore --project demo-test \"npx playwright test\"",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",

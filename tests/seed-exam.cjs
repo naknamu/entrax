@@ -19,6 +19,7 @@ const PROJECT_IDS = ['demo-test', 'entrax-878a1'];
 const examData = {
   title: 'Layout Verification Exam',
   description: 'Seeded exam used to verify the exam-taking layout renders in multi-columns.',
+  status: 'published',
   timeLimitMinutes: 30,
   passingPercent: 70,
   showResultsToStudent: true,

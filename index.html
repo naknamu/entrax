@@ -61,7 +61,7 @@
   </main>
 
   <script type="module">
-    import { auth } from '/src/firebase.js';
+    import { auth, persistenceReady } from '/src/firebase.js';
     import { onAuthStateChanged, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
     import { showAlert } from '/js/admin.js';
 
@@ -75,13 +75,29 @@
     const alertContainer = document.getElementById('alert-container');
 
     // If already signed in as a non-anonymous user (e.g. "Remember me" was
-    // checked last time), skip the login page and go straight to the
-    // dashboard. Anonymous student sessions are NOT redirected — the login
-    // page stays available for the admin to sign in.
-    onAuthStateChanged(auth, (user) => {
-      if (user && !user.isAnonymous) {
-        window.location.href = 'admin-dashboard.html';
-      }
+    // checked last time), skip the login page. Only admins (custom claim
+    // `role: admin`) go to the admin dashboard; everyone else is a student and
+    // is sent to the student portal. Anonymous student sessions are NOT
+    // redirected — the login page stays available for an admin to sign in.
+    persistenceReady.then(async () => {
+      await auth.authStateReady();
+      onAuthStateChanged(auth, async (user) => {
+        if (!user || user.isAnonymous) return;
+        try {
+          const token = await user.getIdTokenResult(true);
+          window.location.href = token.claims?.role === 'admin'
+            ? 'admin-dashboard.html'
+            : 'student.html';
+        } catch (error) {
+          console.error('Could not verify account role:', error);
+          window.location.href = 'student.html';
+        }
+      });
+    }).catch((error) => {
+      // Auth initialization failed: keep the sign-in form usable rather than
+      // leaving a blank page (redirecting to index.html would loop).
+      console.error('Could not initialize authentication:', error);
+      showAlert(alertContainer, 'Could not initialize sign-in. Please reload the page.', 'error');
     });
 
     form.addEventListener('submit', async (e) => {
@@ -103,12 +119,20 @@
         // unchecked -> keep only for this tab (sessionStorage).
         const persistence = rememberInput.checked ? browserLocalPersistence : browserSessionPersistence;
         await setPersistence(auth, persistence);
-        await signInWithEmailAndPassword(auth, email, password);
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        // Route by role: admins to the dashboard, students to their portal.
+        let isAdmin = false;
+        try {
+          const token = await credential.user.getIdTokenResult(true);
+          isAdmin = token.claims?.role === 'admin';
+        } catch (error) {
+          console.warn('Could not read account role, defaulting to student portal:', error);
+        }
         // Show success message before redirect
         showAlert(alertContainer, 'Login successful! Redirecting...', 'success');
-        // Redirect to admin dashboard after a brief delay
+        // Redirect after a brief delay
         setTimeout(() => {
-          window.location.href = 'admin-dashboard.html';
+          window.location.href = isAdmin ? 'admin-dashboard.html' : 'student.html';
         }, 500);
       } catch (error) {
         console.error('Login error:', error);

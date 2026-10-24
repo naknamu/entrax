@@ -47,6 +47,7 @@ test.describe('Exam retake and review', () => {
       data: {
         fields: {
           title: { stringValue: 'Retake regression exam' },
+          status: { stringValue: 'published' },
           createdBy: { stringValue: 'test-admin-uid' },
           timeLimitMinutes: { integerValue: '60' },
           passingPercent: { integerValue: '50' },
@@ -154,6 +155,7 @@ test.describe('Exam retake and review', () => {
       data: {
         fields: {
           title: { stringValue: 'Portal retake exam' },
+          status: { stringValue: 'published' },
           createdBy: { stringValue: 'test-admin-uid' },
           createdAt: { timestampValue: nowIso },
           timeLimitMinutes: { integerValue: '60' },

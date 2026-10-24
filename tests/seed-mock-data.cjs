@@ -176,12 +176,12 @@ async function seed() {
     try {
       const rec = await auth.getUserByEmail('admin@test.com');
       adminUid = rec.uid;
-      await auth.setCustomUserClaims(adminUid, { admin: true });
+      await auth.setCustomUserClaims(adminUid, { role: 'admin' });
       console.log('  ✓ Admin exists:', adminUid);
     } catch {
       const rec = await auth.createUser({ email: 'admin@test.com', password: 'password123', displayName: 'Test Admin', emailVerified: true });
       adminUid = rec.uid;
-      await auth.setCustomUserClaims(adminUid, { admin: true });
+      await auth.setCustomUserClaims(adminUid, { role: 'admin' });
       console.log('  ✓ Admin created:', adminUid);
     }
 
@@ -214,6 +214,7 @@ async function seed() {
     for (const exam of exams) {
       await db.collection('exams').doc(exam.id).set({
         ...exam,
+        status: exam.status || 'published',
         createdBy: adminUid,
         createdAt: daysAgo(30),
         updatedAt: daysAgo(1),

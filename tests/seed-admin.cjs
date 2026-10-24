@@ -36,9 +36,11 @@ const ADMIN_PASSWORD = 'password123';
   }
 
   const examId = 'sample-exam-admin-owned';
+  await auth.setCustomUserClaims(uid, { role: 'admin' });
   await db.collection('exams').doc(examId).set({
     title: 'Admin Owned Exam',
     description: 'Seeded for admin dashboard testing',
+    status: 'published',
     timeLimitMinutes: 30,
     passingPercent: 70,
     showResultsToStudent: true,

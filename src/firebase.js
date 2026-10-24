@@ -10,6 +10,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Firebase config from Vite env vars (defined in .env.development / .env.production / .env.example)
 const firebaseConfig = {
@@ -39,6 +40,22 @@ if (import.meta.env.VITE_USE_EMULATOR === 'true') {
   
   // Firestore emulator
   connectFirestoreEmulator(db, 'localhost', 8081);
+}
+
+// Optional App Check (reCAPTCHA v3). Off by default: it only runs when a site
+// key is configured AND we are not using the emulators (App Check has no
+// emulator support here, and enabling it locally would block every request).
+const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY;
+if (appCheckSiteKey && import.meta.env.VITE_USE_EMULATOR !== 'true') {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (error) {
+    // App Check is defense-in-depth; never let it break app startup.
+    console.error('App Check initialization failed:', error);
+  }
 }
 
 // Expose globals for Playwright test synchronization (waitForFirebase helper)

@@ -13,6 +13,7 @@ const TEST_ADMIN = {
 const SAMPLE_EXAM = {
   title: 'Sample Exam for Testing',
   description: 'This is a sample exam used for automated testing',
+  status: 'published',
   timeLimitMinutes: 30,
   passingPercent: 70,
   showResultsToStudent: true,

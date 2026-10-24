@@ -210,21 +210,42 @@ export async function getSubmissionsForExam(db, examId, options = {}) {
 }
 
 /**
- * Check if student already submitted
+ * Check if student already submitted.
+ *
+ * The query is scoped by studentUid (or legacy studentEmail) so Firestore
+ * security rules can prove ownership — an unconstrained submissions query is
+ * denied for students. The examId is filtered client-side, which also avoids
+ * a composite index.
+ *
  * @param {Firestore} db - Firestore instance
  * @param {string} examId - Exam ID
- * @param {string} studentEmail - Student email/ID
+ * @param {Object|string} student - { studentUid, studentEmail } or a legacy email string
  * @returns {Promise<Object|null>} Existing submission or null
  */
-export async function getExistingSubmission(db, examId, studentEmail) {
-  const q = query(
-    collection(db, 'submissions'),
-    where('examId', '==', examId),
-    where('studentEmail', '==', studentEmail),
-    limit(1)
-  );
+export async function getExistingSubmission(db, examId, student = {}) {
+  const { studentUid, studentEmail } = typeof student === 'string'
+    ? { studentEmail: student }
+    : student;
+
+  let q;
+  if (studentUid) {
+    q = query(
+      collection(db, 'submissions'),
+      where('studentUid', '==', studentUid)
+    );
+  } else if (studentEmail) {
+    q = query(
+      collection(db, 'submissions'),
+      where('studentEmail', '==', studentEmail)
+    );
+  } else {
+    return null;
+  }
+
   const snap = await getDocs(q);
-  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .find(sub => sub.examId === examId) || null;
 }
 
 /**
@@ -446,8 +467,13 @@ export async function getSubmissionsByStudent(db, studentUid, options = {}) {
  * @returns {Promise<Array>} Array of open exams
  */
 export async function getAvailableExams(db) {
-  // No orderBy — avoids composite index requirement; sort client-side
-  const examsQuery = query(collection(db, 'exams'));
+  // Only published exams are listable by students (security rules require the
+  // query to be constrained by status). No orderBy — avoids a composite index;
+  // sort client-side and keep the date/question filtering below.
+  const examsQuery = query(
+    collection(db, 'exams'),
+    where('status', '==', 'published')
+  );
   const snap = await getDocs(examsQuery);
   const now = new Date();
   return snap.docs

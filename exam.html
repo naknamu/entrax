@@ -441,10 +441,15 @@
     let flaggedQuestions = new Set();
     let startTime = null;
     let timeLimitMs = 0;
+    let examEndTime = null; // exam.endDate in ms (null = no close date)
+    let sessionEndTime = null; // min(start + time limit, exam close) in ms
     let submissionId = null;
     let tabSwitchCount = 0;
     let isSubmitted = false;
     let isAutoSubmitting = false;
+    let autoSubmitFailures = 0; // consecutive failed auto-submit attempts
+    let autoSubmitRetryAt = 0; // backoff gate (timestamp); no retry before this
+    const MAX_AUTO_SUBMIT_FAILURES = 3;
     let timerInterval = null;
     let allowPrevious = true;
     let showResultsToStudent = false;
@@ -453,6 +458,7 @@
     let questionOrder = []; // randomized order indices
     let examLoaded = false; // guards against re-loading (and re-starting) on later auth events
     let categoryStats = {}; // per-category performance after submission
+    let autoSaveTimeout = null; // debounce handle for Firestore autosave
 
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -533,6 +539,8 @@
         const now = new Date();
         const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
         const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+        // Remember the close time so a resumed attempt cannot outlive the window.
+        examEndTime = endDate ? endDate.getTime() : null;
 
         let examUnavailableMessage = null;
         if (startDate && startDate > now) {
@@ -572,6 +580,27 @@
           startExamBtn.disabled = false;
           showScreen('start-screen');
           return;
+        }
+
+        // Resume an in-progress draft (page reload, crash, second tab) instead
+        // of showing the start form or creating a duplicate attempt. This runs
+        // for anonymous direct-link students too — their auth uid owns the draft.
+        // A retake is an explicit "start over": discard the old draft instead of
+        // resuming it (otherwise a near-expiry draft would instantly auto-submit
+        // and the "new" attempt would reuse the old submission id).
+        const draft = await findDraftSubmission();
+        if (draft && !isRetake) {
+          resumeExam(draft);
+          return;
+        }
+        if (draft && isRetake) {
+          // Delete it, otherwise findDraftSubmission() (newest unsubmitted)
+          // would resurface it after the new attempt is submitted.
+          try {
+            await deleteDoc(doc(db, 'submissions', draft.id));
+          } catch (error) {
+            console.warn('Could not discard previous draft:', error);
+          }
         }
 
         if (examUnavailableMessage) {
@@ -617,30 +646,125 @@
     }
 
     /**
+     * Collect submissions owned by the current user.
+     *
+     * The query MUST be constrained by studentUid (or, for legacy attempts
+     * created before studentUid existed, by the auth email) — Firestore rules
+     * deny unconstrained submission queries. The examId filter happens
+     * client-side, which also avoids a composite index.
+     */
+    async function fetchOwnSubmissions() {
+      const user = auth.currentUser;
+      const byId = new Map();
+      if (!user) return byId;
+
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'submissions'),
+          where('studentUid', '==', user.uid)
+        ));
+        snap.docs.forEach(d => byId.set(d.id, { id: d.id, ...d.data() }));
+      } catch (error) {
+        console.warn('Could not load your attempts:', error);
+      }
+
+      // Legacy attempts (no studentUid) are owned by the auth email. Anonymous
+      // sessions have no email, so this branch is skipped for direct-link users.
+      if (user.email) {
+        try {
+          const snap = await getDocs(query(
+            collection(db, 'submissions'),
+            where('studentEmail', '==', user.email)
+          ));
+          snap.docs.forEach(d => byId.set(d.id, { id: d.id, ...d.data() }));
+        } catch (error) {
+          // Best-effort legacy fallback; ignore.
+        }
+      }
+
+      return byId;
+    }
+
+    function submissionMillis(submission) {
+      const ts = submission?.submittedAt;
+      return ts?.toMillis ? ts.toMillis() : 0;
+    }
+
+    /**
      * Find the signed-in student's most recent submitted attempt for this exam.
-     * Matches on the auth uid first, then on email so legacy submissions
-     * (created before studentUid was stored) still open in review mode.
      */
     async function findLatestSubmission() {
-      const user = auth.currentUser;
-      if (!user) return null;
+      const byId = await fetchOwnSubmissions();
+      return [...byId.values()]
+        .filter(sub => sub.submittedAt != null && sub.examId === examId)
+        .sort((a, b) => submissionMillis(b) - submissionMillis(a))[0] || null;
+    }
 
-      const snap = await getDocs(query(
-        collection(db, 'submissions'),
-        where('examId', '==', examId)
-      ));
-
-      return snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(sub => sub.submittedAt != null && (
-          sub.studentUid === user.uid ||
-          (user.email && sub.studentEmail === user.email)
-        ))
+    /**
+     * Find an unfinished attempt for this exam (submittedAt is null). Used to
+     * resume after a reload instead of losing answers or creating a duplicate.
+     */
+    async function findDraftSubmission() {
+      const byId = await fetchOwnSubmissions();
+      return [...byId.values()]
+        .filter(sub => sub.submittedAt == null && sub.examId === examId)
         .sort((a, b) => {
-          const ta = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : 0;
-          const tb = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : 0;
+          const ta = a.startedAt?.toMillis ? a.startedAt.toMillis() : 0;
+          const tb = b.startedAt?.toMillis ? b.startedAt.toMillis() : 0;
           return tb - ta;
         })[0] || null;
+    }
+
+    /**
+     * Resume an existing draft: restore answers/flags/order/start time, then
+     * enter the exam UI without creating a new submission document.
+     */
+    function resumeExam(draft) {
+      studentName = draft.studentName || studentNameInput.value.trim();
+      studentEmail = draft.studentEmail || studentEmailInput.value.trim();
+      studentNameInput.value = studentName;
+      studentEmailInput.value = studentEmail;
+
+      restoreSubmissionState(draft);
+      // Recover an answer typed inside the 800 ms autosave window before a hard
+      // reload (localStorage is written immediately; Firestore is debounced).
+      mergeLocalDraftAnswers();
+
+      // Keep the localStorage copy in sync (it is written immediately on every
+      // answer; Firestore is the source of truth for resume).
+      localStorage.setItem(`exam_${examId}_${studentEmail}_start`, String(startTime));
+      localStorage.setItem(`exam_${examId}_${studentEmail}_answers`, JSON.stringify(answers));
+      localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
+
+      beginExamSession();
+    }
+
+    /**
+     * Merge locally-cached answers into a resumed draft. Only applies when the
+     * cache belongs to this exact submission (same submissionId), so a stale
+     * cache from another attempt/device can't inject answers. Never clears an
+     * answer that Firestore already has.
+     */
+    function mergeLocalDraftAnswers() {
+      try {
+        const cachedId = localStorage.getItem(`exam_${examId}_${studentEmail}_submissionId`);
+        if (!cachedId || cachedId !== submissionId) return;
+
+        const cached = JSON.parse(
+          localStorage.getItem(`exam_${examId}_${studentEmail}_answers`) || 'null'
+        );
+        if (!Array.isArray(cached)) return;
+
+        cached.forEach((entry, index) => {
+          const selected = entry?.selectedIndex;
+          if (selected == null || selected < 0) return;
+          if (!answers[index] || answers[index].selectedIndex == null || answers[index].selectedIndex < 0) {
+            answers[index] = { selectedIndex: selected };
+          }
+        });
+      } catch (error) {
+        console.warn('Could not merge local draft answers:', error);
+      }
     }
 
     /**
@@ -798,29 +922,15 @@
 
         // Check if already submitted. Explicit retakes (from the portal's
         // "Retake" button or the already-submitted screen) skip this check so
-        // the student can take the exam again.
+        // the student can take the exam again. The query is scoped to this
+        // user's own submissions (rules deny unconstrained reads).
         try {
-          const existingQuery = query(
-            collection(db, 'submissions'),
-            where('examId', '==', examId),
-            where('studentEmail', '==', studentEmail)
-          );
-          const existingSnapshot = await getDocs(existingQuery);
-
-          // Clean up abandoned drafts from crashed sessions so they don't
-          // block or clutter later attempts (allowed by the security rules).
-          for (const draft of existingSnapshot.docs.filter(d => d.data().submittedAt == null)) {
-            try {
-              await deleteDoc(draft.ref);
-            } catch (draftError) {
-              console.warn('Could not remove abandoned draft:', draftError);
-            }
-          }
-
+          const existing = await fetchOwnSubmissions();
+          const forExam = [...existing.values()].filter(sub => sub.examId === examId);
           if (!isRetake) {
-            const submittedDoc = existingSnapshot.docs.find(d => d.data().submittedAt != null);
+            const submittedDoc = forExam.find(sub => sub.submittedAt != null);
             if (submittedDoc) {
-              showAlreadySubmitted(submittedDoc.data());
+              showAlreadySubmitted(submittedDoc);
               return true;
             }
           }
@@ -837,6 +947,8 @@
         currentQuestionIndex = 0;
         tabSwitchCount = 0;
         isSubmitted = false;
+        autoSubmitFailures = 0;
+        autoSubmitRetryAt = 0;
 
         // Create submission document with start time
         submissionId = generateId();
@@ -870,16 +982,32 @@
         localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
 
         // Start exam
-        showScreen('exam-screen');
-        renderQuestion();
-        startTimer();
-        setupTabVisibilityListener();
-        updateNavigation();
-        setupMobileSidebar();
+        beginExamSession();
         return true;
       } finally {
         isStartingExam = false;
       }
+    }
+
+    /**
+     * Enter the exam UI for an already-initialized session (new attempt or
+     * resumed draft). The submission document must already exist.
+     */
+    function beginExamSession() {
+      // The attempt may not outlive the exam's close time: a draft resumed after
+      // the window closed gets zero remaining time and auto-submits immediately.
+      sessionEndTime = Math.min(
+        startTime + timeLimitMs,
+        examEndTime ?? Number.POSITIVE_INFINITY
+      );
+      showScreen('exam-screen');
+      renderQuestion();
+      startTimer();
+      setupTabVisibilityListener();
+      updateNavigation();
+      setupMobileSidebar();
+      // A resumed attempt may already be past its time limit / close time.
+      checkAutoSubmit();
     }
 
     startExamBtn.addEventListener('click', () => {
@@ -897,16 +1025,23 @@
 
     function updateTimerDisplay() {
       if (!startTime) return;
-      
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, timeLimitMs - elapsed);
-      
+
+      // Fallback for callers that start the timer without beginExamSession()
+      // (e.g. retry after a failed submit).
+      if (sessionEndTime == null) {
+        sessionEndTime = Math.min(startTime + timeLimitMs, examEndTime ?? Number.POSITIVE_INFINITY);
+      }
+
+      const remaining = Math.max(0, sessionEndTime - Date.now());
+
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
       timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-      // Progress bar
-      const progress = Math.max(0, (remaining / timeLimitMs) * 100);
+      // Progress bar (denominator is the actual session length, which may be
+      // shorter than the time limit when the exam closes first).
+      const sessionLength = Math.max(1, sessionEndTime - startTime);
+      const progress = Math.max(0, (remaining / sessionLength) * 100);
       timerProgressBar.style.width = `${progress}%`;
       timerBar.querySelector('.timer-progress-container').setAttribute('aria-valuenow', Math.round(progress));
 
@@ -930,18 +1065,32 @@
     }
 
     function checkAutoSubmit() {
-      if (isSubmitted || isAutoSubmitting) return;
-      
-      const elapsed = Date.now() - startTime;
-      if (elapsed >= timeLimitMs) {
+      if (isSubmitted || isAutoSubmitting || !startTime) return;
+      // Back off between retries after a failed auto-submit.
+      if (Date.now() < autoSubmitRetryAt) return;
+
+      if (sessionEndTime == null) {
+        sessionEndTime = Math.min(startTime + timeLimitMs, examEndTime ?? Number.POSITIVE_INFINITY);
+      }
+
+      // Compare against the session deadline (time limit or exam close,
+      // whichever comes first), not just the time limit.
+      if (Date.now() >= sessionEndTime) {
         isAutoSubmitting = true;
-        autoSubmit();
+        submitExam(true);
       }
     }
 
     // Tab visibility detection
     function setupTabVisibilityListener() {
       document.addEventListener('visibilitychange', handleVisibilityChange);
+      // Best-effort flush on hard reload/close (the localStorage merge in
+      // resumeExam is the reliable fallback if this async write is aborted).
+      window.addEventListener('pagehide', handlePageHide);
+    }
+
+    function handlePageHide() {
+      if (!isSubmitted) flushAutoSave();
     }
 
     function handleVisibilityChange() {
@@ -949,6 +1098,8 @@
         tabSwitchCount++;
         showTabWarning();
         saveTabSwitchCount();
+        // Persist any pending answers before the tab is backgrounded/closed.
+        flushAutoSave();
       }
     }
 
@@ -1071,7 +1222,26 @@
       renderQuestion();
     }
 
-    async function autoSaveAnswers() {
+    /**
+     * Schedule a Firestore autosave (debounced). Rapid answer/flag changes only
+     * produce one write ~800 ms after the last change. localStorage is written
+     * immediately by the callers.
+     */
+    function autoSaveAnswers() {
+      if (!submissionId) return;
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        autoSaveTimeout = null;
+        flushAutoSave();
+      }, 800);
+    }
+
+    /** Write the current answers/flags to Firestore right now. */
+    async function flushAutoSave() {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = null;
+      }
       if (!submissionId) return;
       try {
         await updateDoc(doc(db, 'submissions', submissionId), {
@@ -1245,6 +1415,11 @@
 
       clearInterval(timerInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+
+      // Flush any debounced autosave before writing the final submission so a
+      // pending timer can't race the graded result.
+      await flushAutoSave();
 
       const endTime = Date.now();
       const timeTaken = endTime - startTime;
@@ -1277,8 +1452,28 @@
         });
       } catch (error) {
         console.error('Error submitting exam:', error);
-        showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
         isSubmitted = false;
+        isAutoSubmitting = false;
+
+        if (autoSubmitted) {
+          // Retry a transient failure with backoff; stop after a few attempts so
+          // a permanent permission denial can't hammer the backend every second.
+          autoSubmitFailures++;
+          if (autoSubmitFailures >= MAX_AUTO_SUBMIT_FAILURES) {
+            clearInterval(timerInterval);
+            showAlert(
+              examAlertContainer,
+              'Automatic submission failed repeatedly. Please click "Submit Exam" to save your answers, or reload the page to resume.',
+              'error'
+            );
+            return;
+          }
+          const backoffMs = Math.min(30000, 2000 * (2 ** (autoSubmitFailures - 1)));
+          autoSubmitRetryAt = Date.now() + backoffMs;
+        } else {
+          showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
+        }
+
         startTimer();
         setupTabVisibilityListener();
         return;
@@ -1318,6 +1513,10 @@
         }
       }
 
+      // The original doc is gone (or unreadable to the rules); recreate under a
+      // new id. If it still exists, remove it afterwards so the attempt isn't
+      // orphaned. Rules allow deleting an own unsubmitted draft.
+      const previousId = submissionId;
       submissionId = generateId();
       await setDoc(doc(db, 'submissions', submissionId), {
         examId,
@@ -1336,6 +1535,9 @@
         flaggedQuestions: [],
         ...finalData
       });
+      if (previousId) {
+        deleteDoc(doc(db, 'submissions', previousId)).catch(() => {});
+      }
       localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
     }
 

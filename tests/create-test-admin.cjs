@@ -40,9 +40,9 @@ async function createTestAdmin() {
       }
     }
 
-    // Set custom claims for admin (optional)
-    await auth.setCustomUserClaims(userRecord.uid, { admin: true });
-    console.log('Set admin claims for user:', userRecord.uid);
+    // Grant the admin role custom claim used by firestore.rules + admin pages.
+    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin' });
+    console.log('Set admin claim { role: "admin" } for user:', userRecord.uid);
 
     console.log('\n✅ Test admin ready:');
     console.log('   Email:', email);

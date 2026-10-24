@@ -344,9 +344,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script type="module">
     import { auth, db } from '/src/firebase.js';
-    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { signOut } from 'firebase/auth';
     import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { showAlert, showConfirm, escapeHtml, generateId } from '/js/admin.js';
+    import { ensureAdmin, failClosed } from '/js/admin-guard.js';
     import {
       generateKaplanMathQuestions, KAPLAN_MATH_TOPICS,
       generateKaplanReadingQuestions, KAPLAN_READING_TOPICS,
@@ -739,12 +740,9 @@
     }
     initAccordions();
 
-    // Auth check
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = 'index.html';
-        return;
-      }
+    // Auth check — only admins (custom claim) may create/edit exams.
+    ensureAdmin().then(async (user) => {
+      if (!user) return; // redirected to sign-in / student portal
       currentUser = user;
       if (isEditing) {
         document.getElementById('page-title').textContent = 'Edit Exam';
@@ -755,7 +753,7 @@
         addQuestion(); // Add first question by default
       }
       loadExistingCategories();
-    });
+    }).catch(failClosed);
 
     // Load existing categories from exams
     async function loadExistingCategories() {

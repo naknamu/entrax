@@ -46,3 +46,14 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# Local agent/tooling artifacts
+.reasonix/
+reasonix.toml
+
+# Local scratch data (generated exam previews, dumps)
+exam-data-preview.json
+
+# Ad-hoc screenshots from visual checks (root only)
+/exam-*.png
+/step-*.png

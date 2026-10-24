@@ -40,6 +40,11 @@ async function seedTestData() {
         throw error;
       }
     }
+
+    // Grant the admin claim used by firestore.rules and the admin pages.
+    const adminUser = await auth.getUserByEmail(adminEmail);
+    await auth.setCustomUserClaims(adminUser.uid, { role: 'admin' });
+    console.log('Admin claim set for:', adminUser.uid);
     
     // Create sample exam
     console.log('Creating sample exam...');
@@ -47,6 +52,7 @@ async function seedTestData() {
     const examData = {
       title: 'Sample Exam for Testing',
       description: 'This is a sample exam used for automated testing',
+      status: 'published',
       timeLimitMinutes: 30,
       passingPercent: 70,
       showResultsToStudent: true,

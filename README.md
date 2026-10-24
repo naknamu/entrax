@@ -250,7 +250,7 @@ All components are built with accessibility in mind: focus states, ARIA labels, 
 - Firebase security rules in `firestore.rules` — restrict reads/writes by auth state and ownership
   - Students can only read their own submissions (by `studentUid`, with legacy email fallbacks)
   - Submissions can only be created for an open exam; deletes are limited to abandoned drafts/admins
-- Student sessions use Firebase email-link (magic-link) auth; admin pages require a non-anonymous user
+- Student sessions use Firebase email-link (magic-link) auth; admin pages require the `role: admin` custom claim (`scripts/set-admin-claim.cjs`); a signed-in student is redirected
 - Auth state is restored (`authStateReady()`) before pages decide a visitor is signed out, so a refresh never silently downgrades a student to anonymous
 - Client-side validation + server-side rules (defense in depth)
 - XSS prevention via `escapeHtml()` utility on all dynamic content

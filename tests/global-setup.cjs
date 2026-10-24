@@ -26,23 +26,34 @@ async function globalSetup() {
   const auth = admin.auth();
   const db = admin.firestore();
   
-  // Create test admin user
-  console.log('👤 Creating test admin user...');
+  // Create (or find) the test admin user and grant the admin custom claim.
+  // Look up by email so an account created earlier with a different uid still
+  // gets the claim — rules and admin pages rely on `role: admin`, not the uid.
+  console.log('👤 Ensuring test admin user + admin claim...');
+  let adminUid = null;
   try {
-    await auth.createUser({
-      uid: 'test-admin-uid',
-      email: 'admin@test.com',
-      password: 'password123',
-      displayName: 'Test Admin',
-      emailVerified: true
-    });
-    console.log('✅ Admin user created');
-  } catch (error) {
-    if (error.code === 'auth/uid-already-exists' || error.code === 'auth/email-already-exists') {
-      console.log('ℹ️ Admin user already exists');
-    } else {
-      console.error('❌ Failed to create admin user:', error.message);
+    let userRecord;
+    try {
+      userRecord = await auth.getUserByEmail('admin@test.com');
+      console.log('ℹ️ Admin user already exists:', userRecord.uid);
+    } catch (error) {
+      if (error.code !== 'auth/user-not-found') throw error;
+      userRecord = await auth.createUser({
+        uid: 'test-admin-uid',
+        email: 'admin@test.com',
+        password: 'password123',
+        displayName: 'Test Admin',
+        emailVerified: true
+      });
+      console.log('✅ Admin user created:', userRecord.uid);
     }
+    adminUid = userRecord.uid;
+    await auth.setCustomUserClaims(adminUid, { role: 'admin' });
+    const verified = await auth.getUser(adminUid);
+    console.log('✅ Admin claim set for', adminUid, JSON.stringify(verified.customClaims || {}));
+  } catch (error) {
+    console.error('❌ Failed to set up admin user:', error.message);
+    throw error;
   }
   
   // Create sample exam with FIXED ID for testing
@@ -52,6 +63,8 @@ async function globalSetup() {
     const examData = {
       title: 'Sample Exam for Testing',
       description: 'This is a sample exam used for automated testing',
+      status: 'published',
+      createdBy: adminUid,
       timeLimitMinutes: 30,
       passingPercent: 70,
       showResultsToStudent: true,

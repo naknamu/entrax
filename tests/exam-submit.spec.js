@@ -26,6 +26,7 @@ test.describe('Exam submission', () => {
       data: {
         fields: {
           title: { stringValue: 'Submit regression exam' },
+          status: { stringValue: 'published' },
           createdBy: { stringValue: 'test-admin-uid' },
           timeLimitMinutes: { integerValue: '60' },
           showResultsToStudent: { booleanValue: true },
@@ -79,6 +80,16 @@ test.describe('Exam submission', () => {
 
       await expect(page.locator('#submission-screen')).toBeVisible({ timeout: 20000 });
       await expect(page.locator('#exam-alert-container')).not.toContainText('Failed to submit');
+
+      // The recreate path must not leave an orphaned draft behind: exactly one
+      // submission document should exist for this exam.
+      const afterSubmit = await request.get(`${DOCS_URL}/submissions?pageSize=300`, {
+        headers: OWNER_AUTH
+      });
+      const afterBody = await afterSubmit.json();
+      const submissionsForExam = (afterBody.documents || [])
+        .filter((doc) => doc.fields?.examId?.stringValue === examId);
+      expect(submissionsForExam).toHaveLength(1);
 
       // Students must be able to get back to the portal after submitting.
       const backToDashboard = page.locator('#submission-screen a[href="student.html#dashboard"]');
