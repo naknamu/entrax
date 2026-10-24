@@ -67,6 +67,29 @@ export async function signInAsAdmin(page) {
 }
 
 /**
+ * Sign the current page's Firebase user out.
+ *
+ * Useful when a test acted as an admin (create an exam) and then needs the
+ * direct-link student flow, where exam.html shows the name/email form. A
+ * signed-in user is auto-started from the portal and would skip that form.
+ */
+export async function signOut(page) {
+  const before = page.url();
+  await page.evaluate(async () => {
+    if (window.__FIREBASE_AUTH__) {
+      await window.__FIREBASE_AUTH__.signOut();
+    }
+  });
+  // Admin pages redirect to index.html once signed out. Wait for that
+  // navigation (bounded) so a following page.goto() isn't interrupted.
+  await Promise.race([
+    page.waitForURL(url => url.toString() !== before, { timeout: 2000 }).catch(() => {}),
+    page.waitForTimeout(600)
+  ]);
+  await page.waitForLoadState('load').catch(() => {});
+}
+
+/**
  * Create a test exam
  */
 export async function createTestExam(page, examData = {}) {

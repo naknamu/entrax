@@ -1708,6 +1708,39 @@ pre code {
   display: block;
 }
 
+/* Exam Loading Screen */
+.exam-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: 60vh;
+  text-align: center;
+}
+
+.exam-loading .spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-width: 3px;
+}
+
+.exam-loading-text {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+}
+
+/* Submission screen navigation */
+.submission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
 /* Timer Bar */
 .exam-timer-bar {
   position: sticky;

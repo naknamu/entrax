@@ -661,7 +661,7 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
         statusClass = 'failed';
       }
       actionBtn = `
-        <a href="exam.html?examId=${exam.id}" class="btn btn-ghost btn-sm">Retake</a>
+        <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-ghost btn-sm">Retake</a>
         <a href="exam.html?examId=${exam.id}&review=true" class="btn btn-primary btn-sm">View Results</a>`;
     } else {
       statusBadge = '<span class="badge badge-info">New</span>';

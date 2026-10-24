@@ -27,8 +27,9 @@ const app = initializeApp(firebaseConfig);
 // Auth & Firestore instances
 export const auth = getAuth(app);
 
-// Ensure auth sessions persist across browser sessions (survive page reloads and tab closes)
-setPersistence(auth, browserLocalPersistence).catch(console.error);
+// Ensure auth sessions persist across browser sessions (survive page reloads and tab closes).
+// Export the promise so pages can await it before relying on onAuthStateChanged.
+export const persistenceReady = setPersistence(auth, browserLocalPersistence).catch(console.error);
 export const db = getFirestore(app);
 
 // Connect to emulators in development (controlled by VITE_USE_EMULATOR env var)

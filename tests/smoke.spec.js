@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, createTestExam, viewResultsAsAdmin } from './utils.js';
+import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, signOut, createTestExam, viewResultsAsAdmin } from './utils.js';
 
 const TEST_ADMIN_EMAIL = 'admin@test.com';
 const TEST_ADMIN_PASSWORD = 'password123';
@@ -127,7 +127,11 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
       ]
     });
     const testExamId = result.examId;
-    
+
+    // The student takes the exam through the direct link (signed out), so the
+    // name/email form is shown instead of the portal auto-start.
+    await signOut(page);
+
     // Take exam as student
     await page.goto(`/exam.html?examId=${testExamId}&test=true`);
     await waitForFirebase(page);

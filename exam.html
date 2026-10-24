@@ -12,8 +12,18 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="exam-page">
+  <!-- Loading Screen (shown until the exam is loaded so the start form never flashes) -->
+  <section id="loading-screen" class="exam-screen active" aria-busy="true" aria-live="polite">
+    <div class="exam-container exam-container--start">
+      <div class="exam-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="exam-loading-text">Loading exam…</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Start Screen -->
-  <section id="start-screen" class="exam-screen active" aria-labelledby="start-title">
+  <section id="start-screen" class="exam-screen" aria-labelledby="start-title" hidden>
     <div class="exam-container exam-container--start">
       <header class="start-header">
         <h1 id="exam-title-start" class="start-title">Loading...</h1>
@@ -276,8 +286,10 @@
           </div>
         </div>
 
-        <div class="mt-6 text-center">
-          <p class="text-muted">You may now close this window.</p>
+        <div class="submission-actions">
+          <a href="student.html#dashboard" class="btn btn-primary btn-lg">Back to Dashboard</a>
+          <a href="#" class="btn btn-outline btn-lg retake-exam-link">Retake Exam</a>
+          <a href="student.html#exams" class="btn btn-ghost btn-lg">View My Exams</a>
         </div>
       </article>
     </div>
@@ -310,6 +322,12 @@
             </dl>
           </div>
         </div>
+
+        <div class="submission-actions">
+          <a href="student.html#dashboard" class="btn btn-primary btn-lg">Back to Dashboard</a>
+          <a href="#" class="btn btn-outline btn-lg retake-exam-link">Retake Exam</a>
+          <a href="student.html#exams" class="btn btn-ghost btn-lg">View My Exams</a>
+        </div>
       </article>
     </div>
   </section>
@@ -328,9 +346,9 @@
   </section>
 
   <script type="module">
-    import { auth, db } from '/src/firebase.js';
+    import { auth, db, persistenceReady } from '/src/firebase.js';
     import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-    import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+    import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { gradeExam, getCategoryStatistics } from '/js/grading.js';
     import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
 
@@ -402,6 +420,7 @@
     const verdictTitle = document.getElementById('verdict-title');
     const verdictDetail = document.getElementById('verdict-detail');
     const verdictIcon = document.getElementById('verdict-icon');
+    const submissionTitle = document.getElementById('submission-title');
     const categoryBreakdownCard = document.getElementById('category-breakdown-card');
     const categoryBreakdownEl = document.getElementById('category-breakdown');
 
@@ -432,11 +451,16 @@
     let passingPercent = 70;
     let randomizeQuestions = false;
     let questionOrder = []; // randomized order indices
+    let examLoaded = false; // guards against re-loading (and re-starting) on later auth events
     let categoryStats = {}; // per-category performance after submission
 
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
     examId = urlParams.get('examId');
+    // Explicit retake: ignore the "already submitted" check and start a fresh attempt.
+    const isRetake = urlParams.get('retake') === 'true';
+    // Review: show a previous submitted attempt instead of starting the exam.
+    const isReview = urlParams.get('review') === 'true';
 
     if (!examId) {
       showScreen('exam-closed-screen');
@@ -445,22 +469,33 @@
 
     // Auth — restore session first; only sign in anonymously if no user exists.
     // (Don't overwrite a student's portal session with an anonymous one.)
-    let authResolved = false;
-    onAuthStateChanged(auth, async (user) => {
-      if (!authResolved) {
-        authResolved = true;
-        if (!user) {
-          // No existing session — create anonymous one for direct-link access
-          try { await signInAnonymously(auth); } catch (e) { console.error(e); }
-          return; // will re-fire onAuthStateChanged with the anonymous user
+    // Wait for persistence to be ready so onAuthStateChanged fires with the
+    // correct user (not null from a race with setPersistence).
+    persistenceReady.then(async () => {
+      // Ensure Firebase has restored the persisted session before deciding
+      // whether this is a direct-link (anonymous) visit. Without this, the
+      // first auth callback can be `null` and replace a signed-in student's
+      // session with an anonymous one.
+      await auth.authStateReady();
+      let authResolved = false;
+      onAuthStateChanged(auth, async (user) => {
+        if (!authResolved) {
+          authResolved = true;
+          if (!user) {
+            // No existing session — create anonymous one for direct-link access
+            try { await signInAnonymously(auth); } catch (e) { console.error(e); }
+            return; // will re-fire onAuthStateChanged with the anonymous user
+          }
         }
-      }
-      if (user) {
-        await loadExam();
-      }
+        if (user) {
+          await loadExam();
+        }
+      });
     });
 
     async function loadExam() {
+      if (examLoaded) return;
+      examLoaded = true;
       try {
         const examDoc = await getDoc(doc(db, 'exams', examId));
         if (!examDoc.exists()) {
@@ -479,37 +514,79 @@
         passingPercent = exam.passingPercent || 70;
         randomizeQuestions = exam.randomizeQuestions === true;
 
-        // Check availability window
-        const now = new Date();
-        const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
-        const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
-
-        if (startDate && startDate > now) {
-          showScreen('exam-closed-screen');
-          document.getElementById('exam-closed-message').textContent = `This exam opens on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}.`;
-          return;
-        }
-        if (endDate && endDate < now) {
-          showScreen('exam-closed-screen');
-          document.getElementById('exam-closed-message').textContent = `This exam closed on ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}.`;
-          return;
-        }
+        // Point the "Retake Exam" links at a fresh attempt for this exam.
+        document.querySelectorAll('.retake-exam-link').forEach(link => {
+          link.href = `exam.html?examId=${encodeURIComponent(examId)}&retake=true`;
+        });
 
         // Randomize question order if enabled. When the exam has named
         // sections, questions are shuffled WITHIN each section (Kaplan-style:
         // sections stay contiguous) and section order is preserved.
+        // (Review mode overwrites this with the saved order below.)
         if (randomizeQuestions) {
           questionOrder = buildRandomizedOrder();
         } else {
           questionOrder = questions.map((_, i) => i);
         }
 
-        // Render start screen
+        // Check availability window
+        const now = new Date();
+        const startDate = exam.startDate?.toDate ? exam.startDate.toDate() : (exam.startDate ? new Date(exam.startDate) : null);
+        const endDate = exam.endDate?.toDate ? exam.endDate.toDate() : (exam.endDate ? new Date(exam.endDate) : null);
+
+        let examUnavailableMessage = null;
+        if (startDate && startDate > now) {
+          examUnavailableMessage = `This exam opens on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}.`;
+        } else if (endDate && endDate < now) {
+          examUnavailableMessage = `This exam closed on ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}.`;
+        }
+
+        // Review mode: show a previous submitted attempt instead of starting a
+        // new one. This works even after the exam window has closed.
+        if (isReview) {
+          const previous = await findLatestSubmission();
+          if (previous) {
+            restoreSubmissionState(previous);
+            showSubmissionResults(
+              previous.score || 0,
+              previous.totalQuestions || questions.length,
+              previous.percentage || 0,
+              previous.passed === true,
+              previous.autoSubmitted === true,
+              { review: true }
+            );
+            submissionTitle.textContent = 'Exam Results';
+            submissionMessage.textContent = previous.submittedAt
+              ? `Your submitted attempt from ${formatDateTime(previous.submittedAt)}.`
+              : 'Your submitted attempt.';
+            return;
+          }
+          // Nothing to review: don't auto-start an exam the student only
+          // wanted to review. A closed exam shows the closed screen instead.
+          if (examUnavailableMessage) {
+            showScreen('exam-closed-screen');
+            document.getElementById('exam-closed-message').textContent = examUnavailableMessage;
+            return;
+          }
+          renderStartScreen();
+          startExamBtn.disabled = false;
+          showScreen('start-screen');
+          return;
+        }
+
+        if (examUnavailableMessage) {
+          showScreen('exam-closed-screen');
+          document.getElementById('exam-closed-message').textContent = examUnavailableMessage;
+          return;
+        }
+
+        // Render start screen content, but keep the loading screen visible
+        // until we know whether this is an authenticated student who should
+        // be auto-started. This avoids briefly flashing the name/email form.
         renderStartScreen();
         // Exam is fully loaded — only now allow the student to start,
         // otherwise the session would be initialized from empty questions.
         startExamBtn.disabled = false;
-        showScreen('start-screen');
 
         // Auto-start for authenticated students (from the student portal)
         // so they skip the name/email form and go straight into the exam.
@@ -523,17 +600,99 @@
             studentName = studentNameInput.value;
             studentEmail = studentEmailInput.value;
             if (studentName && studentEmail) {
-              startExamBtn.click();
+              const movedOn = await startExam();
+              if (movedOn) return;
             }
           } catch (e) {
             console.warn('Auto-start failed, showing start screen:', e);
           }
         }
+
+        showScreen('start-screen');
       } catch (error) {
         console.error('Error loading exam:', error);
         showScreen('exam-closed-screen');
         document.getElementById('exam-closed-message').textContent = 'Failed to load exam. Please try again.';
       }
+    }
+
+    /**
+     * Find the signed-in student's most recent submitted attempt for this exam.
+     * Matches on the auth uid first, then on email so legacy submissions
+     * (created before studentUid was stored) still open in review mode.
+     */
+    async function findLatestSubmission() {
+      const user = auth.currentUser;
+      if (!user) return null;
+
+      const snap = await getDocs(query(
+        collection(db, 'submissions'),
+        where('examId', '==', examId)
+      ));
+
+      return snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(sub => sub.submittedAt != null && (
+          sub.studentUid === user.uid ||
+          (user.email && sub.studentEmail === user.email)
+        ))
+        .sort((a, b) => {
+          const ta = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : 0;
+          const tb = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : 0;
+          return tb - ta;
+        })[0] || null;
+    }
+
+    /**
+     * Restore the in-memory exam state (answers, flags, question order) from a
+     * saved submission so the existing results/review renderers can be reused.
+     */
+    function restoreSubmissionState(submission) {
+      submissionId = submission.id;
+      startTime = submission.startedAt?.toMillis ? submission.startedAt.toMillis() : Date.now();
+
+      const indexById = new Map(questions.map((q, i) => [q.id, i]));
+      answers = questions.map(() => ({ selectedIndex: -1 }));
+      (submission.answers || []).forEach(answer => {
+        const index = indexById.get(answer.questionId);
+        if (index != null) answers[index] = { selectedIndex: answer.selectedIndex ?? -1 };
+      });
+
+      flaggedQuestions = new Set(submission.flaggedQuestions || []);
+
+      questionOrder = Array.isArray(submission.questionOrder) && submission.questionOrder.length === questions.length
+        ? submission.questionOrder
+        : questions.map((_, i) => i);
+
+      const gradedAnswers = answers.map((a, i) => ({
+        questionId: questions[i].id,
+        selectedIndex: a?.selectedIndex ?? -1
+      }));
+      categoryStats = submission.categoryStats && Object.keys(submission.categoryStats).length
+        ? submission.categoryStats
+        : computeCategoryStats(gradedAnswers);
+    }
+
+    /** Compute per-category performance for the weak-area breakdown. */
+    function computeCategoryStats(gradedAnswers) {
+      const stats = {};
+      const catMap = new Map();
+      questions.forEach(q => {
+        if (!q.category) return;
+        if (!catMap.has(q.category)) catMap.set(q.category, { total: 0, correct: 0 });
+        const entry = catMap.get(q.category);
+        entry.total++;
+        const answer = gradedAnswers.find(a => a.questionId === q.id);
+        if (answer && answer.selectedIndex === q.correctIndex) entry.correct++;
+      });
+      catMap.forEach((data, category) => {
+        stats[category] = {
+          total: data.total,
+          correct: data.correct,
+          percentage: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0
+        };
+      });
+      return stats;
     }
 
     /** Find the exam section a question belongs to (or null). */
@@ -615,100 +774,116 @@
 
     // Start Exam
     let isStartingExam = false;
-    startExamBtn.addEventListener('click', async () => {
-      if (isStartingExam) return;
+    /**
+     * Start the exam. Returns true when the app moved on to another screen
+     * (exam, already-submitted, etc.) and false when validation failed and the
+     * start screen should stay visible.
+     */
+    async function startExam() {
+      if (isStartingExam) return false;
       isStartingExam = true;
-      
-      if (!questions.length) {
-        showAlert(startAlertContainer, 'This exam has no questions. Please contact your instructor.', 'error');
-        isStartingExam = false;
-        return;
-      }
-      
-      studentName = studentNameInput.value.trim();
-      studentEmail = studentEmailInput.value.trim();
-
-      if (!studentName || !studentEmail) {
-        showAlert(startAlertContainer, 'Please enter both your name and email/ID.', 'error');
-        isStartingExam = false;
-        return;
-      }
-
-      // Check if already submitted
       try {
-        const existingQuery = query(
-          collection(db, 'submissions'),
-          where('examId', '==', examId),
-          where('studentEmail', '==', studentEmail)
-        );
-        const existingSnapshot = await getDocs(existingQuery);
-        if (!existingSnapshot.empty) {
-          const existingSub = existingSnapshot.docs[0].data();
-          if (existingSub.submittedAt == null) {
-            // Abandoned draft from a crashed session — remove it so the
-            // student can start fresh instead of being locked out.
-            await deleteDoc(doc(db, 'submissions', existingSnapshot.docs[0].id));
-          } else {
-            showAlreadySubmitted(existingSub);
-            isStartingExam = false;
-            return;
-          }
+        if (!questions.length) {
+          showAlert(startAlertContainer, 'This exam has no questions. Please contact your instructor.', 'error');
+          return false;
         }
-      } catch (error) {
-        console.error('Error checking existing submission:', error);
-        showAlert(startAlertContainer, 'Could not verify your previous attempts. Please try again.', 'error');
+
+        studentName = studentNameInput.value.trim();
+        studentEmail = studentEmailInput.value.trim();
+
+        if (!studentName || !studentEmail) {
+          showAlert(startAlertContainer, 'Please enter both your name and email/ID.', 'error');
+          return false;
+        }
+
+        // Check if already submitted. Explicit retakes (from the portal's
+        // "Retake" button or the already-submitted screen) skip this check so
+        // the student can take the exam again.
+        try {
+          const existingQuery = query(
+            collection(db, 'submissions'),
+            where('examId', '==', examId),
+            where('studentEmail', '==', studentEmail)
+          );
+          const existingSnapshot = await getDocs(existingQuery);
+
+          // Clean up abandoned drafts from crashed sessions so they don't
+          // block or clutter later attempts (allowed by the security rules).
+          for (const draft of existingSnapshot.docs.filter(d => d.data().submittedAt == null)) {
+            try {
+              await deleteDoc(draft.ref);
+            } catch (draftError) {
+              console.warn('Could not remove abandoned draft:', draftError);
+            }
+          }
+
+          if (!isRetake) {
+            const submittedDoc = existingSnapshot.docs.find(d => d.data().submittedAt != null);
+            if (submittedDoc) {
+              showAlreadySubmitted(submittedDoc.data());
+              return true;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking existing submission:', error);
+          showAlert(startAlertContainer, 'Could not verify your previous attempts. Please try again.', 'error');
+          return false;
+        }
+
+        // Initialize exam state
+        startTime = Date.now();
+        answers = new Array(questions.length).fill(null).map(() => ({ selectedIndex: -1 }));
+        flaggedQuestions.clear();
+        currentQuestionIndex = 0;
+        tabSwitchCount = 0;
+        isSubmitted = false;
+
+        // Create submission document with start time
+        submissionId = generateId();
+        try {
+          await setDoc(doc(db, 'submissions', submissionId), {
+            examId,
+            studentName,
+            studentEmail,
+            studentUid: auth.currentUser ? auth.currentUser.uid : '',
+            startedAt: serverTimestamp(),
+            submittedAt: null,
+            answers: [],
+            score: 0,
+            totalQuestions: questions.length,
+            percentage: 0,
+            passed: false,
+            autoSubmitted: false,
+            tabSwitchCount: 0,
+            flaggedQuestions: [],
+            questionOrder: questionOrder
+          });
+        } catch (error) {
+          console.error('Error creating submission:', error);
+          showAlert(startAlertContainer, 'Failed to start exam. Please try again.', 'error');
+          return false;
+        }
+
+        // Save start time to localStorage for persistence
+        localStorage.setItem(`exam_${examId}_${studentEmail}_start`, startTime.toString());
+        localStorage.setItem(`exam_${examId}_${studentEmail}_answers`, JSON.stringify(answers));
+        localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
+
+        // Start exam
+        showScreen('exam-screen');
+        renderQuestion();
+        startTimer();
+        setupTabVisibilityListener();
+        updateNavigation();
+        setupMobileSidebar();
+        return true;
+      } finally {
         isStartingExam = false;
-        return;
       }
+    }
 
-      // Initialize exam state
-      startTime = Date.now();
-      answers = new Array(questions.length).fill(null).map(() => ({ selectedIndex: -1 }));
-      flaggedQuestions.clear();
-      currentQuestionIndex = 0;
-      tabSwitchCount = 0;
-      isSubmitted = false;
-
-      // Create submission document with start time
-      submissionId = generateId();
-      try {
-        await setDoc(doc(db, 'submissions', submissionId), {
-          examId,
-          studentName,
-          studentEmail,
-          studentUid: auth.currentUser ? auth.currentUser.uid : '',
-          startedAt: serverTimestamp(),
-          submittedAt: null,
-          answers: [],
-          score: 0,
-          totalQuestions: questions.length,
-          percentage: 0,
-          passed: false,
-          autoSubmitted: false,
-          tabSwitchCount: 0,
-          flaggedQuestions: [],
-          questionOrder: questionOrder
-        });
-      } catch (error) {
-        console.error('Error creating submission:', error);
-        showAlert(startAlertContainer, 'Failed to start exam. Please try again.', 'error');
-        isStartingExam = false;
-        return;
-      }
-
-      // Save start time to localStorage for persistence
-      localStorage.setItem(`exam_${examId}_${studentEmail}_start`, startTime.toString());
-      localStorage.setItem(`exam_${examId}_${studentEmail}_answers`, JSON.stringify(answers));
-      localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
-
-      // Start exam
-      showScreen('exam-screen');
-      renderQuestion();
-      startTimer();
-      setupTabVisibilityListener();
-      updateNavigation();
-      setupMobileSidebar();
-      isStartingExam = false;
+    startExamBtn.addEventListener('click', () => {
+      startExam();
     });
 
     // Timer
@@ -1083,27 +1258,11 @@
       const { score, totalQuestions, percentage, passed } = gradeExam(questions, gradedAnswers, passingPercent);
 
       // Compute per-category performance for weak-area analysis
-      categoryStats = {};
-      const catMap = new Map();
-      questions.forEach((q, i) => {
-        if (!q.category) return;
-        if (!catMap.has(q.category)) catMap.set(q.category, { total: 0, correct: 0 });
-        const entry = catMap.get(q.category);
-        entry.total++;
-        const ans = gradedAnswers.find(a => a.questionId === q.id);
-        if (ans && ans.selectedIndex === q.correctIndex) entry.correct++;
-      });
-      catMap.forEach((data, category) => {
-        categoryStats[category] = {
-          total: data.total,
-          correct: data.correct,
-          percentage: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0
-        };
-      });
+      categoryStats = computeCategoryStats(gradedAnswers);
 
       // Save final submission
       try {
-        await updateDoc(doc(db, 'submissions', submissionId), {
+        await persistFinalSubmission({
           submittedAt: serverTimestamp(),
           answers: gradedAnswers,
           flaggedQuestions: [...flaggedQuestions],
@@ -1134,10 +1293,59 @@
       showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted);
     }
 
-    function showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted) {
+    /**
+     * Persist the final submission.
+     *
+     * The submission document created at start time can disappear while the
+     * student is still taking the exam: another tab (or a dev/admin reset)
+     * treats this attempt as an abandoned draft and deletes it, because the
+     * duplicate check only sees "not submitted yet". Firestore then rejects the
+     * update (permission-denied on a missing doc) and the whole attempt would
+     * be lost. In that case recreate the document with everything the create
+     * rule requires, so the answers and score are still saved.
+     */
+    async function persistFinalSubmission(finalData) {
+      if (submissionId) {
+        try {
+          await updateDoc(doc(db, 'submissions', submissionId), finalData);
+          return;
+        } catch (error) {
+          // A missing document is reported as permission-denied because the
+          // rules can't evaluate `resource.data` for a doc that isn't there.
+          const code = error?.code || '';
+          if (code !== 'permission-denied' && code !== 'not-found') throw error;
+          console.warn('Could not update submission, recreating it:', error);
+        }
+      }
+
+      submissionId = generateId();
+      await setDoc(doc(db, 'submissions', submissionId), {
+        examId,
+        studentName,
+        studentEmail,
+        studentUid: auth.currentUser ? auth.currentUser.uid : '',
+        startedAt: startTime ? Timestamp.fromMillis(startTime) : serverTimestamp(),
+        questionOrder,
+        answers: [],
+        score: 0,
+        totalQuestions: questions.length,
+        percentage: 0,
+        passed: false,
+        autoSubmitted: false,
+        tabSwitchCount: 0,
+        flaggedQuestions: [],
+        ...finalData
+      });
+      localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
+    }
+
+    function showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted, options = {}) {
+      const { review = false } = options;
       showScreen('submission-screen');
       
-      if (autoSubmitted) {
+      if (review) {
+        submissionMessage.textContent = 'Here is a review of your submitted attempt.';
+      } else if (autoSubmitted) {
         submissionMessage.textContent = 'Time ran out. Your exam has been auto-submitted.';
         submissionIcon.className = 'submission-icon warning';
         submissionIcon.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
@@ -1145,7 +1353,7 @@
         submissionMessage.textContent = 'Your exam has been submitted successfully.';
       }
 
-      if (showResultsToStudent) {
+      if (showResultsToStudent || review) {
         resultsDisplay.hidden = false;
         scorePercent.textContent = `${percentage.toFixed(1)}%`;
         scoreCorrect.textContent = score;

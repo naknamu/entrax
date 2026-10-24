@@ -8,6 +8,7 @@ import {
   injectEmulatorConfig, 
   waitForFirebase, 
   signInAsAdmin, 
+  signOut,
   createTestExam, 
   takeExamAsStudent, 
   answerAllQuestions, 
@@ -130,7 +131,11 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
       ]
     });
     const testExamId = result.examId;
-    
+
+    // The student takes the exam through the direct link (signed out), so the
+    // name/email form is shown instead of the portal auto-start.
+    await signOut(page);
+
     // Take exam as student
     await page.goto(`/exam.html?examId=${testExamId}&test=true`);
     await waitForFirebase(page);
@@ -184,7 +189,11 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
       ]
     });
     const testExamId = result.examId;
-    
+
+    // The student takes the exam through the direct link (signed out), so the
+    // name/email form is shown instead of the portal auto-start.
+    await signOut(page);
+
     // Take exam as student
     await page.goto(`/exam.html?examId=${testExamId}&test=true`);
     await waitForFirebase(page);
@@ -235,7 +244,11 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
       ]
     });
     const testExamId = result.examId;
-    
+
+    // The student takes the exam through the direct link (signed out), so the
+    // name/email form is shown instead of the portal auto-start.
+    await signOut(page);
+
     // Take exam as student
     await page.goto(`/exam.html?examId=${testExamId}&test=true`);
     await waitForFirebase(page);

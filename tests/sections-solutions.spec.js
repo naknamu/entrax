@@ -12,7 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { waitForFirebase, signInAsAdmin, expandAccordion } from './utils.js';
+import { waitForFirebase, signInAsAdmin, signOut, expandAccordion } from './utils.js';
 
 async function createSectionedExam(page) {
   await page.goto('/create-exam.html?test=true');
@@ -97,6 +97,8 @@ async function createSectionedExam(page) {
 }
 
 async function takeExamAndSubmit(page, examId) {
+  // Sign out so the direct-link student flow shows the name/email form.
+  await signOut(page);
   await page.goto(`/exam.html?examId=${examId}&test=true`);
   await waitForFirebase(page);
 
@@ -255,6 +257,9 @@ test.describe('Exam sections & math solutions', () => {
     const examId = await createSectionedExam(page);
     expect(examId).toBeTruthy();
 
+    // Sign out so the direct-link student flow shows the start form.
+    await signOut(page);
+
     // --- Start screen shows the section list (Kaplan-style) ---
     await page.goto(`/exam.html?examId=${examId}&test=true`);
     await waitForFirebase(page);
@@ -347,8 +352,11 @@ test.describe('Exam sections & math solutions', () => {
     await signInAsAdmin(page);
     const examId = await createSectionedExam(page);
 
-    // Student takes the exam
+    // Student takes the exam (takeExamAndSubmit signs out first)
     await takeExamAndSubmit(page, examId);
+
+    // Sign back in as admin to open the results
+    await signInAsAdmin(page);
 
     // Admin opens exam results
     await page.goto(`/exam-results.html?examId=${examId}&test=true`);

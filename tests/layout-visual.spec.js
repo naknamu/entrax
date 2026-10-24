@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { injectEmulatorConfig, waitForFirebase, signInAsAdmin } from './utils.js';
+import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, signOut } from './utils.js';
 
 test.describe('Exam Layout Verification', () => {
   test('desktop viewport - verify layout constraints', async ({ page }) => {
@@ -56,6 +56,9 @@ test.describe('Exam Layout Verification', () => {
     });
     console.log('Created exam:', examId);
     
+    // Sign out so the direct-link student flow shows the name/email form
+    await signOut(page);
+
     // Navigate to the exam as a student
     await page.goto(`/exam.html?examId=${examId}&test=true`);
     await waitForFirebase(page);

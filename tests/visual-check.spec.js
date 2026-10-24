@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, createTestExam, takeExamAsStudent } from './utils.js';
+import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, signOut, createTestExam, takeExamAsStudent } from './utils.js';
 
 test.describe('Visual Layout Check - Desktop 1440px', () => {
   test('exam screen content constrained, sidebar hidden', async ({ page }) => {
@@ -23,7 +23,10 @@ test.describe('Visual Layout Check - Desktop 1440px', () => {
     
     const examId = result.examId;
     console.log('Created exam:', examId);
-    
+
+    // Sign out so the direct-link student flow shows the name/email form
+    await signOut(page);
+
     // Navigate to exam as student
     await page.goto(`/exam.html?examId=${examId}&test=true`);
     await waitForFirebase(page);

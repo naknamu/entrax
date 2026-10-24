@@ -8,7 +8,7 @@
  *  4. Student profile is created/updated in Firestore
  */
 
-import { auth, db } from '@/firebase.js';
+import { auth, db, persistenceReady } from '@/firebase.js';
 import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -117,9 +117,15 @@ export async function completeMagicLinkSignIn() {
  * Subscribe to auth state changes. Calls `callback(user)` immediately
  * and on every state change. Returns the unsubscribe function.
  * @param {Function} callback - (user | null) => void
- * @returns {Function} unsubscribe
+ * @returns {Promise<Function>} unsubscribe (resolves after auth state is restored)
  */
-export function onStudentAuthStateChanged(callback) {
+export async function onStudentAuthStateChanged(callback) {
+  // Wait until Firebase has finished restoring the persisted session before
+  // subscribing. Otherwise the first callback can be `null` even though a
+  // magic-link student is signed in, which makes the portal show the
+  // sign-in/sign-up view and can overwrite the session with an anonymous one.
+  await persistenceReady;
+  await auth.authStateReady();
   return onAuthStateChanged(auth, callback);
 }
 
