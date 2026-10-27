@@ -190,6 +190,8 @@
     import { collection, query, where, getDocs, getCountFromServer, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
     import { formatDate, formatDateTime, formatDuration, showAlert, showConfirm, formatPercent, escapeHtml } from '/js/admin.js';
     import { ensureAdmin, failClosed } from '/js/admin-guard.js';
+    import { mergeExamKeys } from '/js/firestore-helpers.js';
+    import { logAdminAction } from '/js/audit-log.js';
 
     // DOM Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -482,6 +484,12 @@
         submissionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
 
+        logAdminAction('exam.delete', {
+          targetType: 'exam',
+          targetId: examId,
+          details: { title, submissionsDeleted: submissionsSnapshot.size }
+        });
+
         showAlert(alertContainer, 'Exam deleted successfully.', 'success');
         loadDashboard();
       } catch (error) {
@@ -548,6 +556,7 @@
       if (!confirmed) return;
       try {
         await updateDoc(doc(db, 'exams', examId), { status: 'published', updatedAt: serverTimestamp() });
+        logAdminAction('exam.publish', { targetType: 'exam', targetId: examId, details: { title } });
         showAlert(alertContainer, 'Exam published successfully.', 'success');
         loadDashboard();
       } catch (error) {
@@ -557,9 +566,11 @@
     };
 
     // ---------- Read-only exam view ----------
-    function openViewExam(examId) {
-      const exam = allExams.find(e => e.id === examId);
+    async function openViewExam(examId) {
+      let exam = allExams.find(e => e.id === examId);
       if (!exam) return;
+      // Restore correct answers when they live in examKeys (server grading).
+      exam = await mergeExamKeys(db, exam);
 
       viewModalTitle.textContent = exam.title;
       viewModalEdit.href = `create-exam.html?examId=${exam.id}`;

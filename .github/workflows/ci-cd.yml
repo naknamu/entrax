@@ -2,7 +2,8 @@
 # BOTH the GitHub Pages site and the Firestore rules+indexes.
 # Pull requests run the build as a gate (no deployment).
 #
-# E2E tests (Playwright + emulators) are run locally before pushing.
+# E2E tests (Playwright + emulators) also run here, in parallel with the build,
+# as an advisory gate: a flaky browser test does not block a deploy.
 # (The Firestore deploy uses the FIREBASE_TOKEN secret — see README/notes.)
 name: CI/CD
 
@@ -50,6 +51,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Cloud Functions dependencies
+        run: npm ci --prefix functions --no-audit --no-fund
+
+      - name: Grading unit tests
+        run: node --test functions/test/grading.test.cjs
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

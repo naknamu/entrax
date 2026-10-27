@@ -348,6 +348,8 @@
     import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { showAlert, showConfirm, escapeHtml, generateId } from '/js/admin.js';
     import { ensureAdmin, failClosed } from '/js/admin-guard.js';
+    import { mergeExamKeys, saveExamKeys } from '/js/firestore-helpers.js';
+    import { logAdminAction } from '/js/audit-log.js';
     import {
       generateKaplanMathQuestions, KAPLAN_MATH_TOPICS,
       generateKaplanReadingQuestions, KAPLAN_READING_TOPICS,
@@ -946,6 +948,17 @@
       return s ? s.title : '';
     }
 
+    /** Read the server-grading feature switch. Defaults to off on any error. */
+    async function isServerGradingEnabled() {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'features'));
+        return snap.exists() && snap.data().serverGrading === true;
+      } catch (error) {
+        console.warn('Could not read the server-grading flag:', error);
+        return false;
+      }
+    }
+
     // Load exam for editing
     async function loadExamForEdit(id) {
       try {
@@ -955,7 +968,9 @@
           setTimeout(() => window.location.href = 'admin-dashboard.html', 2000);
           return;
         }
-        const exam = examDoc.data();
+        // Answer keys live in `examKeys` when server grading is on; merge them
+        // back so the correct-answer radios render and survive an edit.
+        const exam = await mergeExamKeys(db, { id: examDoc.id, ...examDoc.data() });
         populateForm(exam);
       } catch (error) {
         console.error('Error loading exam:', error);
@@ -1670,7 +1685,26 @@
           targetExamId = generateId();
         }
 
+        // Persist the answer key separately (admin-only). When server grading
+        // is on, the exam document must not carry correctIndex. Never let this
+        // block the exam save: rules that predate `examKeys` deny the write, and
+        // the migration script can always backfill keys later.
+        try {
+          await saveExamKeys(db, targetExamId, examData.questions);
+        } catch (error) {
+          console.warn('Could not save the exam answer key:', error);
+        }
+        if (await isServerGradingEnabled()) {
+          examData.questions = (examData.questions || []).map(({ correctIndex, ...question }) => question);
+        }
+
         await setDoc(doc(db, 'exams', targetExamId), examData, { merge: true });
+
+        logAdminAction(isEditing ? 'exam.update' : 'exam.create', {
+          targetType: 'exam',
+          targetId: targetExamId,
+          details: { title: examData.title, status: examData.status, questionCount: examData.questions?.length || 0 }
+        });
         
         examId = targetExamId;
         isEditing = true;

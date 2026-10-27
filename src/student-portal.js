@@ -19,6 +19,7 @@ import {
   studentSignOut,
   updateStudentDisplayName,
   getCurrentStudentProfile,
+  getNextPath,
 } from '@js/student-auth.js';
 import {
   getStudentDashboardStats,
@@ -295,6 +296,13 @@ $signinBackBtn.addEventListener('click', () => {
 onStudentAuthStateChanged(async (user) => {
   currentUser = user;
   if (user && !user.isAnonymous) {
+    // A direct exam link sent the student here to sign in. Return them to it
+    // instead of showing the portal dashboard.
+    const next = getNextPath();
+    if (next) {
+      window.location.replace(next);
+      return;
+    }
     showPortalView();
     updateSidebarUser(user);
     navigateTo(getCurrentHash() || 'dashboard');

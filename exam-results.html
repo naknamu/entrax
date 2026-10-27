@@ -188,6 +188,7 @@
     import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
     import { formatDate, formatDateTime, formatDuration, formatPercent, escapeHtml, showAlert } from '/js/admin.js';
     import { ensureAdmin, failClosed } from '/js/admin-guard.js';
+    import { mergeExamKeys } from '/js/firestore-helpers.js';
 
     // DOM Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -277,7 +278,8 @@
           setTimeout(() => window.location.href = 'admin-dashboard.html', 2000);
           return;
         }
-        exam = { id: examDoc.id, ...examDoc.data() };
+        // Merge the answer key when correctIndex was stripped for server grading.
+        exam = await mergeExamKeys(db, { id: examDoc.id, ...examDoc.data() });
         renderExamHeader();
 
         // Load submissions

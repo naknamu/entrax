@@ -25,6 +25,11 @@ async function globalSetup() {
   
   const auth = admin.auth();
   const db = admin.firestore();
+
+  // The server-grading spec flips `config/features.serverGrading` globally. If a
+  // previous run crashed before its cleanup, every later client-graded attempt
+  // would be rejected by the rules — always start from a clean switch.
+  await db.doc('config/features').delete().catch(() => {});
   
   // Create (or find) the test admin user and grant the admin custom claim.
   // Look up by email so an account created earlier with a different uid still

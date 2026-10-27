@@ -346,8 +346,9 @@
   </section>
 
   <script type="module">
-    import { auth, db, persistenceReady } from '/src/firebase.js';
-    import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+    import { auth, db, functions, persistenceReady } from '/src/firebase.js';
+    import { onAuthStateChanged, signOut } from 'firebase/auth';
+    import { httpsCallable } from 'firebase/functions';
     import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { gradeExam, getCategoryStatistics } from '/js/grading.js';
     import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
@@ -459,6 +460,8 @@
     let examLoaded = false; // guards against re-loading (and re-starting) on later auth events
     let categoryStats = {}; // per-category performance after submission
     let autoSaveTimeout = null; // debounce handle for Firestore autosave
+    let serverGradingEnabled = false; // config/features.serverGrading
+    let serverGradingResult = null; // last graded result returned by the callable
 
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -467,42 +470,66 @@
     const isRetake = urlParams.get('retake') === 'true';
     // Review: show a previous submitted attempt instead of starting the exam.
     const isReview = urlParams.get('review') === 'true';
+    // Keep the start form visible even when a student session exists (used by
+    // tests and by anyone who wants to confirm the name/email on the attempt).
+    const isManualStart = urlParams.get('manualStart') === 'true';
 
     if (!examId) {
       showScreen('exam-closed-screen');
       document.getElementById('exam-closed-message').textContent = 'Invalid exam link. Please check the URL.';
     }
 
-    // Auth — restore session first; only sign in anonymously if no user exists.
-    // (Don't overwrite a student's portal session with an anonymous one.)
-    // Wait for persistence to be ready so onAuthStateChanged fires with the
-    // correct user (not null from a race with setPersistence).
+    // Auth — every graded attempt requires a real (magic-link) identity.
+    // Anonymous direct-link sessions are sent to the portal to sign in, with a
+    // `next` URL that returns them to this exact exam link afterwards.
+    // Wait for persistence so a restored session is not mistaken for "signed
+    // out" (that race used to overwrite a student's session).
     persistenceReady.then(async () => {
-      // Ensure Firebase has restored the persisted session before deciding
-      // whether this is a direct-link (anonymous) visit. Without this, the
-      // first auth callback can be `null` and replace a signed-in student's
-      // session with an anonymous one.
       await auth.authStateReady();
       let authResolved = false;
       onAuthStateChanged(auth, async (user) => {
         if (!authResolved) {
           authResolved = true;
           if (!user) {
-            // No existing session — create anonymous one for direct-link access
-            try { await signInAnonymously(auth); } catch (e) { console.error(e); }
-            return; // will re-fire onAuthStateChanged with the anonymous user
+            redirectToStudentSignIn();
+            return;
+          }
+          if (user.isAnonymous) {
+            // Legacy anonymous session: clear it so the portal shows sign-in.
+            try { await signOut(auth); } catch (error) { console.warn(error); }
+            redirectToStudentSignIn();
+            return;
           }
         }
-        if (user) {
+        if (user && !user.isAnonymous) {
           await loadExam();
         }
       });
     });
 
+    function redirectToStudentSignIn() {
+      const next = window.location.pathname + window.location.search + window.location.hash;
+      const target = new URL('student.html', window.location.href);
+      target.searchParams.set('next', next);
+      window.location.replace(target.href);
+    }
+
+    /** Read the server-grading feature switch. Defaults to off on any error. */
+    async function isServerGradingEnabled() {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'features'));
+        return snap.exists() && snap.data().serverGrading === true;
+      } catch (error) {
+        console.warn('Could not read the server-grading flag; using client grading:', error);
+        return false;
+      }
+    }
+
     async function loadExam() {
       if (examLoaded) return;
       examLoaded = true;
       try {
+        serverGradingEnabled = await isServerGradingEnabled();
         const examDoc = await getDoc(doc(db, 'exams', examId));
         if (!examDoc.exists()) {
           showScreen('exam-closed-screen');
@@ -522,7 +549,9 @@
 
         // Point the "Retake Exam" links at a fresh attempt for this exam.
         document.querySelectorAll('.retake-exam-link').forEach(link => {
-          link.href = `exam.html?examId=${encodeURIComponent(examId)}&retake=true`;
+          // Preserve manualStart so a confirmation form stays visible when the
+          // current visit was opened with it.
+          link.href = `exam.html?examId=${encodeURIComponent(examId)}&retake=true${isManualStart ? '&manualStart=true' : ''}`;
         });
 
         // Randomize question order if enabled. When the exam has named
@@ -619,8 +648,9 @@
 
         // Auto-start for authenticated students (from the student portal)
         // so they skip the name/email form and go straight into the exam.
+        // `manualStart=true` keeps the confirmation form visible.
         const user = auth.currentUser;
-        if (user && !user.isAnonymous) {
+        if (user && !user.isAnonymous && !isManualStart) {
           try {
             const profileSnap = await getDoc(doc(db, 'students', user.uid));
             const profile = profileSnap.exists() ? profileSnap.data() : {};
@@ -779,7 +809,14 @@
       answers = questions.map(() => ({ selectedIndex: -1 }));
       (submission.answers || []).forEach(answer => {
         const index = indexById.get(answer.questionId);
-        if (index != null) answers[index] = { selectedIndex: answer.selectedIndex ?? -1 };
+        if (index != null) {
+          answers[index] = {
+            selectedIndex: answer.selectedIndex ?? -1,
+            // Server-graded submissions carry the correct index so review still
+            // works after correctIndex is stripped from the exam document.
+            correctIndex: Number.isInteger(answer.correctIndex) ? answer.correctIndex : undefined
+          };
+        }
       });
 
       flaggedQuestions = new Set(submission.flaggedQuestions || []);
@@ -790,7 +827,8 @@
 
       const gradedAnswers = answers.map((a, i) => ({
         questionId: questions[i].id,
-        selectedIndex: a?.selectedIndex ?? -1
+        selectedIndex: a?.selectedIndex ?? -1,
+        correctIndex: a?.correctIndex
       }));
       categoryStats = submission.categoryStats && Object.keys(submission.categoryStats).length
         ? submission.categoryStats
@@ -807,7 +845,8 @@
         const entry = catMap.get(q.category);
         entry.total++;
         const answer = gradedAnswers.find(a => a.questionId === q.id);
-        if (answer && answer.selectedIndex === q.correctIndex) entry.correct++;
+        const correctIndex = Number.isInteger(answer?.correctIndex) ? answer.correctIndex : q.correctIndex;
+        if (answer && answer.selectedIndex === correctIndex) entry.correct++;
       });
       catMap.forEach((data, category) => {
         stats[category] = {
@@ -1422,60 +1461,55 @@
       await flushAutoSave();
 
       const endTime = Date.now();
-      const timeTaken = endTime - startTime;
+      const timeTaken = Math.max(0, endTime - startTime);
 
-      // Grade exam
+      // Build the answer payload once. The server grades its own copy; the
+      // client only ever sends selections.
       const gradedAnswers = answers.map((a, i) => ({
         questionId: questions[i].id,
         selectedIndex: a?.selectedIndex ?? -1
       }));
 
-      const { score, totalQuestions, percentage, passed } = gradeExam(questions, gradedAnswers, passingPercent);
+      let score;
+      let totalQuestions;
+      let percentage;
+      let passed;
 
-      // Compute per-category performance for weak-area analysis
-      categoryStats = computeCategoryStats(gradedAnswers);
-
-      // Save final submission
       try {
-        await persistFinalSubmission({
-          submittedAt: serverTimestamp(),
-          answers: gradedAnswers,
-          flaggedQuestions: [...flaggedQuestions],
-          score,
-          totalQuestions,
-          percentage,
-          passed,
-          autoSubmitted,
-          timeTakenMs: timeTaken,
-          tabSwitchCount,
-          categoryStats
-        });
-      } catch (error) {
-        console.error('Error submitting exam:', error);
-        isSubmitted = false;
-        isAutoSubmitting = false;
-
-        if (autoSubmitted) {
-          // Retry a transient failure with backoff; stop after a few attempts so
-          // a permanent permission denial can't hammer the backend every second.
-          autoSubmitFailures++;
-          if (autoSubmitFailures >= MAX_AUTO_SUBMIT_FAILURES) {
-            clearInterval(timerInterval);
-            showAlert(
-              examAlertContainer,
-              'Automatic submission failed repeatedly. Please click "Submit Exam" to save your answers, or reload the page to resume.',
-              'error'
-            );
-            return;
-          }
-          const backoffMs = Math.min(30000, 2000 * (2 ** (autoSubmitFailures - 1)));
-          autoSubmitRetryAt = Date.now() + backoffMs;
+        if (serverGradingEnabled) {
+          const result = await submitAttemptOnServer(gradedAnswers, autoSubmitted, timeTaken);
+          score = result.score;
+          totalQuestions = result.totalQuestions;
+          percentage = result.percentage;
+          passed = result.passed;
+          applyServerGradedAnswers(result.answers);
+          categoryStats = result.categoryStats || {};
+          serverGradingResult = result;
         } else {
-          showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
-        }
+          // Legacy client-side grading (feature flag off).
+          const graded = gradeExam(questions, gradedAnswers, passingPercent);
+          score = graded.score;
+          totalQuestions = graded.totalQuestions;
+          percentage = graded.percentage;
+          passed = graded.passed;
+          categoryStats = computeCategoryStats(gradedAnswers);
 
-        startTimer();
-        setupTabVisibilityListener();
+          await persistFinalSubmission({
+            submittedAt: serverTimestamp(),
+            answers: gradedAnswers,
+            flaggedQuestions: [...flaggedQuestions],
+            score,
+            totalQuestions,
+            percentage,
+            passed,
+            autoSubmitted,
+            timeTakenMs: timeTaken,
+            tabSwitchCount,
+            categoryStats
+          });
+        }
+      } catch (error) {
+        handleSubmitFailure(error, autoSubmitted);
         return;
       }
 
@@ -1486,6 +1520,107 @@
 
       // Show results
       showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted);
+    }
+
+    /** Recover from a failed submit without losing the attempt. */
+    function handleSubmitFailure(error, autoSubmitted) {
+      console.error('Error submitting exam:', error);
+      isSubmitted = false;
+      isAutoSubmitting = false;
+
+      if (autoSubmitted) {
+        // Retry a transient failure with backoff; stop after a few attempts so
+        // a permanent permission denial can't hammer the backend every second.
+        autoSubmitFailures++;
+        if (autoSubmitFailures >= MAX_AUTO_SUBMIT_FAILURES) {
+          clearInterval(timerInterval);
+          showAlert(
+            examAlertContainer,
+            'Automatic submission failed repeatedly. Please click "Submit Exam" to save your answers, or reload the page to resume.',
+            'error'
+          );
+          return;
+        }
+        const backoffMs = Math.min(30000, 2000 * (2 ** (autoSubmitFailures - 1)));
+        autoSubmitRetryAt = Date.now() + backoffMs;
+      } else {
+        showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
+      }
+
+      startTimer();
+      setupTabVisibilityListener();
+    }
+
+    /**
+     * Call the `submitAttempt` Cloud Function. The server validates ownership,
+     * grades against `examKeys`, and writes the score with Admin privileges.
+     * If the draft was deleted by another tab, recreate it and retry once.
+     */
+    async function submitAttemptOnServer(gradedAnswers, autoSubmitted, timeTaken) {
+      const call = httpsCallable(functions, 'submitAttempt');
+      const payload = {
+        submissionId,
+        examId,
+        answers: gradedAnswers,
+        flaggedQuestions: [...flaggedQuestions],
+        autoSubmitted,
+        tabSwitchCount,
+        timeTakenMs: timeTaken
+      };
+
+      try {
+        const response = await call(payload);
+        return response.data;
+      } catch (error) {
+        const code = error?.code || '';
+        if (code === 'functions/not-found' || code === 'not-found') {
+          await recreateDraftForSubmit();
+          const retry = await call({ ...payload, submissionId });
+          return retry.data;
+        }
+        throw error;
+      }
+    }
+
+    /** Recreate a missing draft right before a server-graded submit. */
+    async function recreateDraftForSubmit() {
+      const previousId = submissionId;
+      submissionId = generateId();
+      await setDoc(doc(db, 'submissions', submissionId), {
+        examId,
+        studentName,
+        studentEmail,
+        studentUid: auth.currentUser ? auth.currentUser.uid : '',
+        // Rules require a server-set startedAt when server grading is on.
+        startedAt: serverTimestamp(),
+        submittedAt: null,
+        answers: [],
+        score: 0,
+        totalQuestions: questions.length,
+        percentage: 0,
+        passed: false,
+        autoSubmitted: false,
+        tabSwitchCount: 0,
+        flaggedQuestions: [],
+        questionOrder
+      });
+      if (previousId) {
+        deleteDoc(doc(db, 'submissions', previousId)).catch(() => {});
+      }
+      localStorage.setItem(`exam_${examId}_${studentEmail}_submissionId`, submissionId);
+    }
+
+    /** Replace in-memory answers with the server-graded copy (incl. keys). */
+    function applyServerGradedAnswers(serverAnswers) {
+      const byId = new Map((serverAnswers || []).map(answer => [answer.questionId, answer]));
+      answers = questions.map((question, index) => {
+        const answer = byId.get(question.id);
+        if (!answer) return { selectedIndex: answers[index]?.selectedIndex ?? -1 };
+        return {
+          selectedIndex: Number.isInteger(answer.selectedIndex) ? answer.selectedIndex : -1,
+          correctIndex: Number.isInteger(answer.correctIndex) ? answer.correctIndex : undefined
+        };
+      });
     }
 
     /**
@@ -1614,7 +1749,11 @@
 
         const studentAnswer = answers[qIndex];
         const selectedIndex = studentAnswer?.selectedIndex ?? -1;
-        const correctIndex = question.correctIndex ?? 0;
+        // Server-graded submissions store the correct index on each answer, so
+        // review works even when the exam doc no longer contains correctIndex.
+        const correctIndex = Number.isInteger(studentAnswer?.correctIndex)
+          ? studentAnswer.correctIndex
+          : (question.correctIndex ?? 0);
         const isCorrect = selectedIndex === correctIndex;
         const isAnswered = selectedIndex >= 0;
         const isFlagged = flaggedQuestions.has(qIndex);

@@ -1,0 +1,53 @@
+name: Firestore backup
+
+# Manual-only by default: run it from the Actions tab ("Run workflow").
+#
+# The nightly schedule is intentionally commented out. Enabling it requires:
+#   1. The Firebase project on the Blaze plan (Firestore managed export).
+#   2. A repository secret `GCP_SA_KEY` (least-privilege service account key).
+#   3. A repository variable `FIRESTORE_BACKUP_BUCKET` (bucket name only).
+# See docs/OPERATIONS.md → "Backups / PITR" before enabling.
+on:
+  workflow_dispatch:
+  # schedule:
+  #   # Nightly at 03:17 UTC (off the hour to avoid peak quota windows).
+  #   - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: Export Firestore to Cloud Storage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify backup configuration
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          BACKUP_BUCKET: ${{ vars.FIRESTORE_BACKUP_BUCKET }}
+        run: |
+          missing=0
+          if [ -z "${GCP_SA_KEY}" ]; then
+            echo "::error::GCP_SA_KEY is not set. Add a least-privilege service account key with datastore import/export permissions and write access to the backup bucket (docs/OPERATIONS.md → Backups / PITR)."
+            missing=1
+          fi
+          if [ -z "${BACKUP_BUCKET}" ]; then
+            echo "::error::FIRESTORE_BACKUP_BUCKET is not set. Add the repository variable with the bucket name only, e.g. entrax-firestore-backups (no gs:// prefix)."
+            missing=1
+          fi
+          exit "${missing}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Export Firestore
+        run: |
+          gcloud firestore export "gs://${{ vars.FIRESTORE_BACKUP_BUCKET }}/firestore/$(date -u +%Y%m%dT%H%M%SZ)" --project=entrax-878a1

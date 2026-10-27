@@ -10,6 +10,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { signInAsStudent } from './utils.js';
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 const PROJECT_ID = 'demo-test';
@@ -56,7 +57,8 @@ test.describe('Exam submission', () => {
     expect(created.ok()).toBeTruthy();
 
     try {
-      await page.goto(`/exam.html?examId=${examId}`, { waitUntil: 'domcontentloaded' });
+      await signInAsStudent(page);
+      await page.goto(`/exam.html?examId=${examId}&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Draft Delete Tester');
       await page.fill('#student-email', studentEmail);

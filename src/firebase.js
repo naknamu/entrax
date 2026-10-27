@@ -10,7 +10,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { initMonitoring } from '@js/monitoring.js';
 
 // Firebase config from Vite env vars (defined in .env.development / .env.production / .env.example)
 const firebaseConfig = {
@@ -32,6 +34,7 @@ export const auth = getAuth(app);
 // Export the promise so pages can await it before relying on onAuthStateChanged.
 export const persistenceReady = setPersistence(auth, browserLocalPersistence).catch(console.error);
 export const db = getFirestore(app);
+export const functions = getFunctions(app);
 
 // Connect to emulators in development (controlled by VITE_USE_EMULATOR env var)
 if (import.meta.env.VITE_USE_EMULATOR === 'true') {
@@ -40,7 +43,13 @@ if (import.meta.env.VITE_USE_EMULATOR === 'true') {
   
   // Firestore emulator
   connectFirestoreEmulator(db, 'localhost', 8081);
+
+  // Functions emulator (server-side grading, Phase 0.3)
+  connectFunctionsEmulator(functions, 'localhost', 5001);
 }
+
+// Sentry is a no-op unless VITE_SENTRY_DSN is configured. Never block startup.
+initMonitoring().catch((error) => console.warn('Monitoring init failed:', error));
 
 // Optional App Check (reCAPTCHA v3). Off by default: it only runs when a site
 // key is configured AND we are not using the emulators (App Check has no
@@ -63,6 +72,7 @@ if (typeof window !== 'undefined') {
   window.__FIREBASE_APP__ = app;
   window.__FIREBASE_AUTH__ = auth;
   window.__FIREBASE_DB__ = db;
+  window.__FIREBASE_FUNCTIONS__ = functions;
 }
 
 export default app;

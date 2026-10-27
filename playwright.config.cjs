@@ -11,6 +11,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   // Test directory
   testDir: './tests',
+
+  // The server-grading spec flips a global feature switch, so it runs on its
+  // own config/worker (npm run test:server-grading) instead of this suite.
+  testIgnore: ['**/server-grading.spec.js'],
   
   // Global setup/teardown
   globalSetup: require.resolve('./tests/global-setup.cjs'),

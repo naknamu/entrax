@@ -5,36 +5,22 @@ service cloud.firestore {
     // SECURITY RULES FOR ONLINE EXAM PLATFORM
     // ==========================================================================
     //
-    // IMPORTANT SECURITY TRADEOFF NOTE:
-    // ---------------------------------
-    // Firestore security rules CANNOT hide specific fields within a document.
-    // If a user has read access to a document, they can read ALL fields.
+    // Phase 0.3 (server-side grading) is behind a feature switch:
+    //   config/features { serverGrading: true }
     //
-    // In this "no-backend" static-only version:
-    // - Correct answers (correctIndex) are stored in the exam document
-    // - Students need read access to exams to take them
-    // - Therefore, a determined student COULD read correctIndex before submitting
+    // When the switch is ON:
+    // - `examKeys/{examId}` holds correct answers (admin-only; Admin SDK writes).
+    // - The `submitAttempt` Cloud Function grades and writes score fields.
+    // - Clients may only create an empty draft and autosave answers/flags.
+    // - Exam documents should have `correctIndex` stripped (migration script).
     //
-    // MITIGATIONS IN THIS IMPLEMENTATION:
-    // 1. Grading happens client-side AFTER submission (not before)
-    // 2. Exam documents are only readable during the exam availability window
-    // 3. Students only get exam data when they start the exam (via token)
-    // 4. For TRUE security (hiding answers completely), you would need:
-    //    - A Cloud Function (Firebase Functions) to grade server-side
-    //    - Store correct answers in a separate collection only admins can read
-    //    - Call the Function on submit, never send correctIndex to client
+    // When the switch is OFF (legacy):
+    // - Grading happens in the browser and `correctIndex` stays in the exam doc.
+    // - Published exams, including future/closed ones, are listable and expose
+    //   `correctIndex`. Do not charge money in this mode.
     //
-    // This is a known limitation of client-side-only Firebase apps.
-    // For production high-stakes exams, use Cloud Functions.
-    //
-    // PHASE 0.2 NOTE (post-close review):
-    // Published exams stay readable via `get` after their endDate so
-    // `exam.html?review=true` can re-render a past attempt (it needs the exam
-    // doc + correctIndex). Drafts are NOT readable, and not-yet-open exams are
-    // not readable via `get`. However, `list` only checks `status`, so any
-    // signed-in user can still list published exams — including future/closed
-    // ones — and read correctIndex. That exposure is deferred to Phase 0.3
-    // (server-side grading / correctIndex key separation).
+    // Students must be real (magic-link) users. Anonymous direct-link sessions
+    // are rejected for exam reads and submissions.
     // ==========================================================================
 
     // Helper functions
@@ -42,9 +28,7 @@ service cloud.firestore {
       // Admins are identified by a custom claim granted with the Admin SDK
       // (scripts/set-admin-claim.cjs). A student account can never grant this
       // to itself, and rules stay cheap: no extra document lookup.
-      // .get() avoids a rule-evaluation error when the claim is absent
-      // (dot access on a missing map key aborts evaluation instead of
-      // returning null).
+      // .get() avoids a rule-evaluation error when the claim is absent.
       return request.auth != null && request.auth.token.get('role', '') == 'admin';
     }
 
@@ -52,18 +36,35 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // A real (magic-link / email) user, not an anonymous direct-link session.
+    function isRealUser() {
+      return isAuthenticated() &&
+             request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     function examExists(examId) {
       return exists(/databases/$(database)/documents/exams/$(examId));
     }
 
+    function featureDoc() {
+      return /databases/$(database)/documents/config/features;
+    }
+
+    function serverGradingEnabled() {
+      return exists(featureDoc()) &&
+             get(featureDoc()).data.get('serverGrading', false) == true;
+    }
+
     // A published exam with questions that has started (open or already closed).
     // Used for `get`: review=true must still work after the window closes, so
-    // this deliberately ignores endDate. Drafts stay hidden; published
-    // future/closed exams remain `list`able (see the 0.2/0.3 note above).
+    // this deliberately ignores endDate. Drafts and not-yet-open exams stay
+    // hidden. Published future/closed exams remain `list`able; once
+    // serverGrading is enabled, `correctIndex` is no longer in the exam doc.
     function isExamReadable(examId) {
       let exam = get(/databases/$(database)/documents/exams/$(examId));
       let start = exam.data.get('startDate', null);
-      return exam.data.get('status', '') == 'published' &&
+      return isRealUser() &&
+             exam.data.get('status', '') == 'published' &&
              exam.data.get('questions', []).size() > 0 &&
              (start == null || start <= request.time);
     }
@@ -94,6 +95,33 @@ service cloud.firestore {
               resource.data.get('studentEmail', '') == request.auth.token.get('email', ''));
     }
 
+    // A client-created draft must not carry grading results. The callable writes
+    // those with the Admin SDK, which bypasses rules.
+    function draftShapeOk() {
+      return request.resource.data.get('submittedAt', null) == null &&
+             request.resource.data.get('score', 0) == 0 &&
+             request.resource.data.get('percentage', 0) == 0 &&
+             request.resource.data.get('passed', false) == false &&
+             request.resource.data.get('gradedBy', '') == '';
+    }
+
+    // ==========================================================================
+    // CONFIG (feature flags)
+    // ==========================================================================
+    match /config/features {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================================================
+    // EXAM ANSWER KEYS (server grading only)
+    // ==========================================================================
+    // Never readable by students. Admin pages may read them to edit/preview
+    // exams whose `correctIndex` has been stripped.
+    match /examKeys/{examId} {
+      allow read, write: if isAdmin();
+    }
+
     // ==========================================================================
     // EXAMS COLLECTION
     // ==========================================================================
@@ -106,13 +134,12 @@ service cloud.firestore {
       // Students can `get` a started, published exam (taking it, or reviewing a
       // past attempt after the window closes). Drafts and not-yet-open exams are
       // not gettable.
-      // get = single doc read (can use resource.data)
       allow get: if isAdmin() || isOwnExam() || (!isAdmin() && isExamReadable(examId));
       // list = query — rules are not filters, so the client query must be
       // provable from the constraints. Students can list every published exam,
-      // including future/closed ones; drafts are admin-only. correctIndex in
-      // those documents is only closed by Phase 0.3 key separation.
-      allow list: if isAdmin() || (isAuthenticated() && resource.data.get('status', '') == 'published');
+      // including future/closed ones; drafts are admin-only. With server
+      // grading on, those documents no longer contain `correctIndex`.
+      allow list: if isAdmin() || (isRealUser() && resource.data.get('status', '') == 'published');
 
       // Admins manage ALL exam content. Ownership is deliberately not checked:
       // legacy production exams carry a hardcoded foreign `createdBy` uid
@@ -126,50 +153,44 @@ service cloud.firestore {
     // SUBMISSIONS COLLECTION
     // ==========================================================================
     match /submissions/{submissionId} {
-      // Students can CREATE a submission (take an exam)
-      // They provide: examId, studentName, studentEmail, answers, startedAt
-      // Server-side: submittedAt, score, percentage, passed, autoSubmitted are set by client after grading
-      allow create: if 
-        // Must be for a valid, open exam
+      // Students can CREATE a draft attempt. With server grading on, the doc
+      // must be empty of results and its start time must be server-set.
+      allow create: if
+        isRealUser() &&
         examExists(request.resource.data.examId) &&
         isExamOpen(request.resource.data.examId) &&
-        // Must be linked to the authenticated session (anonymous or email)
-        request.resource.data.studentUid != null &&
-        request.resource.data.studentUid == request.auth.uid &&
-        // Student info required
-        request.resource.data.studentName != null &&
-        request.resource.data.studentName != '' &&
-        request.resource.data.studentEmail != null &&
-        request.resource.data.studentEmail != '' &&
-        // Started timestamp required
-        request.resource.data.startedAt != null &&
-        // Answers array required
-        request.resource.data.answers != null &&
-        // Prevent duplicate submissions for same exam+student
-        // Note: This requires a composite index or client-side check
-        true;
+        request.resource.data.get('studentUid', '') == request.auth.uid &&
+        request.resource.data.get('studentName', '') != '' &&
+        request.resource.data.get('studentEmail', '') != '' &&
+        request.resource.data.get('startedAt', null) != null &&
+        request.resource.data.get('answers', null) != null &&
+        (!serverGradingEnabled() ||
+          (draftShapeOk() && request.resource.data.startedAt == request.time));
 
       // Students can READ their own submission (after submitting).
       // Admins can read everything. Legacy submissions that predate
-      // `studentUid` are still readable by their auth email, but only when the
-      // token actually carries an email (anonymous sessions have none).
-      allow get: if isAdmin() || (isAuthenticated() && isSubmissionOwner());
-      allow list: if isAdmin() || (isAuthenticated() && isSubmissionOwner());
+      // `studentUid` are still readable by their auth email.
+      allow get: if isAdmin() || (isRealUser() && isSubmissionOwner());
+      allow list: if isAdmin() || (isRealUser() && isSubmissionOwner());
 
-      // Students can UPDATE their own submission (autosave answers, final submit)
-      // The submission is linked to the authenticated session via studentUid, so this
-      // works for BOTH anonymous and email/password students (their typed exam email
-      // may legitimately differ from their auth account email).
-      // Legacy fallback: email/password users whose auth email matches the
-      // submission's studentEmail.
-      allow update: if 
+      // Students can UPDATE their own UNSUBMITTED draft (autosave). The final
+      // submit is the transition submittedAt == null -> timestamp. With server
+      // grading on, only autosave fields may change; the callable writes the
+      // graded result with the Admin SDK.
+      allow update: if
         isAdmin() ||
-        (isAuthenticated() && isSubmissionOwner());
+        (isRealUser() &&
+         isSubmissionOwner() &&
+         resource.data.get('submittedAt', null) == null &&
+         (!serverGradingEnabled() ||
+           (request.resource.data.get('submittedAt', null) == null &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['answers', 'flaggedQuestions', 'lastSavedAt', 'tabSwitchCount']))));
 
-      // No deletes for submissions (audit trail) — admins may clean up, and a
-      // student may remove their own draft. Submitted attempts stay immutable.
+      // No deletes for submitted submissions (audit trail). A student may
+      // remove their own draft (retake / abandoned attempt).
       allow delete: if isAdmin() ||
-        (isAuthenticated() &&
+        (isRealUser() &&
          resource.data.get('studentUid', '') == request.auth.uid &&
          resource.data.get('submittedAt', null) == null);
     }
@@ -179,19 +200,32 @@ service cloud.firestore {
     // ==========================================================================
     match /students/{uid} {
       // Students can read their own profile
-      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if isRealUser() && request.auth.uid == uid;
 
       // Students can create their own profile (first sign-in)
-      allow create: if isAuthenticated() && request.auth.uid == uid;
+      allow create: if isRealUser() && request.auth.uid == uid;
 
       // Students can update their own profile
-      allow update: if isAuthenticated() && request.auth.uid == uid;
+      allow update: if isRealUser() && request.auth.uid == uid;
 
       // Students can delete their own profile
-      allow delete: if isAuthenticated() && request.auth.uid == uid;
+      allow delete: if isRealUser() && request.auth.uid == uid;
 
       // Admins can read all student profiles
       allow read: if isAdmin();
+    }
+
+    // ==========================================================================
+    // AUDIT LOG (append-only)
+    // ==========================================================================
+    match /auditLogs/{logId} {
+      allow create: if isAdmin() &&
+        request.resource.data.get('actorUid', '') == request.auth.uid &&
+        request.resource.data.get('action', '').size() > 0 &&
+        request.resource.data.get('createdAt', null) == request.time;
+
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ==========================================================================
@@ -206,20 +240,20 @@ service cloud.firestore {
 /* ==========================================================================
    DEPLOYMENT INSTRUCTIONS FOR FIRESTORE RULES
    ==========================================================================
-   
+
    1. Go to Firebase Console → Firestore Database → Rules tab
    2. Copy the entire content of this file
    3. Paste into the rules editor
    4. Click "Publish"
-   
+
    OR use Firebase CLI:
    firebase deploy --only firestore:rules
-   
+
    REQUIRED INDEXES (create in Firebase Console → Firestore → Indexes):
    - Collection: submissions
      Fields: examId (Ascending), studentEmail (Ascending)
      Query scope: Collection
-   - Collection: submissions  
+   - Collection: submissions
      Fields: examId (Ascending), submittedAt (Descending)
      Query scope: Collection
    - Collection: exams

@@ -5,11 +5,13 @@ A modern, full-featured online exam platform built with **Vite**, **Firebase (Au
 ## ✨ Features
 
 - **Multi-page Architecture** — Separate pages for login, admin dashboard, exam creation, exam taking, results, and the student portal
-- **Firebase Backend** — Authentication (admin email/password, student magic link, anonymous fallback) and Firestore for real-time data
+- **Firebase Backend** — Authentication (admin email/password, student magic link) and Firestore for real-time data
 - **Student Portal** — Sign in with a magic link, browse open exams, see past scores, retake an exam, or review a submitted attempt
 - **Exam Creation** — Rich form with question builder, import from text/CSV/JSON/DOCX, categories, named sections, randomization, and a procedural question generator (Kaplan reading/math/writing/science)
 - **Exam Taking** — One-question-per-screen, live timer with auto-submit, progress tracking, flag questions, tab-switch detection, optional sections
 - **Grading & Results** — Automatic grading, per-category weak-area breakdown, detailed answer review, CSV export, print-friendly views
+- **Server-side grading (Phase 0.3)** — Behind a feature switch, a `submitAttempt` Cloud Function grades against an admin-only answer key so students never receive `correctIndex` and cannot write their own score
+- **Audit log** — Admin create/update/publish/delete actions are appended to an admin-only, immutable `auditLogs` collection
 - **Retake & Review** — Retake creates a fresh attempt; review replays the last submitted attempt (answers, flags, order) without creating a submission
 - **Admin Dashboard** — Stats overview, exam management, submission review with filtering/sorting
 - **Responsive Design** — Works on desktop, tablet, and mobile
@@ -73,8 +75,13 @@ From the portal a student can:
 - **View Results** (`exam.html?examId=…&review=true`) — replays the latest submitted
   attempt, even after the exam has closed.
 
-Students who open an exam link while signed in are started automatically; the
-name/email form is only shown to signed-out visitors using a direct link.
+Students who open an exam link while signed in are started automatically; add
+`&manualStart=true` to keep the name/email confirmation form visible.
+
+**Every graded attempt requires a real (magic-link) identity.** A signed-out or
+anonymous visit to `exam.html` is signed out and redirected to
+`student.html?next=<original exam URL>`; after signing in the portal sends the
+student back to that exact exam link.
 
 ### Development against Production Firebase
 
@@ -94,22 +101,30 @@ npm run dev
 ├── exam.html               # Student exam taking, results, retake & review
 ├── exam-results.html       # Exam results & analytics
 ├── student.html            # Student portal (magic-link sign-in, exam list)
+├── functions/              # Cloud Functions (submitAttempt — server grading)
+│   ├── index.js            # Callable: validate, grade, write score
+│   ├── grading.cjs         # Pure grading logic (unit tested)
+│   └── test/               # node:test unit tests
 ├── src/
 │   ├── firebase.js         # Shared Firebase initialization (singleton)
 │   └── student-portal.js   # Portal views, exam cards, score charts
 ├── js/
 │   ├── admin.js            # Admin page utilities
+│   ├── audit-log.js        # Append-only admin action log (never throws)
 │   ├── exam.js             # Exam page utilities
-│   ├── firestore-helpers.js # Firestore CRUD helpers
+│   ├── firestore-helpers.js # Firestore CRUD helpers (+ examKeys)
 │   ├── grading.js          # Grading & category statistics
+│   ├── monitoring.js       # Env-gated Sentry scaffold (no-op without a DSN)
 │   ├── question-generator.js # Procedural question generation
 │   ├── reading-generator.js  # Reading passage/question generator
 │   └── student-auth.js     # Magic-link auth wrapper
 ├── public/
 │   └── style.css           # Design system & component styles
 ├── scripts/                # One-off data/maintenance helpers
+├── docs/OPERATIONS.md      # Staging, Sentry, backups, App Check, secrets
 ├── tests/                  # Playwright E2E tests + seed/verify helpers
 ├── .env.example            # Environment variable template
+├── .env.staging.example    # Staging template (copy to .env.staging, gitignored)
 ├── .env.development        # Local dev config (gitignored)
 ├── .env.production         # Production config (gitignored)
 ├── firestore.rules         # Firestore security rules
@@ -132,14 +147,17 @@ npm run dev
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Messaging Sender ID | Yes |
 | `VITE_FIREBASE_APP_ID` | Firebase Web App ID | Yes |
 | `VITE_USE_EMULATOR` | Set to `true` to connect to local emulators | No (default: false) |
+| `VITE_APPCHECK_SITE_KEY` | reCAPTCHA v3 site key; App Check stays off when empty | No |
+| `VITE_SENTRY_DSN` | Sentry browser DSN; monitoring is a no-op when empty | No |
+| `VITE_SENTRY_ENVIRONMENT` | Sentry environment label (defaults to the Vite mode) | No |
 
-Create `.env.development` for local development and `.env.production` for production builds. **Never commit real secrets to git.**
+Create `.env.development` for local development and `.env.production` for production builds. **Never commit real secrets to git.** `.env.staging` is gitignored too — start from `.env.staging.example`.
 
 ### Firebase Emulators
 
-The project uses Firebase Auth (port 9099) and Firestore (port 8081) emulators for local development, configured in `firebase.json` with project `demo-test`. The Emulator UI is at http://127.0.0.1:4000.
+The project uses Firebase Auth (port 9099), Firestore (8081), and Cloud Functions (5001) emulators for local development, configured in `firebase.json` with project `demo-test`. The Emulator UI is at http://127.0.0.1:4000.
 
-Set `VITE_USE_EMULATOR=true` in `.env.development` to point the app at them.
+Set `VITE_USE_EMULATOR=true` in `.env.development` to point the app at them. The Functions emulator runs the code with the host Node version; Cloud Functions use Node 20 in production, so a "node version mismatch" warning locally is expected.
 
 ## 🧪 Testing
 
@@ -149,6 +167,12 @@ npm run test:all
 
 # Run tests against already-running dev server
 npm run test
+
+# Phase 0.3 server-grading spec (single worker; Functions emulator required)
+npm run test:server-grading
+
+# Pure grading unit tests (no emulator)
+node --test functions/test/grading.test.cjs
 
 # Run tests with UI
 npm run test:ui
@@ -169,15 +193,22 @@ npm run test:report
 - `tests/exam-platform.spec.js` — Comprehensive feature tests
 - `tests/sections-solutions.spec.js` — Named sections, section badges, solutions on results
 - `tests/student-portal.spec.js` — Portal → exam navigation without losing the signed-in session
+- `tests/security-rules.spec.js` — Rules regression (anonymous denied, admin allowed, drafts hidden)
+- `tests/exam-resume.spec.js` — Reload resumes the attempt; `retake=true` starts fresh
 - `tests/exam-submit.spec.js` — Submission survives a deleted/abandoned draft document
 - `tests/exam-retake-review.spec.js` — Retake starts a new attempt; review replays a submitted attempt
+- `tests/server-grading.spec.js` — Phase 0.3: key hiding, score tampering, server grading, review
+- `tests/audit-log.spec.js` — Admin-only append-only audit log
 - `tests/layout-visual.spec.js`, `tests/visual-check.spec.js` — Layout constraints and visual checks
-- `tests/utils.js` — Shared test helpers (`signInAsAdmin`, `signOut`, `createTestExam`, etc.)
+- `tests/utils.js` — Shared test helpers (`signInAsAdmin`, `signInAsStudent`, `signOut`, `createTestExam`, etc.)
 - `tests/global-setup.cjs` — Creates test admin user & sample exam in emulators
 - `tests/global-teardown.cjs` — Cleanup
 
-Tests that exercise the direct-link student flow call `signOut(page)` first, because
-a signed-in student is auto-started and never sees the name/email form.
+Tests that take an exam must sign in as a real student first (`signInAsStudent`)
+and open the exam with `&manualStart=true`, because a signed-in student is
+auto-started and never sees the name/email form. `tests/server-grading.spec.js`
+is excluded from the main suite (`playwright.config.cjs`) because it flips a
+global feature switch; it runs in a second pass via its own config.
 
 ### Data Helpers
 
@@ -187,7 +218,18 @@ npm run seed:mock
 
 # Delete submissions for one exam (default: mock-history-world)
 node scripts/dev-reset-exam.cjs <examId>
+
+# Answer keys: write examKeys / strip inline keys / restore inline keys
+node scripts/migrate-exam-keys.cjs [--strip|--restore] [--dry-run]
+
+# Server-grading switch (defaults to the emulator)
+node scripts/set-feature-flag.cjs serverGrading on|off
 ```
+
+Every maintenance script defaults to the **emulator** (`demo-test`,
+localhost:8081). Production requires an explicit `--prod` and Application
+Default Credentials. See the deploy order in [`ROADMAP.md`](ROADMAP.md) before
+running anything with `--prod`.
 
 ## 🏗️ Building for Production
 
@@ -225,6 +267,20 @@ Output goes to `dist/` — ready for static hosting.
 The same workflow deploys Firestore rules and indexes to the `entrax-878a1`
 project in parallel with the Pages deploy (skipped when those files are unchanged).
 
+### Cloud Functions (server grading)
+
+`submitAttempt` lives in `functions/` and requires the **Blaze** plan. Nothing in
+the current production deployment calls it until `config/features.serverGrading`
+is turned on, so shipping the site and rules is safe before Functions exist.
+
+```bash
+npm --prefix functions install
+firebase deploy --only functions --project entrax-878a1
+```
+
+Then follow the 6-step flip (and rollback) in [`ROADMAP.md`](ROADMAP.md) §0.3.
+Deploy order matters: functions → keys → site → rules → flag → `--strip`.
+
 ### Manual Deployment
 
 ```bash
@@ -247,14 +303,20 @@ All components are built with accessibility in mind: focus states, ARIA labels, 
 
 ## 🔐 Security
 
-- Firebase security rules in `firestore.rules` — restrict reads/writes by auth state and ownership
+- Firebase security rules in `firestore.rules` — restrict reads/writes by auth state, claim, and ownership
+  - Students must be **real** (magic-link) users: `isRealUser()` rejects anonymous sessions for exam reads/lists, submissions, and student profiles
   - Students can only read their own submissions (by `studentUid`, with legacy email fallbacks)
   - Submissions can only be created for an open exam; deletes are limited to abandoned drafts/admins
+  - `examKeys/{examId}` (correct answers) and `auditLogs` are admin-only; `auditLogs` is append-only
 - Student sessions use Firebase email-link (magic-link) auth; admin pages require the `role: admin` custom claim (`scripts/set-admin-claim.cjs`); a signed-in student is redirected
 - Auth state is restored (`authStateReady()`) before pages decide a visitor is signed out, so a refresh never silently downgrades a student to anonymous
+- **Server-side grading** (opt-in via `config/features.serverGrading`): clients may only create an ungraded draft and autosave answers; `submitAttempt` grades with the Admin SDK, so a student cannot write `score`/`passed` and never receives the answer key
 - Client-side validation + server-side rules (defense in depth)
 - XSS prevention via `escapeHtml()` utility on all dynamic content
 - CSP-ready (no inline scripts except Vite's dev module shim)
+
+Operational details (staging, Sentry, backups, App Check, secrets rotation) are in
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 ## 📝 License
 

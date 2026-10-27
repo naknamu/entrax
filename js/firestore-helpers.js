@@ -57,6 +57,66 @@ export async function getExam(db, examId) {
 }
 
 /**
+ * Read the server-side answer key for an exam (admin-only in rules).
+ * @param {Firestore} db
+ * @param {string} examId
+ * @returns {Promise<Object|null>} `{ answers: { [questionId]: correctIndex } }`
+ */
+export async function getExamKeys(db, examId) {
+  const snap = await getDoc(doc(db, 'examKeys', examId));
+  return snap.exists() ? snap.data() : null;
+}
+
+/**
+ * Merge `examKeys` back into an exam's questions so admin pages can edit and
+ * preview exams whose `correctIndex` was stripped for server grading.
+ * @param {Firestore} db
+ * @param {Object} exam
+ * @returns {Promise<Object>} exam with `questions[].correctIndex` restored
+ */
+export async function mergeExamKeys(db, exam) {
+  if (!exam || !exam.id) return exam;
+  try {
+    const keys = await getExamKeys(db, exam.id);
+    const answerMap = keys?.answers;
+    if (!answerMap) return exam;
+    return {
+      ...exam,
+      questions: (exam.questions || []).map(question => ({
+        ...question,
+        correctIndex: Number.isInteger(answerMap[question.id])
+          ? answerMap[question.id]
+          : question.correctIndex
+      }))
+    };
+  } catch (error) {
+    console.warn('Could not load exam answer key:', error);
+    return exam;
+  }
+}
+
+/**
+ * Persist the answer key for an exam. Admin-only in rules.
+ * @param {Firestore} db
+ * @param {string} examId
+ * @param {Array} questions
+ * @returns {Promise<void>}
+ */
+export async function saveExamKeys(db, examId, questions) {
+  const answers = {};
+  (questions || []).forEach(question => {
+    if (question && question.id != null && Number.isInteger(question.correctIndex) && question.correctIndex >= 0) {
+      answers[question.id] = question.correctIndex;
+    }
+  });
+  await setDoc(
+    doc(db, 'examKeys', examId),
+    { answers, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+/**
  * Update exam
  * @param {Firestore} db - Firestore instance
  * @param {string} examId - Exam ID

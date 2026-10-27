@@ -77,6 +77,10 @@ Consequences for this pass:
    4. Deploy the site.
    Verify after step 3: portal lists all 104, admin dashboard loads, a student
    cannot list submissions.
+
+   **Server grading (0.3) is a separate, later flip** — do the backfill/claim/
+   rules/site order above first, then follow the 6-step flip in 0.3 when Blaze
+   and Functions are ready. Never deploy `--strip` before the rules that need it.
 3. **Rollback:** re-deploying the previous rules is safe (they only widen
    access); the site rollback alone is not, because old code queries exams
    without the `status` filter. Roll back both or neither.
@@ -88,6 +92,16 @@ Consequences for this pass:
 ---
 
 ## Phase 0 — Safety & reliability (current pass)
+
+**Status:** 0.1, 0.2, 0.4, 0.5 are code-complete and emulator-tested. 0.3 and
+0.6 are code-complete behind a feature switch / no-op scaffolds but **not
+deployed** (Blaze, Sentry, staging project, backups and App Check keys are
+external). Nothing from this pass has been deployed to production; the 104 live
+exams still need the backfill → claim → rules → site order above.
+
+**Verified locally (last run):** full Playwright suite green (32 tests), the
+isolated server-grading spec green with the Functions emulator, 14/14 grading
+unit tests, `npm run build` clean.
 
 ### 0.1 Roles & admin authorization
 
@@ -130,25 +144,61 @@ Rules detail:
 - Submission `create` still uses `isExamOpen()` (published + inside the window),
   so a closed exam cannot be started.
 
-### 0.3 Server-side grading `[!]`
+### 0.3 Server-side grading `[~] implemented, not deployed`
 
-Blocked on: Firebase **Blaze** plan + Cloud Functions.
+Code complete and emulator-tested; **not deployed** because it needs the
+Firebase **Blaze** plan + Cloud Functions. Everything is behind the
+`config/features.serverGrading` switch, so production behavior is unchanged
+until someone deliberately turns it on.
 
-- [ ] Move `correctIndex` to `examKeys/{examId}` (Admin SDK only).
-- [ ] `submitAttempt` callable validates the attempt, grades, and writes
-      `score/percentage/passed/submittedAt` with server timestamps.
-- [ ] Rules deny client writes to those fields.
-- [ ] Server-side attempt counter (duplicate prevention).
+- [x] `examKeys/{examId}` holds `{ answers: { [questionId]: correctIndex } }`
+      (admin read/write only; Admin SDK writes in production).
+- [x] `submitAttempt` callable (Functions v1, Node 20) validates the attempt,
+      grades, and writes `answers/score/totalQuestions/percentage/passed/
+      timeTakenMs/tabSwitchCount/flaggedQuestions/categoryStats/submittedAt/
+      gradedBy: 'server'` with server timestamps. Idempotent on retry.
+- [x] `timeTakenMs` is derived from the server `startedAt` and clamped to the
+      time limit and the exam close time; a client duration is never trusted.
+- [x] Rules deny client writes to grading fields while the switch is on: a
+      client may only create an ungraded draft (`submittedAt == null`,
+      `startedAt == request.time`) and autosave
+      `answers|flaggedQuestions|lastSavedAt|tabSwitchCount`.
+- [x] Client (`exam.html`) reads the switch, calls `submitAttempt`, renders the
+      review from the `correctIndex` stored on each graded answer, and recreates
+      a missing draft before retrying once.
+- [x] Admin pages merge `examKeys` back into the exam for edit/preview/results,
+      and stop writing `correctIndex` into the exam document while the switch is
+      on.
+- [x] `scripts/migrate-exam-keys.cjs` (`--strip` / `--restore` / `--dry-run`) and
+      `scripts/set-feature-flag.cjs`; both default to the emulator.
+- [x] `tests/server-grading.spec.js` (isolated single-worker config) covers key
+      hiding, score tampering, server grading, and review rendering. It passes
+      end-to-end against the Functions emulator (`npm run test:server-grading`).
 
-Interim: drafts are not readable, and `get` of a not-yet-open exam is blocked, but
-published exams — including future/closed ones — remain **listable** by any
-signed-in user, and `correctIndex` is in the document. Answers are not shown in
-the UI. Not sufficient for paid, high-stakes practice — do this before charging
+**Not done:** a server-side attempt counter (duplicate prevention). One student
+can still start many drafts for the same exam; only the stored submissions
+record them. Decide whether that matters for paid practice (it likely does not —
+retakes are a feature — but it does mean "first attempt" can be gamed).
+
+**Flip order (production, only after Blaze):**
+
+1. `firebase deploy --only functions --project entrax-878a1`
+2. `node scripts/migrate-exam-keys.cjs --prod` (writes keys, **no** `--strip`)
+3. Deploy the site (it reads the switch and already handles both modes)
+4. Deploy the rules
+5. `node scripts/set-feature-flag.cjs serverGrading on --prod`
+6. `node scripts/migrate-exam-keys.cjs --strip --prod`
+
+**Rollback:** `set-feature-flag.cjs serverGrading off --prod` →
+`migrate-exam-keys.cjs --restore --prod` → re-deploy the previous rules/site.
+Turning the switch off while `correctIndex` is still stripped makes every
+client-graded attempt score 0, so the restore step is not optional.
+
+While the switch is **off** (today's production): published exams — including
+future/closed ones — remain listable by any signed-in user and `correctIndex` is
+in the document. Answers are not shown in the UI, but the data is readable.
+Not sufficient for paid, high-stakes practice — flip the switch before charging
 money.
-
-**Blocking before charging money:** any authenticated user (incl. anonymous) can
-list published exams — including future/closed ones — and read `correctIndex`;
-fixed only by server-side grading / key separation.
 
 ### 0.4 Attempt resilience
 
@@ -161,17 +211,34 @@ fixed only by server-side grading / key separation.
 - [x] Optional Firebase App Check scaffold (`VITE_APPCHECK_SITE_KEY`).
 - [!] Production magic-link email: verified sending domain + branded template
       (or Postmark/SendGrid via a Function).
-- [!] Decide: allow anonymous direct-link attempts, or require magic-link
-      identity for every graded attempt?
+- [x] **Identity decision:** every graded attempt requires a real (magic-link)
+      identity. Anonymous direct-link sessions are signed out and redirected to
+      `student.html?next=<original exam URL>`; the `next` path survives the
+      magic-link round trip. Rules require `isRealUser()` for exam reads, exam
+      lists, submissions, and student profiles.
+- [x] `?manualStart=true` keeps the name/email form visible for tests and for
+      students who want to confirm the details on the attempt; retake links
+      preserve it.
 - [ ] Rate limiting and Auth authorized domains pinned to the product domain.
 
 ### 0.6 Ops baseline
 
-- [x] CI runs Playwright on every push/PR against the emulators; deploys do not wait for it (advisory gate).
-- [!] Sentry (or equivalent) wired into the frontend.
-- [!] Staging Firebase project + `.env.staging`.
-- [!] Scheduled Firestore exports / PITR.
-- [ ] Audit log collection for admin actions.
+- [x] CI runs Playwright on every push/PR against the emulators (auth, firestore,
+      **functions**); deploys do not wait for it (advisory gate). The
+      server-grading spec runs in a second, single-worker pass because it flips a
+      global switch.
+- [x] Audit log collection for admin actions (`auditLogs`, append-only,
+      admin-only read). `js/audit-log.js` writes on exam create/update/publish/
+      delete and never blocks the admin action (failures are swallowed).
+- [x] Sentry scaffold (`js/monitoring.js`): **no-op until `VITE_SENTRY_DSN` is
+      set**, no static import, PII off, uid-only user context.
+- [x] Staging template (`.env.staging.example`, `npm run build:staging`) and
+      `.env.staging` in `.gitignore`.
+- [x] Firestore backup runbook + manual `workflow_dispatch` workflow
+      (`docs/OPERATIONS.md`, `.github/workflows/firestore-backup.yml`).
+- [!] The external half of the above: Sentry org/DSN, `entrax-staging` project,
+      Blaze + backup bucket + PITR + `GCP_SA_KEY`, App Check keys, rate-limit
+      quotas. Nothing has been deployed; the backup workflow has never run.
 
 ---
 
@@ -258,9 +325,9 @@ fixed only by server-side grading / key separation.
 4. **Pricing** — subscription ($9–19/mo) vs. one-time exam pass ($39–59);
    recommend testing both.
 5. **Firebase plan** — Blaze for Cloud Functions (server grading, email,
-   scheduled backups). Required for 0.3.
-6. **Identity** — allow anonymous direct-link attempts, or require sign-in for
-   every graded attempt? (Recommend sign-in.)
+   scheduled backups). Required to deploy 0.3. **Still open.**
+6. **Identity** — **decided:** every graded attempt requires a magic-link
+   identity (see 0.5). Anonymous direct links are redirected to sign-in.
 7. **Email provider** — Firebase email link vs. Postmark/SendGrid via Function.
 
 ---
@@ -270,8 +337,12 @@ fixed only by server-side grading / key separation.
 ```bash
 npm run build                 # production build
 npm run test                  # full Playwright suite (emulators required)
+npm run test:server-grading   # Phase 0.3 spec, single worker, Functions emulator
+node --test functions/test/grading.test.cjs   # pure grading unit tests
 npm run seed:mock             # seed student + exams for manual checks
 node scripts/set-admin-claim.cjs admin@test.com --emulator
+node scripts/migrate-exam-keys.cjs --dry-run  # emulator by default
+node scripts/set-feature-flag.cjs serverGrading on --emulator
 ```
 
 Production (only after a dry run against the emulator):
@@ -281,12 +352,27 @@ node scripts/backfill-exam-status.cjs --prod    # expect 104 scanned / 104 publi
 node scripts/set-admin-claim.cjs <admin-email> --prod  # grant the admin claim
 ```
 
+Server grading (only after Blaze + Functions are deployed) — full order in 0.3:
+
+```bash
+firebase deploy --only functions --project entrax-878a1
+node scripts/migrate-exam-keys.cjs --prod        # keys only, no --strip
+# deploy the site, then the rules
+node scripts/set-feature-flag.cjs serverGrading on --prod
+node scripts/migrate-exam-keys.cjs --strip --prod
+```
+
 Manual smoke checklist:
 
 - [ ] Magic-link student: portal lists only open/published exams.
 - [ ] Magic-link student: cannot open `admin-dashboard.html` (redirected).
+- [ ] Signed-out / anonymous visit to an exam link redirects to sign-in and
+      returns to the same exam afterwards.
 - [ ] Student: refresh mid-exam restores answers and remaining time.
 - [ ] Student: retake starts a fresh attempt; review still works.
 - [ ] Admin: create/publish/delete exam and read all submissions.
-- [ ] Direct-link (anonymous) student: exam still starts and submits.
+- [ ] Admin: `auditLogs` rows appear for create/publish/delete; a student cannot
+      read them.
+- [ ] With the switch on: a student cannot read `examKeys` or write `score`;
+      the callable grades and the review still shows correct answers.
 - [ ] Free vs. paid entitlement hides premium exams (after Phase 1).

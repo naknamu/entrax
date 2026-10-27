@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { signInAsStudent } from './utils.js';
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 const PROJECT_ID = 'demo-test';
@@ -97,7 +98,9 @@ test.describe('Exam attempt resilience', () => {
     expect(created.ok()).toBeTruthy();
 
     try {
-      await page.goto(`/exam.html?examId=${examId}`, { waitUntil: 'domcontentloaded' });
+      // Graded attempts require a real identity now.
+      await signInAsStudent(page);
+      await page.goto(`/exam.html?examId=${examId}&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Resume Tester');
       await page.fill('#student-email', studentEmail);
@@ -195,7 +198,8 @@ test.describe('Exam attempt resilience', () => {
 
     try {
       // Start an attempt and answer the first question.
-      await page.goto(`/exam.html?examId=${examId}`, { waitUntil: 'domcontentloaded' });
+      await signInAsStudent(page);
+      await page.goto(`/exam.html?examId=${examId}&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Retake Tester');
       await page.fill('#student-email', studentEmail);
@@ -214,7 +218,7 @@ test.describe('Exam attempt resilience', () => {
       expect(await readSubmissionId()).toBe(firstId);
 
       // An explicit retake must NOT resume the old draft.
-      await page.goto(`/exam.html?examId=${examId}&retake=true`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/exam.html?examId=${examId}&retake=true&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Retake Tester');
       await page.fill('#student-email', studentEmail);

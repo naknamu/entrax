@@ -9,6 +9,7 @@ import {
   waitForFirebase, 
   signInAsAdmin, 
   signOut,
+  signInAsStudent,
   createTestExam, 
   takeExamAsStudent, 
   answerAllQuestions, 
@@ -79,7 +80,8 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
 
   // 3. Exam link opens correctly in fresh context
   test('Exam link opens start screen', async ({ page }) => {
-    await page.goto(`/exam.html?examId=${examId}&test=true`);
+    await signInAsStudent(page);
+    await page.goto(`/exam.html?examId=${examId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     await expect(page.locator('#start-screen')).toBeVisible();
     await expect(page.locator('#exam-title-start')).toContainText('Test Exam');
@@ -88,7 +90,8 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
 
   // 4. Student takes exam and submits successfully
   test('Student takes exam → submits → confirmation', async ({ page }) => {
-    await page.goto(`/exam.html?examId=${examId}&test=true`);
+    await signInAsStudent(page);
+    await page.goto(`/exam.html?examId=${examId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     
     await page.fill('#student-name', 'Smoke Test Student');
@@ -135,9 +138,10 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
     // The student takes the exam through the direct link (signed out), so the
     // name/email form is shown instead of the portal auto-start.
     await signOut(page);
+    await signInAsStudent(page);
 
     // Take exam as student
-    await page.goto(`/exam.html?examId=${testExamId}&test=true`);
+    await page.goto(`/exam.html?examId=${testExamId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     await page.fill('#student-name', 'Dashboard Score Student');
     await page.fill('#student-email', 'dashboard@test.com');
@@ -193,9 +197,10 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
     // The student takes the exam through the direct link (signed out), so the
     // name/email form is shown instead of the portal auto-start.
     await signOut(page);
+    await signInAsStudent(page);
 
     // Take exam as student
-    await page.goto(`/exam.html?examId=${testExamId}&test=true`);
+    await page.goto(`/exam.html?examId=${testExamId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     await page.fill('#student-name', 'Detail View Student');
     await page.fill('#student-email', 'detail@test.com');
@@ -248,9 +253,10 @@ test.describe('Online Exam Platform - Full E2E Tests', () => {
     // The student takes the exam through the direct link (signed out), so the
     // name/email form is shown instead of the portal auto-start.
     await signOut(page);
+    await signInAsStudent(page);
 
     // Take exam as student
-    await page.goto(`/exam.html?examId=${testExamId}&test=true`);
+    await page.goto(`/exam.html?examId=${testExamId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     await page.fill('#student-name', 'CSV Export Student');
     await page.fill('#student-email', 'csv@test.com');

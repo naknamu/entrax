@@ -8,7 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { signInAsAdmin } from './utils.js';
+import { signInAsAdmin, signInAsStudent } from './utils.js';
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 const PROJECT_ID = 'demo-test';
@@ -69,7 +69,8 @@ test.describe('Exam retake and review', () => {
 
     try {
       // ── First attempt ───────────────────────────────────────────────────
-      await page.goto(`/exam.html?examId=${examId}`, { waitUntil: 'domcontentloaded' });
+      await signInAsStudent(page);
+      await page.goto(`/exam.html?examId=${examId}&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Retake Tester');
       await page.fill('#student-email', studentEmail);
@@ -91,7 +92,7 @@ test.describe('Exam retake and review', () => {
       await page.waitForSelector('#submission-screen:not([hidden])', { timeout: 20000 });
 
       // ── A plain visit still blocks a second attempt ─────────────────────
-      await page.goto(`/exam.html?examId=${examId}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/exam.html?examId=${examId}&manualStart=true`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#start-screen:not([hidden])', { timeout: 20000 });
       await page.fill('#student-name', 'Retake Tester');
       await page.fill('#student-email', studentEmail);

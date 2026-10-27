@@ -27,12 +27,36 @@ const PENDING_EMAIL_KEY = 'studentPendingEmail';
  * The URL must be a valid redirect URL configured in the Firebase console
  * (Authentication → Settings → Authorized domains).
  */
+/**
+ * Same-origin path from `?next=`, used to return a student to the exam link
+ * they originally opened. Rejects absolute/off-site URLs to avoid an open
+ * redirect.
+ * @returns {string|null}
+ */
+export function getNextPath() {
+  const raw = new URLSearchParams(window.location.search).get('next');
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    // Never bounce back to the sign-in page itself.
+    if (/\/student\.html$/i.test(url.pathname)) return null;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return null;
+  }
+}
+
 function getActionCodeSettings() {
   // Use the current origin so it works in dev (localhost:8080) and production
   const origin = window.location.origin;
   const basePath = window.location.pathname.replace(/\/[^/]*$/, '/');
+  const url = new URL(`${origin}${basePath}student.html`);
+  // Preserve the post-sign-in destination across the magic-link round trip.
+  const next = getNextPath();
+  if (next) url.searchParams.set('next', next);
   return {
-    url: `${origin}${basePath}student.html`,
+    url: url.href,
     handleCodeInApp: true,
   };
 }
@@ -100,8 +124,14 @@ export async function completeMagicLinkSignIn() {
   const credential = await signInWithEmailLink(auth, email, window.location.href);
   localStorage.removeItem(PENDING_EMAIL_KEY);
 
-  // Clean the URL to remove the sign-in link params
-  window.history.replaceState({}, document.title, window.location.pathname);
+  // Clean the URL to remove the sign-in link params, but keep `?next=` so the
+  // portal can send the student back to the exam link they opened.
+  const next = getNextPath();
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname + (next ? `?next=${encodeURIComponent(next)}` : '')
+  );
 
   // Create / update student profile
   const user = credential.user;

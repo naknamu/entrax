@@ -25,7 +25,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { signInAsAdmin } from './utils.js';
+import { signInAsAdmin, signInAsStudent } from './utils.js';
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 const PROJECT_ID = 'demo-test';
@@ -122,7 +122,8 @@ test.describe('Firestore security rules', () => {
     });
 
     try {
-      await signInAnonymously(page);
+      // Graded attempts require a real identity; anonymous is covered below.
+      await signInAsStudent(page);
 
       const result = await page.evaluate(async ({ draftId, closedId }) => {
         const firestoreUrl = performance
@@ -206,6 +207,82 @@ test.describe('Firestore security rules', () => {
     } finally {
       await removeExam(request, draftId);
       await removeExam(request, closedId);
+    }
+  });
+
+  test('anonymous sessions cannot read exams, list exams, or create submissions', async ({ page, request }) => {
+    const examId = `rules-anon-${Date.now()}`;
+    await seedExam(request, examId, {
+      title: 'Open published exam (anonymous must not see it)',
+      status: 'published',
+      createdBy: 'test-admin-uid',
+      startDate: '2020-01-01T00:00:00Z',
+      endDate: '2999-01-01T00:00:00Z',
+    });
+
+    try {
+      await signInAnonymously(page);
+
+      const result = await page.evaluate(async ({ examId }) => {
+        const firestoreUrl = performance
+          .getEntriesByType('resource')
+          .map((entry) => entry.name)
+          .find((name) => /firebase_firestore\.js/.test(name));
+        if (!firestoreUrl) throw new Error('firebase/firestore module URL not found');
+
+        const auth = window.__FIREBASE_AUTH__;
+        const db = window.__FIREBASE_DB__;
+        const {
+          collection, doc, getDoc, getDocs, setDoc, serverTimestamp, query, where,
+        } = await import(firestoreUrl);
+
+        const out = {};
+
+        try {
+          const snap = await getDoc(doc(db, 'exams', examId));
+          out.get = snap.exists() ? 'allowed' : 'missing';
+        } catch (error) {
+          out.get = error.code || String(error);
+        }
+
+        try {
+          const snap = await getDocs(query(collection(db, 'exams'), where('status', '==', 'published')));
+          out.list = `allowed:${snap.size}`;
+        } catch (error) {
+          out.list = error.code || String(error);
+        }
+
+        try {
+          await setDoc(doc(db, 'submissions', `rules-anon-sub-${Date.now()}`), {
+            examId,
+            studentName: 'Anonymous Student',
+            studentEmail: 'anon@test.com',
+            studentUid: auth.currentUser.uid,
+            startedAt: serverTimestamp(),
+            submittedAt: null,
+            answers: [],
+          });
+          out.submit = 'allowed';
+        } catch (error) {
+          out.submit = error.code || String(error);
+        }
+
+        try {
+          const snap = await getDoc(doc(db, 'examKeys', examId));
+          out.keys = snap.exists() ? 'allowed' : 'missing';
+        } catch (error) {
+          out.keys = error.code || String(error);
+        }
+
+        return out;
+      }, { examId });
+
+      expect(result.get).toBe('permission-denied');
+      expect(result.list).toBe('permission-denied');
+      expect(result.submit).toBe('permission-denied');
+      expect(result.keys).toBe('permission-denied');
+    } finally {
+      await removeExam(request, examId);
     }
   });
 

@@ -48,16 +48,36 @@ export async function waitForFirebase(page) {
 }
 
 /**
- * Sign in as admin
+ * Sign in as admin.
+ *
+ * Several tests take an exam as a student and then need the admin view in the
+ * same browser context. A student session makes `index.html` redirect to the
+ * portal, so the admin form never renders. Clear any session on `student.html`
+ * first — it never redirects away — then use the normal login form.
  */
 export async function signInAsAdmin(page) {
-  await page.goto('/index.html?test=true', { waitUntil: 'networkidle' });
-  
+  await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__FIREBASE_AUTH__ !== undefined, null, {
+    timeout: 20000,
+  });
+  await page
+    .evaluate(async () => {
+      const auth = window.__FIREBASE_AUTH__;
+      if (!auth) return;
+      // Restore the persisted session before deciding; signOut is a no-op when
+      // there is none.
+      await auth.authStateReady?.();
+      await auth.signOut();
+    })
+    .catch(() => {});
+
+  await page.goto('/index.html?test=true', { waitUntil: 'domcontentloaded' });
+
   // Wait for the login form to be visible
   await page.waitForSelector('#login-form', { state: 'visible', timeout: 30000 });
   await page.waitForSelector('#email', { state: 'visible', timeout: 30000 });
   await page.waitForSelector('#password', { state: 'visible', timeout: 30000 });
-  
+
   await page.fill('#email', TEST_ADMIN_EMAIL);
   await page.fill('#password', TEST_ADMIN_PASSWORD);
   await page.click('#login-form button[type="submit"]');
@@ -87,6 +107,33 @@ export async function signOut(page) {
     page.waitForTimeout(600)
   ]);
   await page.waitForLoadState('load').catch(() => {});
+}
+
+/**
+ * Sign in as a real (magic-link) student through the Auth emulator.
+ *
+ * The app no longer allows anonymous graded attempts, so specs that used to
+ * rely on a direct-link anonymous session must sign in first. The emulator
+ * exposes the sign-in link in the portal's dev-mode panel; follow it and wait
+ * for the portal view.
+ */
+export async function signInAsStudent(page, email = 'student@test.com') {
+  await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
+
+  // Already signed in as a real user? Nothing to do.
+  if (await page.locator('#portal-view').isVisible().catch(() => false)) return;
+
+  await page.waitForSelector('#signin-form', { state: 'visible', timeout: 20000 });
+  await page.fill('#signin-email', email);
+  await page.click('#signin-btn');
+
+  const devLink = page.locator('#signin-dev-link-anchor');
+  await devLink.waitFor({ state: 'visible', timeout: 20000 });
+  const href = await devLink.getAttribute('href');
+  if (!href || href === '#') throw new Error('Auth emulator did not return a magic link');
+
+  await page.goto(href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#portal-view', { state: 'visible', timeout: 30000 });
 }
 
 /**

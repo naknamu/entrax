@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, signOut, createTestExam, viewResultsAsAdmin } from './utils.js';
+import { injectEmulatorConfig, waitForFirebase, signInAsAdmin, signOut, signInAsStudent, createTestExam, viewResultsAsAdmin } from './utils.js';
 
 const TEST_ADMIN_EMAIL = 'admin@test.com';
 const TEST_ADMIN_PASSWORD = 'password123';
@@ -69,7 +69,8 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
 
   // 3. Exam link opens correctly in fresh context
   test('Exam link opens start screen', async ({ page }) => {
-    await page.goto(`/exam.html?examId=${examId}&test=true`);
+    await signInAsStudent(page);
+    await page.goto(`/exam.html?examId=${examId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     await expect(page.locator('#start-screen')).toBeVisible();
     await expect(page.locator('#exam-title-start')).toContainText('Smoke Test Exam');
@@ -82,8 +83,9 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
     page.on('console', msg => console.log('BROWSER LOG:', msg.text()));
     page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
     page.on('requestfailed', req => console.log('REQUEST FAILED:', req.url(), req.failure()?.errorText));
-    
-    await page.goto(`/exam.html?examId=${examId}&test=true`);
+
+    await signInAsStudent(page);
+    await page.goto(`/exam.html?examId=${examId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     
     await page.fill('#student-name', 'Smoke Test Student');
@@ -131,9 +133,10 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
     // The student takes the exam through the direct link (signed out), so the
     // name/email form is shown instead of the portal auto-start.
     await signOut(page);
+    await signInAsStudent(page);
 
     // Take exam as student
-    await page.goto(`/exam.html?examId=${testExamId}&test=true`);
+    await page.goto(`/exam.html?examId=${testExamId}&test=true&manualStart=true`);
     await waitForFirebase(page);
     
     await page.fill('#student-name', 'Smoke Test Student');

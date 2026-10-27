@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:staging": "vite build --mode staging",
     "preview": "vite preview --port 8080",
     "test": "npx playwright test",
-    "test:ci": "firebase emulators:exec --only auth,firestore --project demo-test \"npx playwright test\"",
+    "test:ci": "firebase emulators:exec --only auth,firestore,functions --project demo-test \"node scripts/run-ci-tests.cjs\"",
+    "test:server-grading": "npx playwright test --config=playwright.server-grading.config.cjs",
+    "functions:install": "npm --prefix functions install",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "test:report": "npx playwright show-report",
-    "emulators": "firebase emulators:start --only auth,firestore --project demo-test",
+    "emulators": "firebase emulators:start --only auth,firestore,functions --project demo-test",
     "setup:admin": "node tests/create-test-admin.cjs",
     "seed:mock": "node tests/seed-mock-data.cjs",
     "test:all": "npm run emulators & sleep 10 && npm run setup:admin && npm run dev & sleep 5 && npm run test"
@@ -37,6 +40,7 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
+    "@sentry/browser": "^8.0.0",
     "firebase": "^10.12.2",
     "mammoth": "^1.6.0"
   }

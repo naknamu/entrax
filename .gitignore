@@ -12,6 +12,7 @@ build/
 .env.production.local
 # .env.production is provided by GitHub Secrets in CI (see .github/workflows/deploy.yml)
 .env.production
+.env.staging
 
 # Firebase
 .firebase/
