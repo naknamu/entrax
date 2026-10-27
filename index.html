@@ -3,160 +3,334 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Online Exam Platform - Secure academic testing">
-  <title>Sign In - Exam Platform</title>
+  <meta name="description" content="Practice for the Kaplan Nursing Entrance Exam with 3,900+ original questions, full-length timed mocks, and detailed answer explanations. Start free — no card required.">
+  <title>Nightingale — Nursing Entrance Exam Practice</title>
+  <meta name="theme-color" content="#2563eb">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Nightingale">
+  <meta property="og:title" content="Nightingale — Nursing Entrance Exam Practice">
+  <meta property="og:description" content="3,900+ practice questions, full-length timed mocks, and clear explanations for the Kaplan Nursing Entrance Exam.">
+  <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
 </head>
-<body class="login-page">
-  <main class="container">
-    <div class="login-card">
-      <header class="login-header">
-        <div class="login-logo" aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
-          </svg>
-        </div>
-        <h1 class="login-title">Welcome Back</h1>
-        <p class="login-subtitle">Sign in to access your admin dashboard</p>
-      </header>
+<body class="mk-body">
+  <a class="mk-skip" href="#main">Skip to content</a>
 
-      <form id="login-form" class="login-form" novalidate>
-        <div id="alert-container"></div>
+  <!-- ─── Navigation ──────────────────────────────────────────────────────── -->
+  <header class="mk-nav">
+    <div class="mk-nav-inner">
+      <a class="mk-brand" href="index.html" aria-label="Nightingale home">
+        <span class="mk-brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l1.5-3 2 6 2-4 1.5 1h6"/></svg>
+        </span>
+        <span class="mk-brand-text">Nightingale</span>
+      </a>
 
-        <div class="form-group">
-          <label class="label" for="email">Email Address</label>
-          <input type="email" id="email" name="email" class="input" placeholder="admin@example.com" required autocomplete="email" autofocus>
-        </div>
+      <nav class="mk-nav-links" id="mk-nav-links" aria-label="Main navigation">
+        <a href="#how">How it works</a>
+        <a href="#inside">What's inside</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
 
-        <div class="form-group">
-          <label class="label" for="password">Password</label>
-          <input type="password" id="password" name="password" class="input" placeholder="Enter your password" required autocomplete="current-password">
-        </div>
+      <div class="mk-nav-actions">
+        <a class="mk-signin" href="student.html" data-cta="nav-signin" data-location="nav">Sign in</a>
+        <a class="btn btn-primary mk-nav-cta" href="student.html" data-cta="nav-primary" data-location="nav">Start free</a>
+      </div>
 
-        <div class="form-group">
-          <div class="checkbox-group">
-            <input type="checkbox" id="remember" name="remember">
-            <label for="remember">Remember me</label>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
-          <span class="btn-text">Sign In</span>
-          <span class="spinner hidden" id="login-spinner"></span>
-        </button>
-      </form>
-
-      <footer class="login-footer">
-        <p>Don't have an account? <a href="#" id="forgot-password-link">Contact your administrator</a></p>
-      </footer>
+      <button class="mk-nav-toggle" id="mk-nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mk-nav-links">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ─── Hero ──────────────────────────────────────────────────────────── -->
+    <section class="mk-hero">
+      <div class="mk-hero-inner">
+        <div class="mk-hero-copy">
+          <span class="mk-eyebrow"><span class="mk-dot" aria-hidden="true"></span> Independent practice for the Kaplan Nursing Entrance Exam</span>
+          <h1>Walk into your nursing entrance exam <span class="mk-accent">ready.</span></h1>
+          <p class="mk-lead">3,900+ original practice questions, full-length timed mocks, and clear explanations for every answer — built around the four sections the Kaplan Nursing Entrance Exam tests.</p>
+          <div class="mk-hero-actions">
+            <a class="btn btn-primary btn-lg" href="student.html" data-cta="hero-primary" data-location="hero">Start free — no card required</a>
+            <a class="btn btn-outline btn-lg" href="#inside" data-cta="hero-secondary" data-location="hero">See what's inside</a>
+          </div>
+          <ul class="mk-hero-points">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Math, Reading, Writing &amp; Science</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> 104 practice sets and full-length mocks</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Explanations on 99% of questions</li>
+          </ul>
+        </div>
+
+        <div class="mk-hero-visual" aria-hidden="true">
+          <div class="mk-score-card">
+            <div class="mk-score-head">
+              <div>
+                <span class="mk-score-kicker">Full-length mock</span>
+                <strong>Practice Test 4</strong>
+              </div>
+              <span class="mk-chip mk-chip--success">Passed</span>
+            </div>
+            <div class="mk-score-body">
+              <div class="mk-score-ring"><span class="mk-score-ring-inner">82%</span></div>
+              <div class="mk-score-summary">
+                <strong>Above the 70% passing mark</strong>
+                <span>91 questions · 2h 15m</span>
+              </div>
+            </div>
+            <div class="mk-bars">
+              <div class="mk-bar-row"><span>Reading</span><div class="mk-bar"><i style="width:86%"></i></div><b>86%</b></div>
+              <div class="mk-bar-row"><span>Math</span><div class="mk-bar"><i style="width:78%"></i></div><b>78%</b></div>
+              <div class="mk-bar-row"><span>Writing</span><div class="mk-bar"><i style="width:84%"></i></div><b>84%</b></div>
+              <div class="mk-bar-row"><span>Science</span><div class="mk-bar"><i style="width:80%"></i></div><b>80%</b></div>
+            </div>
+          </div>
+          <span class="mk-float mk-float--one">3,973 questions</span>
+          <span class="mk-float mk-float--two">99% explained</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Stats strip ───────────────────────────────────────────────────── -->
+    <section class="mk-stats" aria-label="Content at a glance">
+      <div class="mk-stats-inner">
+        <div><strong>3,973</strong><span>practice questions</span></div>
+        <div><strong>104</strong><span>practice sets</span></div>
+        <div><strong>4</strong><span>exam sections</span></div>
+        <div><strong>99%</strong><span>with explanations</span></div>
+      </div>
+    </section>
+
+    <!-- ─── How it works ──────────────────────────────────────────────────── -->
+    <section id="how" class="mk-section">
+      <div class="mk-section-inner">
+        <header class="mk-section-head">
+          <span class="mk-eyebrow">How it works</span>
+          <h2>From “where do I start?” to test-day confidence.</h2>
+          <p>No classroom, no schedule. Pick up where you left off on any device.</p>
+        </header>
+        <div class="mk-steps">
+          <article class="mk-step">
+            <span class="mk-step-num">1</span>
+            <h3>Take the free diagnostic</h3>
+            <p>Sit a full-length practice test and see your score by section and by topic. No card, no commitment.</p>
+          </article>
+          <article class="mk-step">
+            <span class="mk-step-num">2</span>
+            <h3>Fix your weakest areas</h3>
+            <p>Short drills target the exact categories you missed — fractions, reading inference, chemistry, and more.</p>
+          </article>
+          <article class="mk-step">
+            <span class="mk-step-num">3</span>
+            <h3>Re-test under real conditions</h3>
+            <p>Full-length timed mocks with Kaplan-style sections, a countdown, flag-and-review, and a score breakdown.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── What's inside ─────────────────────────────────────────────────── -->
+    <section id="inside" class="mk-section mk-section-alt">
+      <div class="mk-section-inner">
+        <header class="mk-section-head">
+          <span class="mk-eyebrow">What's inside</span>
+          <h2>Everything you need to practise properly.</h2>
+          <p>Built for the way the real exam is structured — and for the way you actually study.</p>
+        </header>
+        <div class="mk-features">
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <h3>Full-length timed mocks</h3>
+            <p>91-question exams with a live timer, section breaks, and automatic submission when time runs out.</p>
+          </article>
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+            <h3>Section drills</h3>
+            <p>Math, Reading, Writing, and Science sets you can take in 10–30 minutes when you don't have a full exam block.</p>
+          </article>
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span>
+            <h3>Answer explanations</h3>
+            <p>Every explained question shows why the right answer works and where the distractors go wrong.</p>
+          </article>
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+            <h3>Score analytics</h3>
+            <p>See your overall percentage, section breakdown, pass/fail status, and improvement across attempts.</p>
+          </article>
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
+            <h3>Flag &amp; review</h3>
+            <p>Mark questions you want to revisit, jump around with the question navigator, then review before submitting.</p>
+          </article>
+          <article class="mk-feature">
+            <span class="mk-feature-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
+            <h3>Works on any device</h3>
+            <p>Mobile-first layout, resumable attempts, and autosave — so a commute or a coffee break is enough to practise.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Sample question ───────────────────────────────────────────────── -->
+    <section class="mk-section">
+      <div class="mk-section-inner mk-sample-layout">
+        <div class="mk-sample-copy">
+          <span class="mk-eyebrow">Try one now</span>
+          <h2>See the explanations for yourself.</h2>
+          <p>This is a real question from the Math bank. Pick an answer — no sign-up needed.</p>
+          <p class="mk-sample-note">Every explained question includes a worked solution, not just a letter.</p>
+        </div>
+
+        <div class="mk-sample-card" data-sample-question data-answer="1">
+          <span class="mk-sample-label">Sample question · Math</span>
+          <p class="mk-sample-q">A patient needs 0.75 L of IV fluid over 6 hours. What is the flow rate in millilitres per hour?</p>
+          <div class="mk-sample-choices">
+            <button type="button" class="mk-choice" data-choice-index="0">75 mL/hr</button>
+            <button type="button" class="mk-choice" data-choice-index="1">125 mL/hr</button>
+            <button type="button" class="mk-choice" data-choice-index="2">150 mL/hr</button>
+            <button type="button" class="mk-choice" data-choice-index="3">450 mL/hr</button>
+          </div>
+          <div class="mk-sample-result" data-sample-result role="status" aria-live="polite" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Pricing ───────────────────────────────────────────────────────── -->
+    <section id="pricing" class="mk-section mk-section-alt">
+      <div class="mk-section-inner">
+        <header class="mk-section-head">
+          <span class="mk-eyebrow">Pricing</span>
+          <h2>One pass. One price. No subscription.</h2>
+          <p>Start with the free diagnostic. Upgrade only if you want the full bank.</p>
+        </header>
+
+        <div class="mk-price-grid">
+          <article class="mk-price-card">
+            <span class="mk-price-tag">Free account</span>
+            <div class="mk-price">$0</div>
+            <p class="mk-price-desc">Enough to see where you stand — no card required.</p>
+            <ul class="mk-price-list">
+              <li>Full-length diagnostic test</li>
+              <li>Sample practice sets</li>
+              <li>Score and section breakdown</li>
+              <li>Explanations on attempted questions</li>
+            </ul>
+            <a class="btn btn-outline btn-block" href="student.html" data-cta="pricing-free" data-location="pricing">Start free</a>
+          </article>
+
+          <article class="mk-price-card mk-price-card--featured">
+            <span class="mk-price-badge">Founding price</span>
+            <span class="mk-price-tag">Exam Pass</span>
+            <div class="mk-price">$19 <span>one-time</span></div>
+            <p class="mk-price-desc">90 days of full access. No auto-renew, no surprise charges.</p>
+            <ul class="mk-price-list">
+              <li>All 104 practice sets</li>
+              <li>Every full-length timed mock</li>
+              <li>Explanations for all 3,900+ questions</li>
+              <li>Weak-area drills and progress tracking</li>
+              <li>Retakes until your access ends</li>
+            </ul>
+            <a class="btn btn-primary btn-block" href="student.html" data-cta="pricing-pass" data-location="pricing">Start free first</a>
+            <p class="mk-price-note">Checkout opens soon. Sign up now and we'll email you the moment it does.</p>
+          </article>
+        </div>
+
+        <p class="mk-price-footnote">Prices in USD. The Exam Pass is a one-time purchase for 90 days of access; it does not renew automatically. See the <a href="terms.html">Terms</a> for the refund policy.</p>
+      </div>
+    </section>
+
+    <!-- ─── FAQ ───────────────────────────────────────────────────────────── -->
+    <section id="faq" class="mk-section">
+      <div class="mk-section-inner mk-faq-layout">
+        <header class="mk-section-head mk-section-head--left">
+          <span class="mk-eyebrow">FAQ</span>
+          <h2>Questions, answered.</h2>
+          <p>Still unsure? <a href="contact.html">Get in touch</a>.</p>
+        </header>
+
+        <div class="mk-faq">
+          <details class="mk-faq-item" open>
+            <summary>Is Nightingale affiliated with Kaplan?</summary>
+            <p>No. Nightingale is an independent study resource. It is not affiliated with, endorsed by, or sponsored by Kaplan, Inc. Kaplan® is a registered trademark of Kaplan, Inc. We do not use or reproduce Kaplan's questions.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>Is the content based on the real exam?</summary>
+            <p>Our sections follow the four areas the Kaplan Nursing Entrance Exam tests — Math, Reading, Writing, and Science — and the practice sets use a similar multiple-choice format. Every question is original content written for practice, not a real exam question.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>How long does the Exam Pass last?</summary>
+            <p>90 days from purchase. It is a one-time payment, not a subscription, so it will not renew automatically. You can retake any exam as often as you like during those 90 days.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>What can I use for free?</summary>
+            <p>A full-length diagnostic test and sample practice sets, including your score and section breakdown. No credit card is required to create an account.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>Can I practise on my phone?</summary>
+            <p>Yes. The exam layout is mobile-first, attempts autosave, and you can resume on another device where you left off.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>What if the Exam Pass isn't for me?</summary>
+            <p>Once checkout opens, the Exam Pass comes with a 14-day refund window. Details will be in the Terms before you pay.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Final CTA ─────────────────────────────────────────────────────── -->
+    <section class="mk-cta-band">
+      <div class="mk-cta-inner">
+        <div>
+          <h2>Your exam date isn't moving.</h2>
+          <p>Start with a free diagnostic and find out exactly what to work on.</p>
+        </div>
+        <a class="btn btn-lg mk-cta-btn" href="student.html" data-cta="footer-primary" data-location="final-cta">Start free — no card required</a>
+      </div>
+    </section>
   </main>
 
-  <script type="module">
-    import { auth, persistenceReady } from '/src/firebase.js';
-    import { onAuthStateChanged, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-    import { showAlert } from '/js/admin.js';
+  <!-- ─── Footer ──────────────────────────────────────────────────────────── -->
+  <footer class="mk-footer">
+    <div class="mk-footer-inner">
+      <div class="mk-footer-brand">
+        <a class="mk-brand" href="index.html" aria-label="Nightingale home">
+          <span class="mk-brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l1.5-3 2 6 2-4 1.5 1h6"/></svg>
+          </span>
+          <span class="mk-brand-text">Nightingale</span>
+        </a>
+        <p>Independent practice for the Kaplan Nursing Entrance Exam.</p>
+      </div>
 
-    const form = document.getElementById('login-form');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const rememberInput = document.getElementById('remember');
-    const loginBtn = document.getElementById('login-btn');
-    const loginSpinner = document.getElementById('login-spinner');
-    const loginBtnText = loginBtn.querySelector('.btn-text');
-    const alertContainer = document.getElementById('alert-container');
+      <nav class="mk-footer-col" aria-label="Product">
+        <h3>Product</h3>
+        <a href="#how">How it works</a>
+        <a href="#inside">What's inside</a>
+        <a href="#pricing">Pricing</a>
+        <a href="student.html">Start free</a>
+      </nav>
 
-    // If already signed in as a non-anonymous user (e.g. "Remember me" was
-    // checked last time), skip the login page. Only admins (custom claim
-    // `role: admin`) go to the admin dashboard; everyone else is a student and
-    // is sent to the student portal. Anonymous student sessions are NOT
-    // redirected — the login page stays available for an admin to sign in.
-    persistenceReady.then(async () => {
-      await auth.authStateReady();
-      onAuthStateChanged(auth, async (user) => {
-        if (!user || user.isAnonymous) return;
-        try {
-          const token = await user.getIdTokenResult(true);
-          window.location.href = token.claims?.role === 'admin'
-            ? 'admin-dashboard.html'
-            : 'student.html';
-        } catch (error) {
-          console.error('Could not verify account role:', error);
-          window.location.href = 'student.html';
-        }
-      });
-    }).catch((error) => {
-      // Auth initialization failed: keep the sign-in form usable rather than
-      // leaving a blank page (redirecting to index.html would loop).
-      console.error('Could not initialize authentication:', error);
-      showAlert(alertContainer, 'Could not initialize sign-in. Please reload the page.', 'error');
-    });
+      <nav class="mk-footer-col" aria-label="Legal">
+        <h3>Legal</h3>
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
+    <div class="mk-footer-bottom">
+      <p>© 2026 Nightingale. All rights reserved.</p>
+      <p class="mk-disclaimer">Nightingale is an independent study resource. It is not affiliated with, endorsed by, or sponsored by Kaplan, Inc. Kaplan® is a registered trademark of Kaplan, Inc. All practice questions are original content.</p>
+    </div>
+  </footer>
 
-      if (!email || !password) {
-        showAlert(alertContainer, 'Please enter both email and password.', 'error');
-        return;
-      }
-
-      setLoading(true);
-      clearAlert();
-
-      try {
-        // "Remember me" checked -> persist across tabs/closes (localStorage);
-        // unchecked -> keep only for this tab (sessionStorage).
-        const persistence = rememberInput.checked ? browserLocalPersistence : browserSessionPersistence;
-        await setPersistence(auth, persistence);
-        const credential = await signInWithEmailAndPassword(auth, email, password);
-        // Route by role: admins to the dashboard, students to their portal.
-        let isAdmin = false;
-        try {
-          const token = await credential.user.getIdTokenResult(true);
-          isAdmin = token.claims?.role === 'admin';
-        } catch (error) {
-          console.warn('Could not read account role, defaulting to student portal:', error);
-        }
-        // Show success message before redirect
-        showAlert(alertContainer, 'Login successful! Redirecting...', 'success');
-        // Redirect after a brief delay
-        setTimeout(() => {
-          window.location.href = isAdmin ? 'admin-dashboard.html' : 'student.html';
-        }, 500);
-      } catch (error) {
-        console.error('Login error:', error);
-        let message = 'Invalid email or password. Please try again.';
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          message = 'Invalid email or password. Please try again.';
-        } else if (error.code === 'auth/too-many-requests') {
-          message = 'Too many failed attempts. Please try again later.';
-        }
-        showAlert(alertContainer, message, 'error');
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    function setLoading(loading) {
-      loginBtn.disabled = loading;
-      loginSpinner.classList.toggle('hidden', !loading);
-      loginBtnText.textContent = loading ? 'Signing in...' : 'Sign In';
-    }
-
-    function clearAlert() {
-      alertContainer.innerHTML = '';
-    }
-  </script>
+  <script type="module" src="/js/landing.js"></script>
 </body>
 </html>

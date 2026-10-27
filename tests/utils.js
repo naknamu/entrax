@@ -51,9 +51,9 @@ export async function waitForFirebase(page) {
  * Sign in as admin.
  *
  * Several tests take an exam as a student and then need the admin view in the
- * same browser context. A student session makes `index.html` redirect to the
- * portal, so the admin form never renders. Clear any session on `student.html`
- * first — it never redirects away — then use the normal login form.
+ * same browser context. A student session makes the admin login page redirect
+ * to the portal, so the admin form never renders. Clear any session on
+ * `student.html` first — it never redirects away — then use the login form.
  */
 export async function signInAsAdmin(page) {
   await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
@@ -71,7 +71,7 @@ export async function signInAsAdmin(page) {
     })
     .catch(() => {});
 
-  await page.goto('/index.html?test=true', { waitUntil: 'domcontentloaded' });
+  await page.goto('/admin-login.html?test=true', { waitUntil: 'domcontentloaded' });
 
   // Wait for the login form to be visible
   await page.waitForSelector('#login-form', { state: 'visible', timeout: 30000 });
@@ -100,7 +100,7 @@ export async function signOut(page) {
       await window.__FIREBASE_AUTH__.signOut();
     }
   });
-  // Admin pages redirect to index.html once signed out. Wait for that
+  // Admin pages redirect to admin-login.html once signed out. Wait for that
   // navigation (bounded) so a following page.goto() isn't interrupted.
   await Promise.race([
     page.waitForURL(url => url.toString() !== before, { timeout: 2000 }).catch(() => {}),

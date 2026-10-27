@@ -5,7 +5,7 @@ test('verify exam layout bugs exist', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   
   // Navigate to index first
-  await page.goto('/index.html?test=true', { waitUntil: 'networkidle' });
+  await page.goto('/admin-login.html?test=true', { waitUntil: 'networkidle' });
   await page.evaluate(() => localStorage.setItem('testMode', 'true'));
   await page.waitForFunction(() => window.__FIREBASE_APP__ !== undefined, { timeout: 10000 });
   await page.waitForTimeout(500);

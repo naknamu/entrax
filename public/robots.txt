@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Authenticated app surfaces are not useful in search results.
+Disallow: /admin-login.html
+Disallow: /admin-dashboard.html
+Disallow: /create-exam.html
+Disallow: /exam-results.html
+Disallow: /exam.html
+Disallow: /student.html
+
+Sitemap: https://nightingaleexam.com/sitemap.xml

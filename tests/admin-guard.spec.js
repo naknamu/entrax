@@ -13,10 +13,10 @@ test.describe('Admin guard', () => {
   test('anonymous visitor is redirected away from the admin dashboard', async ({ page }) => {
     await page.goto('/admin-dashboard.html', { waitUntil: 'domcontentloaded' });
 
-    // Signed-out visitors go to the sign-in page (index.html); a signed-in
-    // non-admin would go to the student portal.
-    await page.waitForURL(/student\.html|index\.html/, { timeout: 20000 });
-    await expect(page).toHaveURL(/student\.html|index\.html/);
+    // Signed-out visitors go to the admin login page (admin-login.html); a
+    // signed-in non-admin would go to the student portal.
+    await page.waitForURL(/student\.html|admin-login\.html/, { timeout: 20000 });
+    await expect(page).toHaveURL(/student\.html|admin-login\.html/);
     await expect(page.locator('h1')).not.toContainText('Admin Dashboard');
   });
 

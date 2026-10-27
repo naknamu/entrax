@@ -27,14 +27,14 @@ function redirectTo(target) {
  *
  * @param {Object} [options]
  * @param {string} [options.redirectTo='student.html'] where non-admins go
- * @param {string} [options.signedOutRedirect='index.html'] where signed-out visitors go
+ * @param {string} [options.signedOutRedirect='admin-login.html'] where signed-out visitors go
  * @returns {Promise<import('firebase/auth').User|null>} the admin user, or null
  *   when the caller is being redirected.
  */
 export async function ensureAdmin(options = {}) {
   const {
     redirectTo: nonAdminRedirect = 'student.html',
-    signedOutRedirect = 'index.html',
+    signedOutRedirect = 'admin-login.html',
   } = options;
 
   await persistenceReady;
@@ -72,7 +72,7 @@ export async function ensureAdmin(options = {}) {
  * initialization failed): never leave protected content visible. Use as
  * `.catch(failClosed)`.
  */
-export function failClosed(error, target = 'index.html') {
+export function failClosed(error, target = 'admin-login.html') {
   console.error('Admin guard: unexpected failure:', error);
   hideDocument();
   redirectTo(target);

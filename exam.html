@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Take Exam - Exam Platform">
-  <title>Take Exam - Exam Platform</title>
+  <meta name="description" content="Practice exam — Nightingale">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Practice Exam — Nightingale</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -352,6 +353,9 @@
     import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
     import { gradeExam, getCategoryStatistics } from '/js/grading.js';
     import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
+    import { initAnalytics, track, trackOnce } from '/js/analytics.js';
+
+    initAnalytics();
 
     // DOM Elements - Start Screen
     const startScreen = document.getElementById('start-screen');
@@ -1022,6 +1026,7 @@
 
         // Start exam
         beginExamSession();
+        track('exam_started', { exam_id: examId });
         return true;
       } finally {
         isStartingExam = false;
@@ -1520,6 +1525,14 @@
 
       // Show results
       showSubmissionResults(score, totalQuestions, percentage, passed, autoSubmitted);
+      track('exam_completed', {
+        exam_id: examId,
+        percentage: Math.round(percentage * 10) / 10,
+        passed: passed === true,
+        auto_submitted: autoSubmitted === true,
+        total_questions: totalQuestions,
+      });
+      trackOnce('first_exam_completed', 'first_mock_completed', { exam_id: examId });
     }
 
     /** Recover from a failed submit without losing the attempt. */

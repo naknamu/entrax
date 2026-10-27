@@ -1,23 +1,55 @@
-# Online Exam Platform
+# Nightingale — Online Exam Platform
 
-A modern, full-featured online exam platform built with **Vite**, **Firebase (Auth + Firestore)**, and vanilla JavaScript. Features a clean, accessible UI designed for academic testing environments.
+A modern, full-featured exam-prep platform built with **Vite**, **Firebase (Auth + Firestore)**, and vanilla JavaScript. It powers **Nightingale**, a B2C practice product for the Kaplan Nursing Entrance Exam, and keeps the original multi-page admin/student exam tooling underneath.
 
 ## ✨ Features
 
-- **Multi-page Architecture** — Separate pages for login, admin dashboard, exam creation, exam taking, results, and the student portal
+- **Marketing landing page** — Public front door at `/` with product copy, an interactive sample question, pricing, FAQ, and legal links (`admin-login.html` is the separate admin entrance)
+- **Multi-page Architecture** — Separate pages for the landing page, admin sign-in, admin dashboard, exam creation, exam taking, results, and the student portal
 - **Firebase Backend** — Authentication (admin email/password, student magic link) and Firestore for real-time data
 - **Student Portal** — Sign in with a magic link, browse open exams, see past scores, retake an exam, or review a submitted attempt
-- **Exam Creation** — Rich form with question builder, import from text/CSV/JSON/DOCX, categories, named sections, randomization, and a procedural question generator (Kaplan reading/math/writing/science)
+- **Exam Creation** — Rich form with question builder, import from text/CSV/JSON/DOCX, categories, named sections, randomization, and a procedural question generator (reading/math/writing/science)
 - **Exam Taking** — One-question-per-screen, live timer with auto-submit, progress tracking, flag questions, tab-switch detection, optional sections
 - **Grading & Results** — Automatic grading, per-category weak-area breakdown, detailed answer review, CSV export, print-friendly views
 - **Server-side grading (Phase 0.3)** — Behind a feature switch, a `submitAttempt` Cloud Function grades against an admin-only answer key so students never receive `correctIndex` and cannot write their own score
 - **Audit log** — Admin create/update/publish/delete actions are appended to an admin-only, immutable `auditLogs` collection
 - **Retake & Review** — Retake creates a fresh attempt; review replays the last submitted attempt (answers, flags, order) without creating a submission
 - **Admin Dashboard** — Stats overview, exam management, submission review with filtering/sorting
+- **Legal & trust surface** — Terms of Service, Privacy Policy, contact page, and a visible non-affiliation disclaimer
+- **Optional analytics** — Env-gated GA4 (`VITE_GA_MEASUREMENT_ID`) with funnel events; no-op and no third-party script when unset
 - **Responsive Design** — Works on desktop, tablet, and mobile
 - **Accessibility** — Semantic HTML, ARIA labels, keyboard navigation, focus management, reduced motion support
 - **Firebase Emulators** — Local development with zero cloud costs
 - **Vite Build** — Fast dev server, optimized production builds, multi-page output
+
+## 🌐 Brand and launch surfaces
+
+The product name used in the UI is **Nightingale**, with the proposed domain
+**nightingaleexam.com** (verified unregistered via Verisign RDAP on 2026-10-27;
+it still needs to be purchased and connected). The brand is intentionally
+independent: Kaplan is referenced only descriptively, and every public surface
+carries a non-affiliation disclaimer.
+
+| Surface | Path | Indexed? |
+|---------|------|----------|
+| Marketing landing page | `/` (`index.html`) | Yes |
+| Terms of Service | `/terms.html` | Yes |
+| Privacy Policy | `/privacy.html` | Yes |
+| Contact | `/contact.html` | Yes |
+| Admin sign-in | `/admin-login.html` | No (`noindex` + `robots.txt`) |
+| Student portal / exams | `/student.html`, `/exam.html` | No |
+
+Support email placeholder: `support@nightingaleexam.com` — set up forwarding (or
+change the address in `index.html`, `terms.html`, `privacy.html`, `contact.html`)
+before launch.
+
+Analytics is **off by default**. When `VITE_GA_MEASUREMENT_ID` is set, these
+events are sent (never email, name, or answers): `cta_click`, `pricing_viewed`,
+`sample_question_answered`, `magic_link_requested`, `signup_completed`,
+`login_completed`, `exam_started`, `exam_completed`, `first_mock_completed`.
+
+If the brand or domain changes, update the wordmark and `nightingaleexam.com`
+strings across the HTML pages, `public/robots.txt`, and `public/sitemap.xml`.
 
 ## 🚀 Quick Start
 
@@ -57,7 +89,8 @@ npm run seed:mock
 npm run dev
 ```
 
-Open http://localhost:8080 — you'll see the login page. Sign in with:
+Open http://localhost:8080 — you'll see the marketing landing page. Admin sign-in
+is at http://localhost:8080/admin-login.html. Sign in with:
 - **Email:** `admin@test.com`
 - **Password:** `password123`
 
@@ -95,7 +128,11 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-├── index.html              # Login page (entry point)
+├── index.html              # Marketing landing page (public front door)
+├── admin-login.html        # Admin sign-in (separate from the landing page)
+├── terms.html              # Terms of Service
+├── privacy.html            # Privacy Policy
+├── contact.html            # Contact / support page
 ├── admin-dashboard.html    # Admin dashboard
 ├── create-exam.html        # Exam creation/editing
 ├── exam.html               # Student exam taking, results, retake & review
@@ -110,16 +147,20 @@ npm run dev
 │   └── student-portal.js   # Portal views, exam cards, score charts
 ├── js/
 │   ├── admin.js            # Admin page utilities
+│   ├── analytics.js        # Env-gated GA4 (no-op without a measurement ID)
 │   ├── audit-log.js        # Append-only admin action log (never throws)
 │   ├── exam.js             # Exam page utilities
 │   ├── firestore-helpers.js # Firestore CRUD helpers (+ examKeys)
 │   ├── grading.js          # Grading & category statistics
+│   ├── landing.js          # Landing page: CTAs, sample question, mobile nav
 │   ├── monitoring.js       # Env-gated Sentry scaffold (no-op without a DSN)
 │   ├── question-generator.js # Procedural question generation
 │   ├── reading-generator.js  # Reading passage/question generator
 │   └── student-auth.js     # Magic-link auth wrapper
 ├── public/
-│   └── style.css           # Design system & component styles
+│   ├── style.css           # Design system, app styles, marketing styles
+│   ├── robots.txt          # Search indexing rules (app pages excluded)
+│   └── sitemap.xml         # Marketing pages
 ├── scripts/                # One-off data/maintenance helpers
 ├── docs/OPERATIONS.md      # Staging, Sentry, backups, App Check, secrets
 ├── tests/                  # Playwright E2E tests + seed/verify helpers
@@ -150,6 +191,7 @@ npm run dev
 | `VITE_APPCHECK_SITE_KEY` | reCAPTCHA v3 site key; App Check stays off when empty | No |
 | `VITE_SENTRY_DSN` | Sentry browser DSN; monitoring is a no-op when empty | No |
 | `VITE_SENTRY_ENVIRONMENT` | Sentry environment label (defaults to the Vite mode) | No |
+| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (`G-…`); analytics loads nothing when empty | No |
 
 Create `.env.development` for local development and `.env.production` for production builds. **Never commit real secrets to git.** `.env.staging` is gitignored too — start from `.env.staging.example`.
 

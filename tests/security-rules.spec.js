@@ -73,7 +73,7 @@ async function removeExam(request, examId) {
 }
 
 async function signInAnonymously(page) {
-  await page.goto('/index.html?test=true', { waitUntil: 'domcontentloaded' });
+  await page.goto('/admin-login.html?test=true', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__FIREBASE_AUTH__ !== undefined, { timeout: 30000 });
 
   const user = await page.evaluate(async () => {

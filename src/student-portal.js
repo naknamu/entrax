@@ -29,6 +29,9 @@ import {
   formatTimestamp,
   toDate,
 } from '@js/firestore-helpers.js';
+import { initAnalytics, track } from '@js/analytics.js';
+
+initAnalytics();
 
 // ─── DOM refs ───────────────────────────────────────────────────────────────
 
@@ -177,7 +180,17 @@ async function handleMagicLinkOnLoad() {
   if (isMagicLink()) {
     try {
       showSigningInLoader();
-      await completeMagicLinkSignIn();
+      const user = await completeMagicLinkSignIn();
+      if (user) {
+        // Firebase sets creationTime == lastSignInTime (within a few seconds)
+        // on the very first sign-in. Treat that as a completed signup; later
+        // links are returning logins.
+        const created = Date.parse(user.metadata?.creationTime || '');
+        const last = Date.parse(user.metadata?.lastSignInTime || '');
+        const isNewUser =
+          Number.isFinite(created) && Number.isFinite(last) && Math.abs(last - created) < 60_000;
+        track(isNewUser ? 'signup_completed' : 'login_completed', { method: 'magic_link' });
+      }
       // Auth state change will handle the rest
     } catch (err) {
       console.error('Magic link sign-in failed:', err);
@@ -247,6 +260,7 @@ $signinForm.addEventListener('submit', async (e) => {
 
   try {
     await sendMagicLink(email);
+    track('magic_link_requested', { method: 'magic_link' });
     $signinForm.hidden = true;
     $signinSuccess.hidden = false;
     $signinSentEmail.textContent = email;

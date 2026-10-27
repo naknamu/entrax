@@ -7,7 +7,7 @@ test.describe('Visual Layout Check - Desktop 1440px', () => {
     await injectEmulatorConfig(page);
     
     // Log in as admin
-    await page.goto('/index.html?test=true');
+    await page.goto('/admin-login.html?test=true');
     await page.evaluate(() => localStorage.setItem('testMode', 'true'));
     await signInAsAdmin(page);
     

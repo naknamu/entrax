@@ -20,7 +20,7 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
     // Create one exam for all tests
     const page = await browser.newPage();
     // Set test mode in localStorage before any navigation
-    await page.goto('/index.html?test=true');
+    await page.goto('/admin-login.html?test=true');
     await page.evaluate(() => localStorage.setItem('testMode', 'true'));
     await signInAsAdmin(page);
     const result = await createTestExam(page, {
@@ -36,7 +36,7 @@ test.describe('Smoke Tests - Core Happy Paths', () => {
 
   test.beforeEach(async ({ page }) => {
     // Set test mode before each navigation
-    await page.goto('/index.html?test=true');
+    await page.goto('/admin-login.html?test=true');
     await page.evaluate(() => localStorage.setItem('testMode', 'true'));
   });
 

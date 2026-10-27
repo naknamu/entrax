@@ -6,7 +6,7 @@ test.describe('Exam Layout Verification', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     
     // Navigate as admin first to ensure an exam exists
-    await page.goto('/index.html?test=true');
+    await page.goto('/admin-login.html?test=true');
     await page.evaluate(() => localStorage.setItem('testMode', 'true'));
     await signInAsAdmin(page);
     

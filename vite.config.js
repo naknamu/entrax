@@ -13,11 +13,15 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'index.html'),
+        'admin-login': resolve(__dirname, 'admin-login.html'),
         'admin-dashboard': resolve(__dirname, 'admin-dashboard.html'),
         'create-exam': resolve(__dirname, 'create-exam.html'),
         exam: resolve(__dirname, 'exam.html'),
         'exam-results': resolve(__dirname, 'exam-results.html'),
         student: resolve(__dirname, 'student.html'),
+        terms: resolve(__dirname, 'terms.html'),
+        privacy: resolve(__dirname, 'privacy.html'),
+        contact: resolve(__dirname, 'contact.html'),
       },
     },
   },

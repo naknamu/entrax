@@ -23,14 +23,18 @@ removes most of the compliance and sales surface.
 
 ### Positioning & legal (read before writing copy)
 
+- **Brand decision (2026-10-27):** **Nightingale**, with the proposed domain
+  `nightingaleexam.com` (verified unregistered; purchase pending). Stage 1 —
+  landing page, admin login split, legal pages, disclaimer, and env-gated
+  analytics — is implemented in this repo.
 - **Do not imply affiliation with Kaplan.** "Kaplan" is a registered trademark.
-  Use a neutral product name/domain; if the exam name is mentioned, use it
+  Use the neutral product name/domain; if the exam name is mentioned, use it
   descriptively ("practice for the Kaplan Nursing Entrance Exam") with a clear
   disclaimer: *not affiliated with, endorsed by, or sponsored by Kaplan, Inc.*
-- **Content must be original.** Audit `js/question-generator.js`,
-  `js/reading-generator.js`, `scripts/fix-reading-exams.cjs`, and
-  `exam-data-preview.json` for copied passages/questions before launch. Do not
-  ship Kaplan-derived material. Keep an authoring log/provenance per question.
+- **Content is original and programmatically generated** (`js/question-generator.js`,
+  `js/reading-generator.js`, `scripts/batch-create-exams.cjs`). Do not ship
+  Kaplan-derived material. Keep a generator-version/provenance log per question
+  batch so originality is defensible.
 - **Scores are practice estimates**, not official results. Say so in the UI and
   ToS; avoid promising a passing score.
 - Publish ToS, privacy policy, refund policy, and a content-removal (DMCA)
@@ -263,12 +267,48 @@ money.
 
 ## Phase 1 — Paid B2C launch
 
+### Stage 1 — public launch surface (done 2026-10-27)
+
+- [x] Marketing landing page at `/` (`index.html`): hero, content stats,
+      how-it-works, feature grid, interactive sample question, pricing, FAQ,
+      final CTA, and footer.
+- [x] Admin sign-in moved to `admin-login.html`; `js/admin-guard.js` and the
+      three admin pages redirect there instead of `/`. The old admin login is no
+      longer the public front door.
+- [x] Legal pages: `terms.html`, `privacy.html`, `contact.html`, linked from the
+      landing page, the student sign-in view, and every legal page.
+- [x] Non-affiliation disclaimer ("not affiliated with, endorsed by, or
+      sponsored by Kaplan, Inc.") in the landing footer, Terms, Privacy, and the
+      student sign-in view. Student headline no longer claims "Master Your Kaplan
+      Entrance Exam".
+- [x] Env-gated GA4 (`js/analytics.js`, `VITE_GA_MEASUREMENT_ID`): no-op without
+      an ID, DNT respected, no PII. Events: `cta_click`, `pricing_viewed`,
+      `sample_question_answered`, `magic_link_requested`, `signup_completed`,
+      `login_completed`, `exam_started`, `exam_completed`, `first_mock_completed`.
+- [x] Pricing section: **$19 one-time Exam Pass for 90 days**, free diagnostic +
+      sample sets, no auto-renew. CTA currently routes to the free account until
+      Stripe exists.
+- [x] `public/robots.txt` + `public/sitemap.xml`; app/admin pages are `noindex`.
+- [x] Tests updated for the new front door (`admin-login.html`); full suite green.
+- [ ] External: buy and connect `nightingaleexam.com`; add it to Firebase Auth
+      authorized domains.
+- [ ] External: verified magic-link sending domain / custom SMTP (SPF, DKIM,
+      DMARC) so sign-in email is not filtered as spam.
+- [ ] External: create the GA4 property and set `VITE_GA_MEASUREMENT_ID` in the
+      production build secrets.
+- [ ] External: set up `support@nightingaleexam.com` forwarding (or change the
+      address in the four public pages).
+- [ ] Optional follow-up: rename the 104 exam titles that still contain "Kaplan"
+      (e.g. `Kaplan Math Questions - Set 5` → `Math Practice Set 5`) so the
+      student-facing list matches the independent-content disclaimer.
+
 ### Onboarding & accounts
 
 - [ ] Sign-up with magic link **and** Google; display name; exam date + target
       score; timezone.
 - [ ] Free tier: one full mock + a limited drill set. Paid tier unlocks the
-      bank, analytics, and full-length mocks.
+      bank, analytics, and full-length mocks. (The landing page now advertises
+      this boundary; the entitlement gate still needs to be built.)
 - [ ] Stripe Checkout + customer portal; webhook writes
       `entitlements/{uid}`; rules gate premium exams/content.
 - [ ] Account settings: export data, delete account, manage subscription.
@@ -276,11 +316,12 @@ money.
 ### Exam experience (student-facing)
 
 - [ ] Explanations for every question (why the right answer is right and each
-      distractor is wrong) — the #1 reason students pay.
-- [ ] Section practice: Reading, Math, Writing, Science (matches the current
+      distractor is wrong) — 99% of the 3,973 live questions already have a
+      `solution`; review the remainder and improve distractor-level detail.
+- [x] Section practice: Reading, Math, Writing, Science (matches the current
       generators and sections model).
-- [ ] Full-length timed mock with a **scaled score estimate** and section
-      breakdown.
+- [x] Full-length timed mock with a section breakdown (scaled score estimate
+      still to do).
 - [ ] Weak-area drills generated from missed categories; "practice this next".
 - [ ] Scratch pad/calculator where appropriate, flag + review, keyboard
       shortcuts.
@@ -295,17 +336,21 @@ money.
 
 ### Growth
 
-- [ ] Marketing site with SEO pages per section ("nursing entrance math
-      practice"), sample questions, and a free diagnostic as the lead magnet.
-- [ ] Analytics (PostHog/GA4): signup → diagnostic → paid funnel.
+- [x] Marketing site with a sample question and a free diagnostic as the lead
+      magnet.
+- [ ] SEO pages per section ("nursing entrance math practice") and a blog.
+- [x] Analytics (GA4): signup → diagnostic → paid funnel events.
 - [ ] Referral or share-your-score loop.
-- [ ] Support: FAQ, contact form, refund flow.
+- [x] Support: FAQ and contact page.
+- [ ] Refund flow (needs Stripe).
 
 ### Trust
 
-- [ ] Disclaimer: independent practice, not affiliated with Kaplan; scores are
+- [x] Disclaimer: independent practice, not affiliated with Kaplan; scores are
       estimates.
-- [ ] ToS, privacy, refunds, data deletion, content provenance log.
+- [x] ToS, privacy, and contact/data-deletion instructions.
+- [ ] Content provenance log (the question bank is programmatically generated;
+      record the generator version and review process).
 - [ ] WCAG 2.1 AA pass on the exam flow (radio-group semantics, modal focus
       trap, contrast, keyboard-only run).
 
@@ -336,18 +381,25 @@ money.
 
 ## Decisions needed
 
-1. **Brand & domain** — neutral name (recommended), with a descriptive
-   "nursing entrance exam" subtitle and a non-affiliation disclaimer.
-2. **Content rights** — who authors/reviews questions, and can we prove
-   originality? This gates paid launch.
-3. **Free/paid boundary** — what is free (one mock?) and what is paid.
-4. **Pricing** — subscription ($9–19/mo) vs. one-time exam pass ($39–59);
-   recommend testing both.
+1. **Brand & domain** — **decided:** Nightingale, with the proposed domain
+   `nightingaleexam.com` (verified unregistered via Verisign RDAP on
+   2026-10-27; purchase and DNS/Auth-domain setup still pending). Kaplan appears
+   only in descriptive copy, with a non-affiliation disclaimer.
+2. **Content rights** — **decided:** the question bank is programmatically
+   generated, so no Kaplan material is reproduced. Keep the generator version
+   and review notes as a provenance log.
+3. **Free/paid boundary** — **decided:** free account gets a full-length
+   diagnostic and sample practice sets; the Exam Pass unlocks the full bank,
+   all mocks, and all explanations. The entitlement gate is still to build.
+4. **Pricing** — **decided:** a **$19 one-time Exam Pass for 90 days** (cheaper
+   than the earlier $39–59 option), no subscription and no auto-renew. Free
+   diagnostic remains the lead magnet.
 5. **Firebase plan** — Blaze for Cloud Functions (server grading, email,
    scheduled backups). Required to deploy 0.3. **Still open.**
 6. **Identity** — **decided:** every graded attempt requires a magic-link
    identity (see 0.5). Anonymous direct links are redirected to sign-in.
 7. **Email provider** — Firebase email link vs. Postmark/SendGrid via Function.
+   **Still open**; the verified sending domain is a Stage 1 external blocker.
 
 ---
 
@@ -395,3 +447,10 @@ Manual smoke checklist:
 - [ ] With the switch on: a student cannot read `examKeys` or write `score`;
       the callable grades and the review still shows correct answers.
 - [ ] Free vs. paid entitlement hides premium exams (after Phase 1).
+- [ ] Public: `/` is the landing page (not an admin login); every CTA reaches
+      `student.html`; `/admin-login.html` still signs an admin in.
+- [ ] Public: Terms, Privacy, Contact, and the non-affiliation disclaimer are
+      reachable from the landing footer and the student sign-in view.
+- [ ] Analytics (with `VITE_GA_MEASUREMENT_ID` set): `cta_click`,
+      `magic_link_requested`, `signup_completed`, and `first_mock_completed`
+      appear in GA4 DebugView.
