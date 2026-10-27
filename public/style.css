@@ -6347,15 +6347,17 @@ th[aria-sort="descending"] .sort-icon::after {
 
 .mk-price-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-6);
-  max-width: 880px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  max-width: 1080px;
   margin: 0 auto;
-  align-items: start;
+  align-items: stretch;
 }
 
 .mk-price-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 32px;
   border: 1px solid var(--color-border);
   border-radius: 20px;
@@ -6416,6 +6418,7 @@ th[aria-sort="descending"] .sort-icon::after {
 .mk-price-list {
   display: grid;
   gap: 10px;
+  flex: 1 0 auto;
   margin: 22px 0 26px;
   padding: 0;
   list-style: none;
@@ -6448,6 +6451,10 @@ th[aria-sort="descending"] .sort-icon::after {
   text-align: center;
 }
 
+.mk-price-note--shared {
+  margin: 20px 0 0;
+}
+
 .mk-price-footnote {
   max-width: 720px;
   margin: 24px auto 0;
@@ -6455,6 +6462,40 @@ th[aria-sort="descending"] .sort-icon::after {
   font-size: var(--text-xs);
   line-height: 1.6;
   text-align: center;
+}
+
+/* Extension strip under the three plans */
+
+.mk-price-extension {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  max-width: 1080px;
+  margin: var(--space-6) auto 0;
+  padding: 22px 26px;
+  border: 1px dashed var(--color-primary-200);
+  border-radius: var(--radius-xl);
+  background: var(--color-primary-50);
+}
+
+.mk-price-extension strong {
+  display: block;
+  color: var(--color-gray-900);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.mk-price-extension p {
+  margin: 6px 0 0;
+  color: var(--color-gray-600);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.mk-price-extension .btn {
+  flex-shrink: 0;
+  background: var(--color-white);
 }
 
 /* ── FAQ ────────────────────────────────────────────────────────────────── */
@@ -6810,8 +6851,12 @@ th[aria-sort="descending"] .sort-icon::after {
     max-width: 520px;
   }
 
-  .mk-price-card--featured {
-    order: -1;
+  .mk-price-extension {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    max-width: 520px;
+    padding: 20px;
   }
 
   .mk-footer-inner {

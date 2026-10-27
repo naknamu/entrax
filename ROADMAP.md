@@ -285,9 +285,10 @@ money.
       an ID, DNT respected, no PII. Events: `cta_click`, `pricing_viewed`,
       `sample_question_answered`, `magic_link_requested`, `signup_completed`,
       `login_completed`, `exam_started`, `exam_completed`, `first_mock_completed`.
-- [x] Pricing section: **$19 one-time Exam Pass for 90 days**, free diagnostic +
-      sample sets, no auto-renew. CTA currently routes to the free account until
-      Stripe exists.
+- [x] Pricing ladder: free diagnostic + sample sets; **$19 Exam Pass (90 days)**;
+      **$9 Extension (+90 days, stacks on the later of now or current expiry)**;
+      **$49 Lifetime** (access while the Service operates). One-time purchases,
+      no auto-renew. CTAs route to the free account until Stripe exists.
 - [x] `public/robots.txt` + `public/sitemap.xml`; app/admin pages are `noindex`.
 - [x] Tests updated for the new front door (`admin-login.html`); full suite green.
 - [x] Rename the exam titles that still contained "Kaplan" so the student-facing
@@ -451,9 +452,12 @@ entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
 3. **Free/paid boundary** — **decided:** free account gets a full-length
    diagnostic and sample practice sets; the Exam Pass unlocks the full bank,
    all mocks, and all explanations. The entitlement gate is still to build.
-4. **Pricing** — **decided:** a **$19 one-time Exam Pass for 90 days** (cheaper
-   than the earlier $39–59 option), no subscription and no auto-renew. Free
-   diagnostic remains the lead magnet.
+4. **Pricing** — **decided:** three one-time products, no subscription and no
+   auto-renew: **$19 Exam Pass (90 days)**, **$9 Extension (+90 days, stacks on
+   the later of purchase or current expiry)**, and **$49 Lifetime** (access for
+   as long as the Service operates; pro-rated refund over 24 months if
+   discontinued). Free diagnostic remains the lead magnet. Extension is sold as
+   an expiry win-back, not at checkout.
 5. **Firebase plan** — Blaze for Cloud Functions (server grading, email,
    scheduled backups). Required to deploy 0.3. **Still open.**
 6. **Identity** — **decided:** every graded attempt requires a magic-link

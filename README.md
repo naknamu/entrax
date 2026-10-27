@@ -43,6 +43,12 @@ Support email placeholder: `support@nightingaleexam.com` — set up forwarding (
 change the address in `index.html`, `terms.html`, `privacy.html`, `contact.html`)
 before launch.
 
+Pricing is three one-time products (no subscription, no auto-renew): **$19 Exam
+Pass for 90 days**, **$9 Extension for +90 days** (stacks on the later of
+purchase or current expiry; sold as an expiry win-back), and **$49 Lifetime**
+(access while the Service operates). Checkout is not wired up yet — every paid
+CTA routes to the free account.
+
 Analytics is **off by default**. When `VITE_GA_MEASUREMENT_ID` is set, these
 events are sent (never email, name, or answers): `cta_click`, `pricing_viewed`,
 `sample_question_answered`, `magic_link_requested`, `signup_completed`,
