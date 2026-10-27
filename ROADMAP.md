@@ -290,17 +290,67 @@ money.
       Stripe exists.
 - [x] `public/robots.txt` + `public/sitemap.xml`; app/admin pages are `noindex`.
 - [x] Tests updated for the new front door (`admin-login.html`); full suite green.
-- [ ] External: buy and connect `nightingaleexam.com`; add it to Firebase Auth
-      authorized domains.
-- [ ] External: verified magic-link sending domain / custom SMTP (SPF, DKIM,
-      DMARC) so sign-in email is not filtered as spam.
-- [ ] External: create the GA4 property and set `VITE_GA_MEASUREMENT_ID` in the
-      production build secrets.
-- [ ] External: set up `support@nightingaleexam.com` forwarding (or change the
-      address in the four public pages).
-- [ ] Optional follow-up: rename the 104 exam titles that still contain "Kaplan"
-      (e.g. `Kaplan Math Questions - Set 5` → `Math Practice Set 5`) so the
-      student-facing list matches the independent-content disclaimer.
+- [x] Rename the exam titles that still contained "Kaplan" so the student-facing
+      list matches the independent-content disclaimer. **82 of 104** production
+      exams renamed (`scripts/rename-exam-titles.cjs --prod --apply`); the other
+      22 already had neutral titles. New scheme: `Math Practice Set 5`,
+      `Reading Practice Set 51`, `Writing Practice Set 75`,
+      `Science Practice Set 70`, `Mock Exam 100`. Verified afterwards: 0 titles,
+      questions, solutions, or sections mention Kaplan. Descriptions still open
+      with "Kaplan Nursing Entrance Exam — …" as descriptive copy (same usage as
+      the landing page and disclaimer); no Kaplan-authored material.
+- [ ] Owner-only launch steps are tracked in
+      [External launch checklist](#external-launch-checklist-owner-only) below.
+
+### External launch checklist (owner only)
+
+Console/DNS/purchase actions that cannot be done from the repo. The site is
+functional without them, but it is not launch-ready: the custom domain is not
+live, sign-in email is unbranded and may be filtered, analytics stays off, and
+support mail has no destination.
+
+1. **Buy and connect `nightingaleexam.com`**
+   - Register the domain (verified unregistered via Verisign RDAP on
+     2026-10-27).
+   - GitHub repo → Settings → Pages → Custom domain: `nightingaleexam.com`
+     (writes `CNAME`), then enable **Enforce HTTPS** after the certificate is
+     issued.
+   - DNS: apex `A` records to GitHub Pages (`185.199.108.153`,
+     `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and
+     `CNAME www -> naknamu.github.io`.
+   - Verify: `https://nightingaleexam.com/` serves the landing page and
+     `https://nightingaleexam.com/terms.html` returns 200.
+2. **Add the domain to Firebase Auth authorized domains**
+   - Firebase Console → Authentication → Settings → Authorized domains → add
+     `nightingaleexam.com` (and `www.nightingaleexam.com` if used).
+   - Why: magic-link sign-in fails with `auth/unauthorized-continue-uri` on any
+     unlisted domain; the app surfaces that error by name.
+   - Verify: request a magic link on the live domain and complete sign-in.
+3. **Verified magic-link sending domain / custom SMTP**
+   - Firebase Console → Authentication → Templates → SMTP settings, or use a
+     transactional provider (Postmark / SendGrid / Resend) behind a Function.
+   - Publish SPF, DKIM, and DMARC for the sending domain. Keep DMARC at
+     `p=none` until reports are clean, then move to `quarantine`.
+   - Verify: a magic link lands in the Gmail/Outlook inbox (not spam) with the
+     Nightingale sender name and a link on `nightingaleexam.com`.
+4. **Create the GA4 property and enable analytics**
+   - analytics.google.com → create a property + web stream for the domain, copy
+     the `G-…` measurement ID.
+   - Add `VITE_GA_MEASUREMENT_ID` as a GitHub Actions secret so the production
+     build injects it (`.github/workflows/ci-cd.yml`).
+   - Verify in GA4 DebugView: `cta_click`, `pricing_viewed`,
+     `sample_question_answered`, `magic_link_requested`, `signup_completed`,
+     `login_completed`, `exam_started`, `exam_completed`,
+     `first_mock_completed`. With DNT on, nothing must load.
+5. **Set up `support@nightingaleexam.com` forwarding**
+   - Create the mailbox/alias at the registrar or in Google Workspace and
+     forward it to the operator inbox.
+   - The address appears in `index.html`, `terms.html`, `privacy.html`, and
+     `contact.html`; update all four if a different address is chosen.
+   - Verify: send a test message, confirm delivery, and reply from the alias.
+
+**Launch gate:** all five items above, plus the Phase 1 entitlement/Stripe work
+(free tier boundary, `entitlements/{uid}`, refund flow).
 
 ### Onboarding & accounts
 
@@ -451,6 +501,8 @@ Manual smoke checklist:
       `student.html`; `/admin-login.html` still signs an admin in.
 - [ ] Public: Terms, Privacy, Contact, and the non-affiliation disclaimer are
       reachable from the landing footer and the student sign-in view.
+- [x] Content: no exam title, question, solution, or section mentions Kaplan
+      (verified against production on 2026-10-27; 82 titles renamed).
 - [ ] Analytics (with `VITE_GA_MEASUREMENT_ID` set): `cta_click`,
       `magic_link_requested`, `signup_completed`, and `first_mock_completed`
       appear in GA4 DebugView.

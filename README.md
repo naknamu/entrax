@@ -266,6 +266,9 @@ node scripts/migrate-exam-keys.cjs [--strip|--restore] [--dry-run]
 
 # Server-grading switch (defaults to the emulator)
 node scripts/set-feature-flag.cjs serverGrading on|off
+
+# Remove "Kaplan" from exam titles (dry run by default; add --apply to write)
+node scripts/rename-exam-titles.cjs [--apply] [--prod]
 ```
 
 Every maintenance script defaults to the **emulator** (`demo-test`,
