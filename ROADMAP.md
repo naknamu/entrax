@@ -60,6 +60,11 @@ Production (`entrax-878a1`) already contains **104 exams**, created before the
 draft/published model existed, plus real student submissions. Treat it as live
 customer data, not seed data.
 
+**As of 2026-10-27 all 104 are `status: 'published'`** (verified with
+`node scripts/backfill-exam-status.cjs --prod`: 104 scanned, 0 marked, 104
+already had status), so the portal lists them under the new rules. The ordering
+notes below still apply to any future project or restore.
+
 Consequences for this pass:
 
 1. **Every script defaults to the emulator** (`demo-test`, localhost). Anything
@@ -94,10 +99,16 @@ Consequences for this pass:
 ## Phase 0 — Safety & reliability (current pass)
 
 **Status:** 0.1, 0.2, 0.4, 0.5 are code-complete and emulator-tested. 0.3 and
-0.6 are code-complete behind a feature switch / no-op scaffolds but **not
-deployed** (Blaze, Sentry, staging project, backups and App Check keys are
-external). Nothing from this pass has been deployed to production; the 104 live
-exams still need the backfill → claim → rules → site order above.
+0.6 are code-complete behind a feature switch / no-op scaffolds; the 0.6
+external half (Sentry org/DSN, staging project, backup bucket, App Check keys,
+rate-limit quotas) is still outstanding.
+
+**Deployed 2026-10-27 (`477ebbf`):** the new site (GitHub Pages) and the new
+Firestore rules + indexes are live on `entrax-878a1`; the admin claim was
+granted to the project owner. The 104 production exams already carried
+`status: 'published'`, so the backfill was a verified no-op
+(104 scanned / 0 marked / 104 already had status) — the portal was never
+empty. Server grading (0.3) remains **off** (no Functions deployed).
 
 **Verified locally (last run):** full Playwright suite green (32 tests), the
 isolated server-grading spec green with the Functions emulator, 14/14 grading
@@ -236,9 +247,17 @@ money.
       `.env.staging` in `.gitignore`.
 - [x] Firestore backup runbook + manual `workflow_dispatch` workflow
       (`docs/OPERATIONS.md`, `.github/workflows/firestore-backup.yml`).
+- [x] Fixed the CI rules deploy: the "did `firestore.rules` change?" check
+      diffed `HEAD` against `HEAD^`, but `actions/checkout` clones at depth 1,
+      so `HEAD^` never resolved and every run reported "unchanged" — the rules
+      had not been deployed since the job was added. The checkout now fetches
+      depth 2 and, if there is no parent, deploys instead of skipping. The
+      current rules were deployed manually on 2026-10-27 (verified via the
+      Rules API: `isRealUser`, `examKeys`, `auditLogs`, `serverGradingEnabled`
+      are live).
 - [!] The external half of the above: Sentry org/DSN, `entrax-staging` project,
       Blaze + backup bucket + PITR + `GCP_SA_KEY`, App Check keys, rate-limit
-      quotas. Nothing has been deployed; the backup workflow has never run.
+      quotas. None of it exists yet; the backup workflow has never run.
 
 ---
 
