@@ -1,7 +1,7 @@
 {
-  "name": "online-exam-platform",
+  "name": "nightingale-exam-platform",
   "version": "1.0.0",
-  "description": "A complete, working online exam platform built with Vite, Firebase (Firestore + Auth). Modern UI/UX for academic testing.",
+  "description": "Nightingale — nursing entrance exam practice built with Vite, Firebase (Firestore + Auth), and vanilla JavaScript.",
   "type": "module",
   "scripts": {
     "dev": "vite",

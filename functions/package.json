@@ -1,8 +1,8 @@
 {
-  "name": "entrax-functions",
+  "name": "nightingale-functions",
   "version": "1.0.0",
   "private": true,
-  "description": "Cloud Functions for the Entrax exam platform (server-side grading).",
+  "description": "Cloud Functions for Nightingale (server-side grading).",
   "main": "index.js",
   "engines": {
     "node": "20"

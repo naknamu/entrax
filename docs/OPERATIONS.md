@@ -4,7 +4,7 @@ Operator-facing steps for the exam platform. Deploy *order* (and the production
 backfill caveats) lives in [ROADMAP.md](../ROADMAP.md) — read that before any
 production change.
 
-Production project: `entrax-878a1`. Emulator project: `demo-test`.
+Production project: `entrax-878a1` (legacy ID; Firebase project IDs are immutable). Emulator project: `demo-test`.
 
 ---
 
@@ -12,14 +12,14 @@ Production project: `entrax-878a1`. Emulator project: `demo-test`.
 
 Nothing goes to production before it has run in staging.
 
-1. Create the Firebase project **`entrax-staging`** (Blaze only if you need
+1. Create the Firebase project **`nightingale-staging`** (Blaze only if you need
    Functions; Firestore + Auth work on Spark).
 2. Enable **Authentication → Sign-in method → Email link (passwordless)**. Add
    the Google provider too if/when it ships.
 3. Create **Firestore** in production mode (rules are deployed from the repo,
    not typed into the console).
 4. **Authentication → Settings → Authorized domains**: add
-   `localhost`, `entrax-staging.web.app`, and any staging custom domain.
+   `localhost`, `nightingale-staging.web.app`, and any staging custom domain.
 5. Register a Web app and copy its config:
 
    ```bash
@@ -33,8 +33,8 @@ Nothing goes to production before it has run in staging.
 6. Deploy the rules, indexes, and functions **to staging first**:
 
    ```bash
-   firebase deploy --only firestore:rules,firestore:indexes --project entrax-staging
-   firebase deploy --only functions --project entrax-staging   # when Functions exist
+   firebase deploy --only firestore:rules,firestore:indexes --project nightingale-staging
+   firebase deploy --only functions --project nightingale-staging   # when Functions exist
    ```
 
    Only after staging is green do you repeat the same commands against
@@ -53,7 +53,7 @@ Nothing goes to production before it has run in staging.
 imported, so the bundle is unchanged while monitoring is off.
 
 1. Sentry → new **Browser / JavaScript** project, one per environment
-   (`entrax-web-staging`, `entrax-web-prod`).
+   (`nightingale-web-staging`, `nightingale-web-prod`).
 2. Copy the DSN into `VITE_SENTRY_DSN` (`.env.staging`, and the production
    build's Vite env in CI). `VITE_SENTRY_ENVIRONMENT` defaults to Vite's `MODE`
    (`staging` / `production`).
@@ -79,7 +79,7 @@ plan.
     --project=entrax-878a1
   ```
 
-  Use a dedicated bucket (e.g. `entrax-firestore-backups`) with a lifecycle rule
+  Use a dedicated bucket (e.g. `nightingale-firestore-backups`) with a lifecycle rule
   (30–90 days) and no public access. The exporting service account needs
   datastore import/export permission plus write on the bucket — nothing else.
 
@@ -87,8 +87,8 @@ plan.
   recovery (7-day window) once on Blaze. PITR is *not* a substitute for
   exports; keep both.
 
-- **Restore test**: restore an export into `entrax-staging` (Console → Import,
-  or `gcloud firestore import gs://... --project=entrax-staging`) and check
+- **Restore test**: restore an export into `nightingale-staging` (Console → Import,
+  or `gcloud firestore import gs://... --project=nightingale-staging`) and check
   counts and a few documents. **Never** import into production without a fresh
   export of production first and an explicit human decision.
 

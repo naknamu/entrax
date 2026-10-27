@@ -259,7 +259,7 @@ money.
       current rules were deployed manually on 2026-10-27 (verified via the
       Rules API: `isRealUser`, `examKeys`, `auditLogs`, `serverGradingEnabled`
       are live).
-- [!] The external half of the above: Sentry org/DSN, `entrax-staging` project,
+- [!] The external half of the above: Sentry org/DSN, `nightingale-staging` project,
       Blaze + backup bucket + PITR + `GCP_SA_KEY`, App Check keys, rate-limit
       quotas. None of it exists yet; the backup workflow has never run.
 
@@ -348,9 +348,19 @@ support mail has no destination.
    - The address appears in `index.html`, `terms.html`, `privacy.html`, and
      `contact.html`; update all four if a different address is chosen.
    - Verify: send a test message, confirm delivery, and reply from the alias.
+6. **Rename the GitHub repository (optional, URL only)**
+   - The current fallback URL is `https://naknamu.github.io/entrax/`. If you want
+     `.../nightingale/` before the custom domain is live, rename the repo under
+     Settings → General → Repository name. GitHub redirects the old repo URL,
+     but Pages URLs can be inconsistent after a rename, so treat this as a
+     one-way change.
+   - Once `nightingaleexam.com` is connected (item 1) the repo name is no longer
+     user-visible, so skipping this is fine.
+   - The Firebase project ID stays `entrax-878a1`: Google project IDs are
+     immutable and every script/CI job references it.
 
-**Launch gate:** all five items above, plus the Phase 1 entitlement/Stripe work
-(free tier boundary, `entitlements/{uid}`, refund flow).
+**Launch gate:** all five mandatory items above, plus the Phase 1
+entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
 
 ### Onboarding & accounts
 

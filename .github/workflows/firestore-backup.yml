@@ -35,7 +35,7 @@ jobs:
             missing=1
           fi
           if [ -z "${BACKUP_BUCKET}" ]; then
-            echo "::error::FIRESTORE_BACKUP_BUCKET is not set. Add the repository variable with the bucket name only, e.g. entrax-firestore-backups (no gs:// prefix)."
+            echo "::error::FIRESTORE_BACKUP_BUCKET is not set. Add the repository variable with the bucket name only, e.g. nightingale-firestore-backups (no gs:// prefix)."
             missing=1
           fi
           exit "${missing}"
