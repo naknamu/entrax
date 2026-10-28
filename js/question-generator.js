@@ -88,6 +88,10 @@ function buildQuestion(category, text, correct, distractors, solution = '') {
     choices: shuffled,
     correctIndex: shuffled.indexOf(correctStr),
     solution,
+    provenance: {
+      generator: 'question-generator.js',
+      generatedAt: new Date().toISOString(),
+    },
   };
 }
 

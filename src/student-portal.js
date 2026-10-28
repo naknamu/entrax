@@ -105,6 +105,7 @@ let currentFilter = 'all';
 let examPage = 1;
 let examPageSize = 10;
 let confirmResolve = null;
+let drillCategory = null;
 
 const MOTIVATIONAL_QUOTES = [
   '"The secret of getting ahead is getting started." — Mark Twain',
@@ -564,9 +565,39 @@ function renderFocusAreas(weakAreas) {
           </div>
           <span class="student-focus-detail">${area.correct}/${area.total} correct</span>
         </div>
+        <button class="btn btn-ghost btn-sm student-drill-btn" data-category="${escapeHtml(area.category)}" type="button">Drill</button>
       </div>
     `;
   }).join('');
+
+  // Drill button handlers
+  $focusAreasList.querySelectorAll('.student-drill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const category = btn.dataset.category;
+      startDrill(category);
+    });
+  });
+}
+
+function startDrill(category) {
+  drillCategory = category;
+  currentFilter = 'available';
+  examPage = 1;
+
+  // Update filter tabs
+  $filterTabs.querySelectorAll('.student-filter-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.filter === 'available')
+  );
+
+  // Show drill badge
+  const $badge = document.getElementById('drill-badge');
+  const $name = document.getElementById('drill-category-name');
+  if ($badge && $name) {
+    $name.textContent = category;
+    $badge.hidden = false;
+  }
+
+  navigateTo('exams');
 }
 
 // ─── Exam List ──────────────────────────────────────────────────────────────
@@ -620,6 +651,12 @@ function applyExamFilter(submissionMap) {
   let filtered = allExams.filter(exam => {
     // Search filter
     if (search && !exam.title?.toLowerCase().includes(search)) return false;
+
+    // Category drill filter
+    if (drillCategory) {
+      const hasCategory = (exam.questions || []).some(q => q.category === drillCategory);
+      if (!hasCategory) return false;
+    }
 
     const sub = submissionMap[exam.id];
     switch (currentFilter) {
@@ -788,6 +825,14 @@ $filterTabs.addEventListener('click', (e) => {
   $filterTabs.querySelectorAll('.student-filter-tab').forEach(t =>
     t.classList.toggle('active', t === tab)
   );
+  applyExamFilter();
+});
+
+// Drill clear button
+document.getElementById('drill-clear')?.addEventListener('click', () => {
+  drillCategory = null;
+  document.getElementById('drill-badge').hidden = true;
+  document.getElementById('drill-category-name').textContent = '';
   applyExamFilter();
 });
 

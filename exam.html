@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="exam-page">
@@ -289,6 +291,10 @@
 
         <div class="submission-actions">
           <a href="student.html#dashboard" class="btn btn-primary btn-lg">Back to Dashboard</a>
+          <button class="btn btn-outline btn-lg" id="share-score-btn" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share Score
+          </button>
           <a href="#" class="btn btn-outline btn-lg retake-exam-link">Retake Exam</a>
           <a href="student.html#exams" class="btn btn-ghost btn-lg">View My Exams</a>
         </div>
@@ -326,6 +332,10 @@
 
         <div class="submission-actions">
           <a href="student.html#dashboard" class="btn btn-primary btn-lg">Back to Dashboard</a>
+          <button class="btn btn-outline btn-lg" id="share-score-btn-already" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share Score
+          </button>
           <a href="#" class="btn btn-outline btn-lg retake-exam-link">Retake Exam</a>
           <a href="student.html#exams" class="btn btn-ghost btn-lg">View My Exams</a>
         </div>
@@ -1953,6 +1963,26 @@
       prevStatus.className = submission.passed ? 'badge badge-success' : 'badge badge-danger';
     }
 
+    function showScoreLink() {
+      const url = new URL('exam.html', window.location.href);
+      url.searchParams.set('examId', examId);
+      return url.href;
+    }
+
+    function shareScore() {
+      const scoreEl = document.getElementById('score-percent');
+      const score = scoreEl ? scoreEl.textContent : '';
+      const text = `I scored ${score} on Nightingale! ${showScoreLink()}`;
+      navigator.clipboard.writeText(text).then(() => {
+        showAlert(document.getElementById('exam-alert-container') || document.body, 'Score link copied to clipboard!', 'success');
+      }).catch(() => {
+        prompt('Copy this:', text);
+      });
+    }
+
+    document.getElementById('share-score-btn')?.addEventListener('click', shareScore);
+    document.getElementById('share-score-btn-already')?.addEventListener('click', shareScore);
+
     function showScreen(screenId) {
       document.querySelectorAll('.exam-screen').forEach(s => {
         s.hidden = true;
@@ -1964,6 +1994,11 @@
     }
 
     // Firestore functions already imported at top of script
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
   </script>
 </body>
 </html>

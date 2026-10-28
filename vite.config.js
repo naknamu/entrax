@@ -22,6 +22,7 @@ export default defineConfig({
         terms: resolve(__dirname, 'terms.html'),
         privacy: resolve(__dirname, 'privacy.html'),
         contact: resolve(__dirname, 'contact.html'),
+        study: resolve(__dirname, 'study.html'),
       },
     },
   },

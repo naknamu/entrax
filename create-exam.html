@@ -351,6 +351,7 @@
     import { ensureAdmin, failClosed } from '/js/admin-guard.js';
     import { mergeExamKeys, saveExamKeys } from '/js/firestore-helpers.js';
     import { logAdminAction } from '/js/audit-log.js';
+    import { logProvenance } from '/js/provenance-log.js';
     import {
       generateKaplanMathQuestions, KAPLAN_MATH_TOPICS,
       generateKaplanReadingQuestions, KAPLAN_READING_TOPICS,
@@ -637,6 +638,13 @@
           leftovers.forEach((q) => {
             if (targetSection) q.sectionId = targetSection;
             addQuestion(q);
+          });
+          logProvenance({
+            event: 'generate_questions',
+            section: currentGenSection,
+            topics: checked,
+            count: questions.length,
+            source: currentGenSection === 'reading' ? 'procedural' : 'math-generator',
           });
           renderSections(); // refresh per-section count badges
           openAccordionSection('questions');

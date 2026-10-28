@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Practice for the Kaplan Nursing Entrance Exam with 3,900+ original questions, full-length timed mocks, and detailed answer explanations. Start free — no card required.">
+  <meta name="description" content="Practice for the Kaplan Nursing Entrance Exam with 3,900+ original questions, full-length timed mocks, detailed explanations, weak-area drills, and offline support. Start free — no card required.">
   <title>Nightingale — Nursing Entrance Exam Practice</title>
   <meta name="theme-color" content="#2563eb">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Nightingale">
   <meta property="og:title" content="Nightingale — Nursing Entrance Exam Practice">
-  <meta property="og:description" content="3,900+ practice questions, full-length timed mocks, and clear explanations for the Kaplan Nursing Entrance Exam.">
+  <meta property="og:description" content="3,900+ practice questions, full-length timed mocks, detailed explanations, weak-area drills, offline support, and a free study guide for the Kaplan Nursing Entrance Exam.">
   <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="mk-body">
@@ -31,10 +33,11 @@
       </a>
 
       <nav class="mk-nav-links" id="mk-nav-links" aria-label="Main navigation">
-        <a href="#how">How it works</a>
-        <a href="#inside">What's inside</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#faq">FAQ</a>
+        <a href="index.html#how">How it works</a>
+        <a href="index.html#inside">What's inside</a>
+        <a href="study.html">Study Guide</a>
+        <a href="index.html#pricing">Pricing</a>
+        <a href="index.html#faq">FAQ</a>
       </nav>
 
       <div class="mk-nav-actions">
@@ -304,7 +307,11 @@
           </details>
           <details class="mk-faq-item">
             <summary>Can I practise on my phone?</summary>
-            <p>Yes. The exam layout is mobile-first, attempts autosave, and you can resume on another device where you left off.</p>
+            <p>Yes. The exam layout is mobile-first, attempts autosave, and you can resume on another device where you left off. You can also install Nightingale as an app for quick access.</p>
+          </details>
+          <details class="mk-faq-item">
+            <summary>Is there a study guide?</summary>
+            <p>Yes — we publish a free study guide with section tips and a test-day checklist so you can focus your prep.</p>
           </details>
           <details class="mk-faq-item">
             <summary>What if it isn't for me?</summary>
@@ -341,9 +348,10 @@
 
       <nav class="mk-footer-col" aria-label="Product">
         <h3>Product</h3>
-        <a href="#how">How it works</a>
-        <a href="#inside">What's inside</a>
-        <a href="#pricing">Pricing</a>
+        <a href="index.html#how">How it works</a>
+        <a href="index.html#inside">What's inside</a>
+        <a href="study.html">Study Guide</a>
+        <a href="index.html#pricing">Pricing</a>
         <a href="student.html">Start free</a>
       </nav>
 
@@ -362,5 +370,10 @@
   </footer>
 
   <script type="module" src="/js/landing.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
 </body>
 </html>

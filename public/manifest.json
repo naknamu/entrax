@@ -1,0 +1,16 @@
+{
+  "name": "Nightingale",
+  "short_name": "Nightingale",
+  "description": "Independent practice for the Kaplan Nursing Entrance Exam",
+  "start_url": "/student.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
