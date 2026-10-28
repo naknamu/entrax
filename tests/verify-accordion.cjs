@@ -49,6 +49,14 @@ const BASE = 'http://localhost:8080';
   console.log('click toggle: opened =', JSON.stringify(opened), '| closed =', JSON.stringify(closed));
   const toggleOk = opened.open === true && opened.expanded === 'true' && closed.open === false && closed.expanded === 'false';
 
+  // 2b) Accordion exclusive-open: opening one closes others
+  await page.click('.accordion-toggle[data-accordion="import"]');
+  await page.waitForTimeout(400);
+  const importOpen = await state('import');
+  const othersClosed = await Promise.all(['exam-info', 'sections', 'generate', 'questions'].map((n) => state(n)));
+  const exclusiveOk = importOpen.open === true && othersClosed.every((s) => s.open === false);
+  console.log('exclusive open:', JSON.stringify({ importOpen, othersClosed }));
+
   // 3) Keyboard: focus sections toggle, Enter opens, Space closes
   await page.focus('.accordion-toggle[data-accordion="sections"]');
   await page.keyboard.press('Enter');
@@ -86,7 +94,7 @@ const BASE = 'http://localhost:8080';
   console.log('auto-expand: collapsed before =', questionsCollapsed, '| open after generate =', questionsAfterGenerate.open);
   const autoOk = questionsCollapsed === true && questionsAfterGenerate.open === true;
 
-  const pass = defaultsOk && toggleOk && kbOk && badgesOk && autoOk;
+  const pass = defaultsOk && toggleOk && kbOk && exclusiveOk && badgesOk && autoOk;
   console.log(`RESULT: ${pass ? 'PASS' : 'FAIL'}`);
   await browser.close();
   process.exit(pass ? 0 : 1);

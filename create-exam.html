@@ -739,7 +739,17 @@
     function initAccordions() {
       document.querySelectorAll('.accordion-toggle').forEach((toggle) => {
         toggle.addEventListener('click', () => {
-          setAccordion(toggle, !toggle.closest('.accordion-section').classList.contains('open'));
+          const section = toggle.closest('.accordion-section');
+          const willOpen = !section.classList.contains('open');
+          if (willOpen) {
+            document.querySelectorAll('.accordion-section.open').forEach((openSection) => {
+              if (openSection !== section) {
+                const openToggle = openSection.querySelector('.accordion-toggle');
+                if (openToggle) setAccordion(openToggle, false);
+              }
+            });
+          }
+          setAccordion(toggle, willOpen);
         });
         toggle.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {

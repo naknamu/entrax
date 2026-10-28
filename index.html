@@ -370,10 +370,22 @@
   </footer>
 
   <script type="module" src="/js/landing.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
-}
-</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+  (function () {
+    const faq = document.querySelector('.mk-faq');
+    if (!faq) return;
+    const items = faq.querySelectorAll('.mk-faq-item');
+    items.forEach((item) => {
+      item.addEventListener('toggle', () => {
+        if (item.open) {
+          items.forEach((other) => { if (other !== item) other.open = false; });
+        }
+      });
+    });
+  }());
+  </script>
 </body>
 </html>
