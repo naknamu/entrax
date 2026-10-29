@@ -1,9 +1,10 @@
 /**
  * Landing/study FAQ accordion (exclusive-open).
  *
- * Regression guard for the flicker reported when opening an answer: the
- * previous implementation closed the other answers from the queued `toggle`
- * event, so the page grew and then shrank again on every click.
+ * Regression guards for two reported issues:
+ *  - the answer flickered because the other answers were closed from the
+ *    queued `toggle` event, so the page grew and then shrank again;
+ *  - compensating for that collapse scrolled the whole page down.
  *
  * Run: npx playwright test tests/landing-faq.spec.js
  */
@@ -43,17 +44,15 @@ test.describe('FAQ accordion', () => {
     expect(await openIndexes(page)).toEqual([]);
   });
 
-  test('keeps the clicked question under the pointer', async ({ page }) => {
+  test('does not scroll the page when an answer opens', async ({ page }) => {
     await openFaq(page);
 
-    // The first answer is open by default, so opening a lower one collapses
-    // content above the click target. Without scroll compensation the whole
-    // list jumps up by the height of the collapsed answer.
-    const summary = page.locator('.mk-faq-item').nth(5).locator('summary');
-    const before = await summary.evaluate((el) => el.getBoundingClientRect().top);
-    await summary.click();
-    const after = await summary.evaluate((el) => el.getBoundingClientRect().top);
+    // Collapsing the answer above the click target must not change the scroll
+    // position: compensating for it made the whole page slide down.
+    const before = await page.evaluate(() => window.scrollY);
+    await page.locator('.mk-faq-item').nth(5).locator('summary').click();
+    const after = await page.evaluate(() => window.scrollY);
 
-    expect(Math.abs(after - before)).toBeLessThan(2);
+    expect(after).toBe(before);
   });
 });

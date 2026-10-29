@@ -97,16 +97,9 @@ if (faq) {
     const item = summary.parentElement;
     if (item.open) return; // closing this answer: leave the rest alone
 
-    // Keep the clicked question under the pointer. Collapsing an answer above
-    // it would otherwise shift the whole list up and move the click target.
-    const anchorTop = summary.getBoundingClientRect().top;
-
     items.forEach((other) => {
       if (other !== item) other.open = false;
     });
-
-    const shift = summary.getBoundingClientRect().top - anchorTop;
-    if (shift !== 0) window.scrollBy(0, shift);
   });
 }
 
