@@ -77,6 +77,39 @@ if (sample) {
   });
 }
 
+// ─── FAQ accordion (one answer open at a time) ──────────────────────────────
+
+const faq = document.querySelector('.mk-faq');
+
+if (faq) {
+  const items = Array.from(faq.querySelectorAll('.mk-faq-item'));
+
+  // Collapse the other answers on `click`, not on `toggle`.
+  //
+  // The `toggle` event is queued: by the time it fires, the browser has already
+  // expanded the clicked answer and painted it, so the page grew and then
+  // shrank again — a visible double jump/flicker. Closing the others in the
+  // click handler happens before the default toggle, so it paints once.
+  faq.addEventListener('click', (event) => {
+    const summary = event.target.closest?.('summary');
+    if (!summary || summary.parentElement?.parentElement !== faq) return;
+
+    const item = summary.parentElement;
+    if (item.open) return; // closing this answer: leave the rest alone
+
+    // Keep the clicked question under the pointer. Collapsing an answer above
+    // it would otherwise shift the whole list up and move the click target.
+    const anchorTop = summary.getBoundingClientRect().top;
+
+    items.forEach((other) => {
+      if (other !== item) other.open = false;
+    });
+
+    const shift = summary.getBoundingClientRect().top - anchorTop;
+    if (shift !== 0) window.scrollBy(0, shift);
+  });
+}
+
 // ─── Pricing view (funnel step) ─────────────────────────────────────────────
 
 const pricing = document.getElementById('pricing');

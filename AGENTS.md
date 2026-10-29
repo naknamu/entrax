@@ -24,6 +24,7 @@
 - Server grading (Phase 0.3) is behind `config/features.serverGrading` (Firestore). When on: answers live in admin-only `examKeys/{examId}`, the `submitAttempt` callable in `functions/` grades with the Admin SDK, clients may only create an ungraded draft and autosave `answers|flaggedQuestions|lastSavedAt|tabSwitchCount`, and `correctIndex` is stripped from exam docs. Admin pages merge keys back for edit/preview. Production is currently **off** (no Functions deployed).
 - In `functions/`, import `FieldValue` from `firebase-admin/firestore`, not `admin.firestore.FieldValue`: the Functions emulator proxies the `firebase-admin` module and its `firestore` export becomes a bound function, which loses static properties (the call then dies with `INTERNAL`).
 - Firestore rules/indexes: `firestore.rules`, `firestore.indexes.json` (deployed by CI when changed). Maintenance scripts (`scripts/*.cjs`) default to the emulator; `--prod` is required for production.
+- PWA: `public/sw.js` (registered from `index.html`/`study.html` with a scope-relative URL so it works under the Pages subpath) is network-first for HTML/JS/CSS and cache-first for images/manifest, so a deploy is never served stale. Bump `CACHE_NAME` when the precache list changes. `public/manifest.json` uses relative paths for the same reason.
 
 ## Environment
 - Copy `.env.example` -> `.env.development` for local; `.env.production` for builds; `.env.staging.example` -> `.env.staging` for staging. **Never commit secrets** (`.env.staging` is gitignored).
