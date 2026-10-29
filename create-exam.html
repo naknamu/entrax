@@ -771,7 +771,9 @@
         submitBtn.querySelector('.btn-text').textContent = 'Update Exam';
         await loadExamForEdit(examId);
       } else {
-        addQuestion(); // Add first question by default
+        // Add the first empty question, unless content already exists — the
+        // admin may have loaded the Kaplan template before auth resolved.
+        if (!questionsContainer.querySelector('.question-block')) addQuestion();
       }
       loadExistingCategories();
     }).catch(failClosed);

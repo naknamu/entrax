@@ -323,10 +323,24 @@ export async function waitForLoading(page) {
     return !loading;
   }, { timeout: 10000 }).catch(() => {}); // Ignore timeout
 }
+
+/**
+ * Wait for the create-exam builder to finish its async init.
+ *
+ * The first empty question is added only after the admin auth check resolves,
+ * so interacting before that point can skip UI that depends on existing
+ * content — e.g. "Load Kaplan Template" shows its replace-content confirmation
+ * only when a question or section already exists.
+ */
+export async function waitForExamBuilder(page) {
+  await page.waitForSelector('.question-block', { timeout: 15000 });
+}
+
 /**
  * Expand a create-exam accordion section (by its data-accordion name) when it
  * is collapsed. Header action buttons stay visible either way; only the body
  * controls are hidden, so tests that interact with body elements need this.
+ * Sections are exclusive-open: opening one collapses the rest.
  */
 export async function expandAccordion(page, name) {
   const section = page.locator(`.accordion-section:has(.accordion-toggle[data-accordion="${name}"])`);

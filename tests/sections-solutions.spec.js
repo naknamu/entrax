@@ -12,11 +12,12 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { waitForFirebase, signInAsAdmin, signOut, signInAsStudent, expandAccordion } from './utils.js';
+import { waitForFirebase, signInAsAdmin, signOut, signInAsStudent, expandAccordion, waitForExamBuilder } from './utils.js';
 
 async function createSectionedExam(page) {
   await page.goto('/create-exam.html?test=true');
   await waitForFirebase(page);
+  await waitForExamBuilder(page);
 
   // Exam info
   await page.fill('#title', 'Sections & Solutions Exam ' + Date.now());
@@ -30,6 +31,9 @@ async function createSectionedExam(page) {
   await page.fill('.section-title-input >> nth=0', 'Math');
   await page.click('#add-section-btn');
   await page.fill('.section-title-input >> nth=1', 'Reading');
+
+  // Sections are exclusive-open, so opening them collapsed the Questions body.
+  await expandAccordion(page, 'questions');
 
   const questions = [
     {
@@ -130,6 +134,7 @@ test.describe('Exam sections & math solutions', () => {
     await signInAsAdmin(page);
     await page.goto('/create-exam.html?test=true');
     await waitForFirebase(page);
+    await waitForExamBuilder(page);
 
     // Load the Kaplan template first (4 sections, 91 empty slots)
     await page.click('#kaplan-template-btn');
@@ -180,6 +185,8 @@ test.describe('Exam sections & math solutions', () => {
     expect(readingState.emptyLeft).toBe(0);
 
     // --- Science tab ---
+    // Generating opens the Questions section, which collapses Generate.
+    await expandAccordion(page, 'generate');
     await page.click('.generate-tab[data-gen-tab="science"]');
     await expect(page.locator('#generate-topics input[type="checkbox"]:checked')).toHaveCount(10);
     await expect(page.locator('#generate-count')).toHaveValue('2');
@@ -206,6 +213,7 @@ test.describe('Exam sections & math solutions', () => {
     await signInAsAdmin(page);
     await page.goto('/create-exam.html?test=true');
     await waitForFirebase(page);
+    await waitForExamBuilder(page);
 
     await page.click('#kaplan-template-btn');
     // Confirm the replace-current-content modal
