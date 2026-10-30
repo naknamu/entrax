@@ -96,7 +96,8 @@ test.describe('Exam submission', () => {
       // Students must be able to get back to the portal after submitting.
       const backToDashboard = page.locator('#submission-screen a[href="student.html#dashboard"]');
       await expect(backToDashboard).toBeVisible();
-      await expect(page.locator('#submission-screen a[href="student.html#exams"]')).toBeVisible();
+      // "Back to Exams" sits at the top, above the (long) answer review.
+      await expect(page.locator('#submission-screen .results-topbar a[href="student.html#exams"]')).toBeVisible();
 
       await backToDashboard.click();
       await expect(page).toHaveURL(/student\.html#dashboard/);

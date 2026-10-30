@@ -221,6 +221,12 @@
   <!-- Submission Confirmation Screen -->
   <section id="submission-screen" class="exam-screen" aria-labelledby="submission-title" hidden>
     <div class="exam-container exam-container--results">
+      <nav class="results-topbar no-print" aria-label="Results navigation">
+        <a href="student.html#exams" class="btn btn-ghost btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Exams
+        </a>
+      </nav>
       <article class="submission-confirmation">
         <div class="submission-icon success" id="submission-icon" aria-hidden="true">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
@@ -305,6 +311,12 @@
   <!-- Already Submitted Screen -->
   <section id="already-submitted-screen" class="exam-screen" aria-labelledby="already-title" hidden>
     <div class="exam-container exam-container--results">
+      <nav class="results-topbar no-print" aria-label="Results navigation">
+        <a href="student.html#exams" class="btn btn-ghost btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Exams
+        </a>
+      </nav>
       <article class="submission-confirmation">
         <div class="submission-icon warning" aria-hidden="true">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1394,7 +1406,12 @@
           if (isAnswered) classes += ' answered';
           if (isFlagged) classes += ' flagged';
 
-          html += `<button type="button" class="${classes}" data-nav-index="${displayIndex}" aria-label="Question ${displayIndex + 1}${isCurrent ? ', current' : ''}${isAnswered ? ', answered' : ''}${isFlagged ? ', flagged' : ''}">${displayIndex + 1}</button>`;
+          // Same wording for the screen-reader label and the hover tooltip so
+          // the number is never just a bare digit.
+          const stateLabel = `${isCurrent ? ', current' : ''}${isAnswered ? ', answered' : ''}${isFlagged ? ', flagged' : ''}`;
+          const label = `Question ${displayIndex + 1}${stateLabel}`;
+
+          html += `<button type="button" class="${classes}" data-nav-index="${displayIndex}" title="${label}" aria-label="${label}">${displayIndex + 1}</button>`;
         });
         html += '</div>';
       }
@@ -1764,6 +1781,8 @@
       // key -> Map<passageKey, { passage, items: string[] }> so questions that
       // share a passage render under ONE passage block instead of repeating it.
       const groups = new Map();
+      // key -> { total, correct, incorrect, unanswered } for the summary row.
+      const sectionStats = new Map();
       let hasSolutions = false;
 
       questionOrder.forEach((qIndex, displayIndex) => {
@@ -1854,16 +1873,28 @@
         const pKey = passage ? `passage:${passage}` : `inline:${displayIndex}`;
         if (!passageMap.has(pKey)) passageMap.set(pKey, { passage, items: [] });
         passageMap.get(pKey).items.push(itemHtml);
+
+        // Per-section tally for the collapsed summary.
+        const stats = sectionStats.get(key) || { total: 0, correct: 0, incorrect: 0, unanswered: 0 };
+        stats.total += 1;
+        if (!isAnswered) stats.unanswered += 1;
+        else if (isCorrect) stats.correct += 1;
+        else stats.incorrect += 1;
+        sectionStats.set(key, stats);
       });
 
       const orderedKeys = examSections.map(s => s.id).filter(k => groups.has(k));
       if (groups.has('__general__')) orderedKeys.push('__general__');
 
+      // One collapsed <details> per section, so a long exam opens as a short
+      // list of summaries (questions / correct / incorrect) instead of a wall
+      // of questions the student has to scroll through to find a topic.
       const reviewHtml = orderedKeys.map((key) => {
         const section = examSections.find(s => s.id === key);
-        const header = section
-          ? `<h4 class="review-section-title">${escapeHtml(section.title)}</h4>`
-          : (examSections.length > 0 ? '<h4 class="review-section-title">General</h4>' : '');
+        const name = section
+          ? section.title
+          : (examSections.length > 0 ? 'General' : 'All questions');
+        const stats = sectionStats.get(key) || { total: 0, correct: 0, incorrect: 0, unanswered: 0 };
         const passageGroups = [...groups.get(key).values()];
         const body = passageGroups.map((pg) => {
           const passageHtml = pg.passage
@@ -1871,7 +1902,25 @@
             : '';
           return passageHtml + pg.items.join('');
         }).join('');
-        return `${header}${body}`;
+
+        const statHtml = [
+          `<span class="review-section-stat">${stats.total} question${stats.total === 1 ? '' : 's'}</span>`,
+          `<span class="review-section-stat review-section-stat--correct">${stats.correct} correct</span>`,
+          `<span class="review-section-stat review-section-stat--incorrect">${stats.incorrect} incorrect</span>`,
+          stats.unanswered > 0
+            ? `<span class="review-section-stat review-section-stat--unanswered">${stats.unanswered} unanswered</span>`
+            : ''
+        ].join('');
+
+        return `
+          <details class="review-section">
+            <summary class="review-section-summary">
+              <span class="review-section-name">${escapeHtml(name)}</span>
+              <span class="review-section-stats">${statHtml}</span>
+            </summary>
+            <div class="review-section-body">${body}</div>
+          </details>
+        `;
       }).join('');
 
       answerBreakdown.innerHTML = reviewHtml || '<p class="text-muted">No questions available.</p>';
@@ -1932,6 +1981,9 @@
 
     if (showAllSolutionsBtn) {
       showAllSolutionsBtn.addEventListener('click', () => {
+        // Sections are collapsed by default; expand them so "show all" has a
+        // visible effect instead of silently opening hidden panels.
+        answerBreakdown.querySelectorAll('details.review-section').forEach(d => { d.open = true; });
         answerBreakdown.querySelectorAll('.solution-content').forEach(c => { c.hidden = false; });
         answerBreakdown.querySelectorAll('.solution-toggle').forEach(t => {
           t.setAttribute('aria-expanded', 'true');

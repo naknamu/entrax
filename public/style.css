@@ -25,18 +25,21 @@
   --color-success-500: #22c55e;
   --color-success-600: #16a34a;
   --color-success-700: #15803d;
+  --color-success-900: #052e16;
 
   --color-warning-50: #fffbeb;
   --color-warning-100: #fef3c7;
   --color-warning-500: #f59e0b;
   --color-warning-600: #d97706;
   --color-warning-700: #b45309;
+  --color-warning-900: #451a03;
 
   --color-danger-50: #fef2f2;
   --color-danger-100: #fee2e2;
   --color-danger-500: #ef4444;
   --color-danger-600: #dc2626;
   --color-danger-700: #b91c1c;
+  --color-danger-900: #450a0a;
 
   --color-info-50: #eff6ff;
   --color-info-100: #dbeafe;
@@ -70,6 +73,8 @@
   --color-text-secondary: var(--color-gray-600);
   --color-text-muted: var(--color-gray-500);
   --color-text-inverse: var(--color-white);
+  /* Hover surface for controls that already sit on a tinted background. */
+  --color-surface-hover: var(--color-gray-200);
 
   /* Primary Semantic */
   --color-primary: var(--color-primary-600);
@@ -187,6 +192,7 @@
     --color-text: var(--color-gray-50);
     --color-text-secondary: var(--color-gray-300);
     --color-text-muted: var(--color-gray-400);
+    --color-surface-hover: var(--color-gray-700);
     --color-primary-light: var(--color-primary-900);
     --color-success-light: var(--color-success-900);
     --color-warning-light: var(--color-warning-900);
@@ -1741,6 +1747,16 @@ pre code {
   margin-top: var(--space-6);
 }
 
+/* Top navigation on the results screen: the student should be able to leave
+   without scrolling past a long answer review. */
+.results-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
 /* Timer Bar */
 .exam-timer-bar {
   position: sticky;
@@ -1970,11 +1986,26 @@ pre code {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+/* Hover/focus must not repaint the state colours: answered (green), flagged
+   (amber) and current (blue) are how a student finds their place in the exam.
+   The affordance is a ring plus a theme-aware surface, so the number stays
+   readable in light and dark mode (the old rule forced a light grey surface
+   with light text in dark mode: ~1.2:1 contrast). */
 .nav-btn:hover {
-  background-color: var(--color-gray-200);
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-100);
+  color: var(--color-text);
+}
+
+.nav-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
   color: var(--color-text);
 }
 
@@ -1987,13 +2018,13 @@ pre code {
 .nav-btn.answered {
   background-color: var(--color-success-light);
   border-color: var(--color-success-border);
-  color: var(--color-success);
+  color: var(--color-success-700);
 }
 
 .nav-btn.flagged {
   background-color: var(--color-warning-light);
   border-color: var(--color-warning-border);
-  color: var(--color-warning);
+  color: var(--color-warning-700);
 }
 
 .nav-btn.current.answered {
@@ -2005,6 +2036,41 @@ pre code {
 .nav-btn.current.flagged {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* Hover keeps the state colours and only adds the ring. */
+.nav-btn.current:hover,
+.nav-btn.current:focus-visible {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary-700);
+  box-shadow: 0 0 0 2px var(--color-primary-200);
+  color: var(--color-white);
+}
+
+.nav-btn.answered:hover,
+.nav-btn.answered:focus-visible {
+  background-color: var(--color-success-light);
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-success-border);
+  color: var(--color-success-700);
+}
+
+.nav-btn.flagged:hover,
+.nav-btn.flagged:focus-visible {
+  background-color: var(--color-warning-light);
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 2px var(--color-warning-border);
+  color: var(--color-warning-700);
+}
+
+.nav-btn.current.answered:hover,
+.nav-btn.current.answered:focus-visible,
+.nav-btn.current.flagged:hover,
+.nav-btn.current.flagged:focus-visible {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary-700);
+  box-shadow: 0 0 0 2px var(--color-primary-200);
   color: var(--color-white);
 }
 
@@ -2992,7 +3058,9 @@ pre code {
 
 /* Category Breakdown (weak-area analysis) */
 .category-breakdown-card {
-  margin-top: var(--space-4);
+  /* The gap above comes from .results-display's margin-bottom; adding another
+     one here made the space above this card larger than the space below it. */
+  margin-top: 0;
 }
 
 .category-breakdown {
@@ -3045,6 +3113,126 @@ pre code {
 
 .answer-breakdown {
   padding: var(--space-6);
+}
+
+/* Student results: the review lives inside .card-body (already padded) and the
+   sections bring their own padding, so the extra inset made the review card
+   look twice as padded as the cards above it. Admin detail views keep the
+   base padding. */
+.results-review .answer-breakdown {
+  padding: 0;
+}
+
+/* Answer review sections: one collapsible <details> per exam section, closed
+   by default so a 100-question review opens as a short list of summaries. */
+.results-review {
+  margin-top: var(--space-8);
+}
+
+.review-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-elevated);
+  overflow: hidden;
+}
+
+.review-section + .review-section {
+  margin-top: var(--space-4);
+}
+
+.review-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  cursor: pointer;
+  list-style: none;
+  background-color: var(--color-bg-subtle);
+  transition: background-color var(--transition-fast);
+}
+
+.review-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-section-summary:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* The card clips its children, so keep the focus ring inside the summary. */
+.review-section-summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.review-section[open] > .review-section-summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-section-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.review-section-name::after {
+  content: '+';
+  color: var(--color-primary-600);
+  font-size: var(--text-lg);
+  font-weight: var(--font-normal);
+  line-height: 1;
+}
+
+.review-section[open] > .review-section-summary .review-section-name::after {
+  content: '−';
+}
+
+.review-section-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.review-section-stat {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.review-section-stat--correct {
+  color: var(--color-success-700);
+  border-color: var(--color-success-border);
+  background-color: var(--color-success-light);
+}
+
+.review-section-stat--incorrect {
+  color: var(--color-danger-700);
+  border-color: var(--color-danger-border);
+  background-color: var(--color-danger-light);
+}
+
+.review-section-stat--unanswered {
+  color: var(--color-warning-700);
+  border-color: var(--color-warning-border);
+  background-color: var(--color-warning-light);
+}
+
+.review-section-body {
+  padding: var(--space-4);
+}
+
+.review-section-body .answer-item:last-child {
+  margin-bottom: 0;
 }
 
 .answer-item {
@@ -4209,6 +4397,44 @@ th[aria-sort="descending"] .sort-icon::after {
   .alert-info {
     color: var(--color-info-100);
     border-color: var(--color-primary-700);
+  }
+
+  /* Question-number states sit on the -900 tints in dark mode, so the -600
+     text loses contrast. Use the -500 shades instead (>= 6:1). */
+  .nav-btn.answered,
+  .nav-btn.answered:hover,
+  .nav-btn.answered:focus-visible {
+    color: var(--color-success-500);
+  }
+  .nav-btn.flagged,
+  .nav-btn.flagged:hover,
+  .nav-btn.flagged:focus-visible {
+    color: var(--color-warning-500);
+  }
+  .nav-btn:hover,
+  .nav-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-primary-700);
+  }
+
+  /* Review summary chips use the same tints. */
+  .review-section-stat--correct {
+    color: var(--color-success-500);
+  }
+  .review-section-stat--incorrect {
+    color: var(--color-danger-500);
+  }
+  .review-section-stat--unanswered {
+    color: var(--color-warning-500);
+  }
+
+  /* Tooltip: the light-mode surface is a dark chip; on a dark page it would
+     disappear, so flip it to a light chip with dark text. */
+  .tooltip::before {
+    color: var(--color-gray-900);
+    background-color: var(--color-gray-100);
+  }
+  .tooltip::after {
+    border-top-color: var(--color-gray-100);
   }
 }
 

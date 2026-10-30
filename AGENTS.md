@@ -38,6 +38,7 @@
 - Exams now require a real student identity: specs call `signInAsStudent(page)` and open `exam.html?examId=…&manualStart=true` so the name/email form stays visible. `manualStart` is preserved on retake links.
 - `tests/server-grading.spec.js` flips the global `config/features.serverGrading` switch, so it is excluded from `playwright.config.cjs` and runs alone via `playwright.server-grading.config.cjs` (`npm run test:server-grading`). `npm run test:ci` (`scripts/run-ci-tests.cjs`) runs the main suite, then that spec, and needs the Functions emulator.
 - `create-exam.html` accordions are **exclusive-open**: opening one collapses the rest. Specs must call `expandAccordion(page, name)` before touching anything inside a section body (question blocks live in the Questions body), and `waitForExamBuilder(page)` before clicking "Load Kaplan Template" — the default question is added only after the admin auth check, and the replace-content confirmation is skipped when no content exists yet.
+- The student results screen (`exam.html#submission-screen`) renders the answer review as one `<details class="review-section">` per exam section, **collapsed by default**, with a questions/correct/incorrect summary in each `<summary>`. Specs must expand the section before clicking a `.solution-toggle` inside it; `.answer-item` counts still work while collapsed.
 - If running tests against running services, ensure emulators are up or use `npm run test:all`. Opening HTML files directly won't work (Vite modules/env).
 
 ## Build/deploy

@@ -333,8 +333,26 @@ test.describe('Exam sections & math solutions', () => {
     await page.click('#confirm-submit-btn');
     await page.waitForSelector('#submission-screen:not([hidden])', { timeout: 10000 });
 
-    // --- Results page: grouped by section, solutions collapsible ---
-    await expect(page.locator('.review-section-title')).toHaveText(['Math', 'Reading']);
+    // --- Results page: one collapsed accordion per section, with counts ---
+    const reviewSections = page.locator('#submission-screen .review-section');
+    await expect(reviewSections).toHaveCount(2);
+    await expect(page.locator('#submission-screen .review-section-name')).toHaveText(['Math', 'Reading']);
+
+    // Collapsed by default, so a long review opens as a short summary list.
+    await expect(reviewSections.nth(0)).not.toHaveAttribute('open', '');
+    await expect(reviewSections.nth(1)).not.toHaveAttribute('open', '');
+
+    // Each header summarises its own section.
+    await expect(reviewSections.nth(0).locator('.review-section-stat').first()).toHaveText('2 questions');
+    await expect(reviewSections.nth(0).locator('.review-section-stat--correct')).toHaveText('2 correct');
+    await expect(reviewSections.nth(0).locator('.review-section-stat--incorrect')).toHaveText('0 incorrect');
+    await expect(reviewSections.nth(1).locator('.review-section-stat--correct')).toHaveText('2 correct');
+
+    // Expand both sections to reach the questions and solutions.
+    await reviewSections.nth(0).locator('summary').click();
+    await reviewSections.nth(1).locator('summary').click();
+    await expect(reviewSections.nth(0)).toHaveAttribute('open', '');
+
     await expect(page.locator('.solution-toggle')).toHaveCount(4);
     await expect(page.locator('#solutions-controls')).toBeVisible();
 
