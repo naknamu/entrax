@@ -490,14 +490,18 @@ function renderScoreChart(trend, passingPercent = 70) {
   });
 
   const barsClass = isSingle ? 'student-chart-bars student-chart-bars--single' : 'student-chart-bars';
-  const passLineTop = `${100 - passingPercent}%`;
+  const passLineBottom = `${passingPercent}%`;
   $scoreTrendChart.innerHTML = `
-    <div class="${barsClass}">${barsHtml}</div>
-    <div class="student-chart-gridline" style="bottom:75%"></div>
-    <div class="student-chart-gridline" style="bottom:50%"></div>
-    <div class="student-chart-gridline" style="bottom:25%"></div>
-    <div class="student-chart-pass-line" style="bottom:${passLineTop}" title="Passing threshold: ${passingPercent}%">
-      <span class="student-chart-pass-label">${passingPercent}%</span>
+    <div class="${barsClass}">
+      <div class="student-chart-plot">
+        ${barsHtml}
+        <div class="student-chart-gridline" style="bottom:75%"></div>
+        <div class="student-chart-gridline" style="bottom:50%"></div>
+        <div class="student-chart-gridline" style="bottom:25%"></div>
+        <div class="student-chart-pass-line" style="bottom:${passLineBottom}" title="Passing threshold: ${passingPercent}%">
+          <span class="student-chart-pass-label">${passingPercent}%</span>
+        </div>
+      </div>
     </div>
     <div class="student-chart-y-axis">
       <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>

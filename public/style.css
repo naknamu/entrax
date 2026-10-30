@@ -5208,6 +5208,11 @@ th[aria-sort="descending"] .sort-icon::after {
   padding-bottom: var(--space-6);
 }
 
+.student-chart-plot {
+  position: relative;
+  height: 100%;
+}
+
 .student-chart-bar-col {
   display: flex;
   flex-direction: column;
