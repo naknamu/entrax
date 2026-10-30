@@ -1757,6 +1757,18 @@ pre code {
   margin-bottom: var(--space-4);
 }
 
+/* Make the back button more visible on the results screen */
+.results-back-btn {
+  color: var(--color-primary);
+  border-color: var(--color-primary-border);
+}
+
+.results-back-btn:hover:not(:disabled) {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
 /* Timer Bar */
 .exam-timer-bar {
   position: sticky;
