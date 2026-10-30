@@ -469,23 +469,26 @@ function renderScoreChart(trend) {
   }
 
   const maxScore = 100;
-  const barWidth = Math.max(20, Math.floor(100 / trend.length) - 2);
+  const isSingle = trend.length === 1;
+  const barWidth = isSingle ? 'auto' : Math.max(20, Math.floor(100 / trend.length) - 2);
 
   let barsHtml = '';
   trend.forEach((item, i) => {
     const height = Math.max(4, (item.percentage / maxScore) * 100);
     const color = item.passed ? 'var(--color-success-500)' : 'var(--color-danger-500)';
     const label = formatDate(item.submittedAt);
+    const colStyle = isSingle ? '' : `width:${barWidth}%`;
     barsHtml += `
-      <div class="student-chart-bar-col" style="width:${barWidth}%">
+      <div class="student-chart-bar-col${isSingle ? ' student-chart-bar-col--single' : ''}" style="${colStyle}">
         <div class="student-chart-bar-tooltip">${item.percentage}%</div>
         <div class="student-chart-bar" style="height:${height}%;background:${color}"></div>
         <span class="student-chart-bar-label">${label}</span>
       </div>`;
   });
 
+  const barsClass = isSingle ? 'student-chart-bars student-chart-bars--single' : 'student-chart-bars';
   $scoreTrendChart.innerHTML = `
-    <div class="student-chart-bars">${barsHtml}</div>
+    <div class="${barsClass}">${barsHtml}</div>
     <div class="student-chart-y-axis">
       <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
     </div>`;
@@ -652,9 +655,10 @@ function applyExamFilter(submissionMap) {
     // Search filter
     if (search && !exam.title?.toLowerCase().includes(search)) return false;
 
-    // Category drill filter
+    // Category drill filter (case-insensitive, trimmed)
     if (drillCategory) {
-      const hasCategory = (exam.questions || []).some(q => q.category === drillCategory);
+      const normalized = drillCategory.trim().toLowerCase();
+      const hasCategory = (exam.questions || []).some(q => q.category && q.category.trim().toLowerCase() === normalized);
       if (!hasCategory) return false;
     }
 
@@ -720,10 +724,10 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
         statusClass = 'failed';
       }
       actionBtn = `
-        <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-ghost btn-sm">Retake</a>
+        <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-outline btn-sm student-retake-btn">Retake</a>
         <a href="exam.html?examId=${exam.id}&review=true" class="btn btn-primary btn-sm">View Results</a>`;
     } else {
-      statusBadge = '<span class="badge badge-info">New</span>';
+      statusBadge = '<span class="badge badge-primary student-new-badge">New</span>';
       statusClass = 'new';
       actionBtn = `<a href="exam.html?examId=${exam.id}" class="btn btn-primary btn-sm">Start Exam</a>`;
     }
@@ -859,6 +863,17 @@ $examPageSize.addEventListener('change', () => {
   examPageSize = parseInt($examPageSize.value, 10);
   examPage = 1;
   applyExamFilter();
+});
+
+// Clickable exam cards
+$examList.addEventListener('click', (e) => {
+  const card = e.target.closest('.student-exam-card');
+  if (!card) return;
+  if (e.target.closest('a, button')) return;
+  const examId = card.dataset.examId;
+  if (examId) {
+    window.location.href = `exam.html?examId=${examId}`;
+  }
 });
 
 // ─── Settings ───────────────────────────────────────────────────────────────
