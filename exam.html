@@ -1811,7 +1811,6 @@
 
         const choicesHtml = (question.choices || []).map((choice, cIndex) => {
           let classes = 'answer-choice';
-          if (cIndex === correctIndex) classes += ' correct';
           if (cIndex === selectedIndex) classes += ' selected';
 
           let label = '';
@@ -1848,7 +1847,7 @@
           : '';
 
         const itemHtml = `
-          <article class="answer-item ${isCorrect ? 'correct' : (isAnswered ? 'incorrect' : '')}${isFlagged ? ' flagged' : ''}">
+          <article class="answer-item${isFlagged ? ' flagged' : ''}">
             <header class="answer-header">
               <div class="answer-question">
                 <span class="answer-question-number">Q${displayIndex + 1}.</span>
