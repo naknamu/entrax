@@ -5270,6 +5270,41 @@ th[aria-sort="descending"] .sort-icon::after {
   padding-right: var(--space-2);
 }
 
+/* Subtle gridlines behind chart bars */
+.student-chart-gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-border);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Passing threshold line */
+.student-chart-pass-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary-600);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.student-chart-pass-label {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-border);
+}
+
 /* ── Focus Areas (Weak-Area Analysis) ──────────────────────────────── */
 
 .student-focus-card {
@@ -5303,6 +5338,13 @@ th[aria-sort="descending"] .sort-icon::after {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.student-focus-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .student-focus-icon {
@@ -5334,7 +5376,7 @@ th[aria-sort="descending"] .sort-icon::after {
 }
 
 .student-focus-pct {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 700;
 }
 

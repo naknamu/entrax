@@ -453,7 +453,10 @@ function renderDashboard() {
   }
 
   // Score trend chart
-  renderScoreChart(s.scoreTrend);
+  const passingPercent = s.availableExams?.length > 0
+    ? Math.min(...s.availableExams.map(e => e.passingPercent || 70))
+    : 70;
+  renderScoreChart(s.scoreTrend, passingPercent);
 
   // Recent activity
   renderRecentActivity(s.recentSubmissions, s.availableExams);
@@ -462,7 +465,7 @@ function renderDashboard() {
   renderFocusAreas(s.weakAreas);
 }
 
-function renderScoreChart(trend) {
+function renderScoreChart(trend, passingPercent = 70) {
   if (!trend || trend.length === 0) {
     $scoreTrendChart.innerHTML = '<div class="student-chart-empty">Take your first exam to see your progress here.</div>';
     return;
@@ -487,8 +490,15 @@ function renderScoreChart(trend) {
   });
 
   const barsClass = isSingle ? 'student-chart-bars student-chart-bars--single' : 'student-chart-bars';
+  const passLineTop = `${100 - passingPercent}%`;
   $scoreTrendChart.innerHTML = `
     <div class="${barsClass}">${barsHtml}</div>
+    <div class="student-chart-gridline" style="bottom:75%"></div>
+    <div class="student-chart-gridline" style="bottom:50%"></div>
+    <div class="student-chart-gridline" style="bottom:25%"></div>
+    <div class="student-chart-pass-line" style="bottom:${passLineTop}" title="Passing threshold: ${passingPercent}%">
+      <span class="student-chart-pass-label">${passingPercent}%</span>
+    </div>
     <div class="student-chart-y-axis">
       <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
     </div>`;
@@ -538,22 +548,21 @@ function renderFocusAreas(weakAreas) {
     return;
   }
 
-  // Show only categories below 80%, max 5
-  const needsWork = weakAreas.filter(a => a.percentage < 80);
-  if (needsWork.length === 0) {
-    $focusAreasCard.hidden = true;
-    return;
-  }
-
   $focusAreasCard.hidden = false;
-  const toShow = needsWork.slice(0, 5);
+  const toShow = weakAreas.slice(0, 5);
 
   $focusAreasList.innerHTML = toShow.map(area => {
     const pct = area.percentage;
-    const barColor = pct >= 60 ? 'var(--color-warning)' : 'var(--color-danger)';
-    const icon = pct >= 60
-      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    const barColor = pct < 60
+      ? 'var(--color-danger)'
+      : pct < 80
+        ? 'var(--color-warning)'
+        : 'var(--color-success)';
+    const icon = pct < 60
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+      : pct < 80
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
 
     return `
       <div class="student-focus-item">
