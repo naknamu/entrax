@@ -1811,6 +1811,8 @@
 
         const choicesHtml = (question.choices || []).map((choice, cIndex) => {
           let classes = 'answer-choice';
+          if (cIndex === correctIndex) classes += ' correct';
+          if (cIndex === selectedIndex && cIndex !== correctIndex) classes += ' incorrect';
           if (cIndex === selectedIndex) classes += ' selected';
 
           let label = '';
