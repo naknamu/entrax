@@ -12,56 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { signInAsStudent } from './utils.js';
-
-const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
-const PROJECT_ID = 'demo-test';
-const DOCS_URL = `http://${EMULATOR_HOST}/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-const OWNER_AUTH = { Authorization: 'Bearer owner' };
-
-// ─── Firestore REST encoding ────────────────────────────────────────────────
-
-function toValue(value) {
-  if (value === null || value === undefined) return { nullValue: null };
-  if (value instanceof Date) return { timestampValue: value.toISOString() };
-  if (typeof value === 'string') return { stringValue: value };
-  if (typeof value === 'boolean') return { booleanValue: value };
-  if (typeof value === 'number') {
-    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
-  }
-  if (Array.isArray(value)) return { arrayValue: { values: value.map(toValue) } };
-  return { mapValue: { fields: toFields(value) } };
-}
-
-function toFields(object) {
-  return Object.fromEntries(Object.entries(object).map(([key, value]) => [key, toValue(value)]));
-}
-
-const EXAM_ID = 'sample-exam-test-fixed-id';
-
-/** Create a submission owned by `studentUid`; returns the document path. */
-async function seedSubmission(request, studentUid, { daysAgo = 0, percentage = 80 } = {}) {
-  const submittedAt = new Date(Date.now() - daysAgo * 86400000);
-  const response = await request.post(`${DOCS_URL}/submissions`, {
-    headers: OWNER_AUTH,
-    data: {
-      fields: toFields({
-        examId: EXAM_ID,
-        examTitle: 'Sample Exam',
-        studentUid,
-        studentName: 'Chart Student',
-        studentEmail: 'chart@test.com',
-        percentage,
-        passed: percentage >= 70,
-        submittedAt,
-        timeTakenMs: 600000,
-      }),
-    },
-  });
-  expect(response.ok()).toBeTruthy();
-  const body = await response.json();
-  return body.name.split('/documents/')[1];
-}
+import { signInAsStudent, seedSubmission, deleteFirestoreDoc } from './utils.js';
 
 async function openDashboard(page) {
   await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
@@ -80,7 +31,7 @@ test.describe('Student dashboard score trend', () => {
 
     const created = [];
     try {
-      created.push(await seedSubmission(request, uid, { percentage: 55 }));
+      created.push(await seedSubmission(request, { studentUid: uid, percentage: 55 }));
       await openDashboard(page);
 
       await expect(page.locator('#score-trend-chart .student-chart-bar-col')).toHaveCount(1);
@@ -127,9 +78,7 @@ test.describe('Student dashboard score trend', () => {
       // The passing threshold is explained by a legend, not a chip over a bar.
       expect(metrics.legend).toMatch(/Passing \d+%/);
     } finally {
-      for (const path of created) {
-        await request.delete(`${DOCS_URL}/${path}`, { headers: OWNER_AUTH });
-      }
+      for (const path of created) await deleteFirestoreDoc(request, path);
     }
   });
 
@@ -143,7 +92,11 @@ test.describe('Student dashboard score trend', () => {
     try {
       const scores = [55, 62, 78];
       for (let i = 0; i < scores.length; i++) {
-        created.push(await seedSubmission(request, uid, { daysAgo: scores.length - i, percentage: scores[i] }));
+        created.push(await seedSubmission(request, {
+          studentUid: uid,
+          percentage: scores[i],
+          submittedAt: new Date(Date.now() - (scores.length - i) * 86400000),
+        }));
       }
       await openDashboard(page);
 
@@ -154,7 +107,11 @@ test.describe('Student dashboard score trend', () => {
         const rects = cols.map((c) => c.getBoundingClientRect());
         const labels = cols.map((c) => {
           const r = c.querySelector('.student-chart-bar-label').getBoundingClientRect();
-          return { left: r.left, right: r.right, text: c.querySelector('.student-chart-bar-label').textContent.replace(/\s+/g, ' ').trim() };
+          return {
+            left: r.left,
+            right: r.right,
+            text: c.querySelector('.student-chart-bar-label').textContent.replace(/\s+/g, ' ').trim(),
+          };
         });
         return {
           tops: rects.map((r) => Math.round(r.top)),
@@ -175,9 +132,7 @@ test.describe('Student dashboard score trend', () => {
         expect(layout.labels[i].left).toBeGreaterThanOrEqual(layout.labels[i - 1].right);
       }
     } finally {
-      for (const path of created) {
-        await request.delete(`${DOCS_URL}/${path}`, { headers: OWNER_AUTH });
-      }
+      for (const path of created) await deleteFirestoreDoc(request, path);
     }
   });
 });

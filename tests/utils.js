@@ -350,3 +350,71 @@ export async function expandAccordion(page, name) {
     await page.waitForTimeout(350); // allow the open transition to finish
   }
 }
+
+/* ── Firestore emulator seeding (REST, owner auth) ─────────────────────── */
+
+const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
+export const FIRESTORE_DOCS_URL =
+  `http://${EMULATOR_HOST}/v1/projects/demo-test/databases/(default)/documents`;
+export const FIRESTORE_OWNER_AUTH = { Authorization: 'Bearer owner' };
+
+function toFirestoreValue(value) {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (value instanceof Date) return { timestampValue: value.toISOString() };
+  if (typeof value === 'string') return { stringValue: value };
+  if (typeof value === 'boolean') return { booleanValue: value };
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(toFirestoreValue) } };
+  return { mapValue: { fields: toFirestoreFields(value) } };
+}
+
+export function toFirestoreFields(object) {
+  return Object.fromEntries(
+    Object.entries(object).map(([key, value]) => [key, toFirestoreValue(value)])
+  );
+}
+
+/** Create a document from plain JS data; returns its REST path for cleanup. */
+export async function createFirestoreDoc(request, collection, data) {
+  const response = await request.post(`${FIRESTORE_DOCS_URL}/${collection}`, {
+    headers: FIRESTORE_OWNER_AUTH,
+    data: { fields: toFirestoreFields(data) },
+  });
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  return body.name.split('/documents/')[1];
+}
+
+export async function deleteFirestoreDoc(request, path) {
+  await request.delete(`${FIRESTORE_DOCS_URL}/${path}`, { headers: FIRESTORE_OWNER_AUTH });
+}
+
+/**
+ * Seed a graded submission for a student so dashboard widgets (score trend,
+ * focus areas, recent activity) have data to render.
+ */
+export async function seedSubmission(request, {
+  studentUid,
+  examId = 'sample-exam-test-fixed-id',
+  percentage = 80,
+  passed = percentage >= 70,
+  submittedAt = new Date(),
+  timeTakenMs = 600000,
+  categoryStats,
+} = {}) {
+  return createFirestoreDoc(request, 'submissions', {
+    examId,
+    examTitle: 'Sample Exam',
+    studentUid,
+    studentName: 'Test Student',
+    studentEmail: 'student@test.com',
+    percentage,
+    passed,
+    submittedAt,
+    timeTakenMs,
+    ...(categoryStats ? { categoryStats } : {}),
+  });
+}
+

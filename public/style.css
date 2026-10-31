@@ -5449,9 +5449,32 @@ th[aria-sort="descending"] .sort-icon::after {
   color: var(--color-text-secondary);
 }
 
+/* The per-category action: tinted so it reads as a button, not body text. */
 .student-drill-btn {
   margin-top: var(--space-1);
   align-self: flex-start;
+  font-weight: 600;
+  color: var(--color-primary-700);
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary-border);
+}
+
+.student-drill-btn:hover:not(:disabled) {
+  color: var(--color-white);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  text-decoration: none;
+}
+
+.student-drill-btn svg {
+  flex: 0 0 auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .student-drill-btn {
+    color: var(--color-primary-300);
+    border-color: var(--color-primary-700);
+  }
 }
 
 /* ── Drill Badge ─────────────────────────────────────────────────────── */

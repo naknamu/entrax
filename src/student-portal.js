@@ -600,7 +600,7 @@ function renderFocusAreas(weakAreas) {
           </div>
           <span class="student-focus-detail">${area.correct}/${area.total} correct</span>
         </div>
-        <button class="btn btn-ghost btn-sm student-drill-btn" data-category="${escapeHtml(area.category)}" type="button">Drill</button>
+        <button class="btn btn-sm student-drill-btn" data-category="${escapeHtml(area.category)}" type="button" aria-label="Drill ${escapeHtml(area.category)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>Drill</button>
       </div>
     `;
   }).join('');
