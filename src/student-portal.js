@@ -142,6 +142,17 @@ function formatDate(timestamp) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Split the axis label into date + year so narrow screens can stack them
+// instead of clipping or overlapping (the year must never be dropped).
+function formatChartDate(timestamp) {
+  const date = toDate(timestamp);
+  if (!date || isNaN(date.getTime())) return ['—', ''];
+  const [datePart, yearPart = ''] = date
+    .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    .split(', ');
+  return [`${datePart},`, yearPart];
+}
+
 function formatRelativeTime(timestamp) {
   const date = toDate(timestamp);
   if (!date) return '';
@@ -471,40 +482,48 @@ function renderScoreChart(trend, passingPercent = 70) {
     return;
   }
 
-  const maxScore = 100;
   const isSingle = trend.length === 1;
-  const barWidth = isSingle ? 'auto' : Math.max(20, Math.floor(100 / trend.length) - 2);
+  const threshold = Math.max(0, Math.min(100, Math.round(Number(passingPercent) || 70)));
 
-  let barsHtml = '';
-  trend.forEach((item, i) => {
-    const height = Math.max(4, (item.percentage / maxScore) * 100);
+  const barsHtml = trend.map(item => {
+    const value = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+    // Clamp so a stray value can never push a bar outside the plot.
+    const height = Math.max(4, value);
     const color = item.passed ? 'var(--color-success-500)' : 'var(--color-danger-500)';
-    const label = formatDate(item.submittedAt);
-    const colStyle = isSingle ? '' : `width:${barWidth}%`;
-    barsHtml += `
-      <div class="student-chart-bar-col${isSingle ? ' student-chart-bar-col--single' : ''}" style="${colStyle}">
-        <div class="student-chart-bar-tooltip">${item.percentage}%</div>
-        <div class="student-chart-bar" style="height:${height}%;background:${color}"></div>
-        <span class="student-chart-bar-label">${label}</span>
+    const [datePart, yearPart] = formatChartDate(item.submittedAt);
+    return `
+      <div class="student-chart-bar-col">
+        <div class="student-chart-bar" style="height:${height}%;background:${color}">
+          <span class="student-chart-bar-tooltip">${Math.round(value)}%</span>
+        </div>
+        <span class="student-chart-bar-label"><span class="student-chart-bar-date">${datePart}</span> <span class="student-chart-bar-year">${yearPart}</span></span>
       </div>`;
-  });
+  }).join('');
 
+  const summary = trend.map(item => `${Math.round(Number(item.percentage) || 0)}%`).join(', ');
+  const innerClass = isSingle ? 'student-chart-inner student-chart-inner--single' : 'student-chart-inner';
   const barsClass = isSingle ? 'student-chart-bars student-chart-bars--single' : 'student-chart-bars';
-  const passLineBottom = `${passingPercent}%`;
   $scoreTrendChart.innerHTML = `
-    <div class="${barsClass}">
-      <div class="student-chart-plot">
-        ${barsHtml}
-        <div class="student-chart-gridline" style="bottom:75%"></div>
-        <div class="student-chart-gridline" style="bottom:50%"></div>
-        <div class="student-chart-gridline" style="bottom:25%"></div>
-        <div class="student-chart-pass-line" style="bottom:${passLineBottom}" title="Passing threshold: ${passingPercent}%">
-          <span class="student-chart-pass-label">${passingPercent}%</span>
+    <div class="${innerClass}">
+      <div class="student-chart-legend"><span class="student-chart-legend-swatch" aria-hidden="true"></span>Passing ${threshold}%</div>
+      <div class="${barsClass}">
+        <div class="student-chart-y-axis" aria-hidden="true">
+          <span style="bottom:100%">100%</span>
+          <span style="bottom:75%">75%</span>
+          <span style="bottom:50%">50%</span>
+          <span style="bottom:25%">25%</span>
+          <span style="bottom:0%">0%</span>
+        </div>
+        <div class="student-chart-scroll">
+          <div class="student-chart-plot" role="img" aria-label="Score trend for your last ${trend.length} submission${isSingle ? '' : 's'}: ${summary}">
+            <div class="student-chart-gridline" style="bottom:75%"></div>
+            <div class="student-chart-gridline" style="bottom:50%"></div>
+            <div class="student-chart-gridline" style="bottom:25%"></div>
+            <div class="student-chart-pass-line" style="bottom:${threshold}%" title="Passing threshold: ${threshold}%"></div>
+            ${barsHtml}
+          </div>
         </div>
       </div>
-    </div>
-    <div class="student-chart-y-axis">
-      <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
     </div>`;
 }
 

@@ -5202,77 +5202,119 @@ th[aria-sort="descending"] .sort-icon::after {
 
 .student-chart-bars {
   display: flex;
-  align-items: flex-end;
-  gap: 2%;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+/* One submission: keep the chart (and its threshold line) a comfortable,
+   centred width instead of stretching it across the whole card. */
+.student-chart-inner--single {
+  max-width: 564px;
+  margin-inline: auto;
+}
+
+.student-chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.student-chart-legend-swatch {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-primary-600);
+}
+
+.student-chart-y-axis {
+  position: relative;
+  flex: 0 0 auto;
+  width: 32px;
   height: 160px;
-  padding-bottom: var(--space-6);
+  /* Matches the scroller's top padding so ticks line up with the plot. */
+  margin-top: 22px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.student-chart-y-axis span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  line-height: 1;
+}
+
+/* Bars sit on a 160px plot; the top padding keeps the value tooltips from
+   being clipped and the bottom padding holds the date labels. */
+.student-chart-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 22px 0 30px;
 }
 
 .student-chart-plot {
   position: relative;
-  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: var(--space-2);
+  width: max-content;
+  min-width: 100%;
+  height: 160px;
 }
 
 .student-chart-bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  justify-content: flex-end;
   position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 48px;
+  min-width: 48px;
+  max-width: 72px;
+  height: 100%;
 }
 
 .student-chart-bar {
+  position: relative;
   width: 100%;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   min-height: 4px;
   transition: height var(--transition-fast);
-  position: relative;
 }
 
 .student-chart-bar-tooltip {
   position: absolute;
-  top: -24px;
+  bottom: calc(100% + var(--space-1));
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--color-text-secondary);
   white-space: nowrap;
+  /* Keep the value readable where it crosses a gridline or the threshold. */
+  background: var(--color-bg-elevated);
+  padding: 0 3px;
+  border-radius: var(--radius-sm);
 }
 
 .student-chart-bar-label {
-  font-size: 10px;
-  color: var(--color-text-muted);
-  margin-top: var(--space-1);
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: unset;
-  max-width: 120px;
-  min-width: 80px;
-  text-align: center;
-}
-
-.student-chart-bars--single {
-  justify-content: center;
-}
-
-.student-chart-bar-col--single {
-  max-width: 120px;
-  width: auto !important;
-}
-
-.student-chart-y-axis {
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: var(--space-6);
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  gap: 0.25em;
   font-size: 10px;
+  line-height: 1.2;
   color: var(--color-text-muted);
-  padding-right: var(--space-2);
+  white-space: nowrap;
+  text-align: center;
 }
 
 /* Subtle gridlines behind chart bars */
@@ -5293,21 +5335,24 @@ th[aria-sort="descending"] .sort-icon::after {
   right: 0;
   height: 2px;
   background: var(--color-primary-600);
-  opacity: 0.9;
   pointer-events: none;
 }
 
-.student-chart-pass-label {
-  position: absolute;
-  right: 0;
-  top: -18px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-primary-700);
-  background: var(--color-primary-50);
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-primary-border);
+/* Narrow screens: stack the date and year so the full year always shows. */
+@media (max-width: 640px) {
+  .student-chart-bar-label {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .student-chart-bars--single .student-chart-bar-label {
+    flex-direction: row;
+    gap: 0.25em;
+  }
+
+  .student-chart-scroll {
+    padding-bottom: 38px;
+  }
 }
 
 /* ── Focus Areas (Weak-Area Analysis) ──────────────────────────────── */
