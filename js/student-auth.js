@@ -78,7 +78,7 @@ export async function sendMagicLink(email) {
  * so the UI can display it directly.
  * @returns {Promise<string|null>} The sign-in link, or null if not in emulator mode
  */
-export async function getEmulatorMagicLink() {
+export async function getEmulatorMagicLink(email) {
   if (import.meta.env.VITE_USE_EMULATOR !== 'true') return null;
   try {
     const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-test';
@@ -89,9 +89,14 @@ export async function getEmulatorMagicLink() {
     const data = await resp.json();
     const codes = data.oobCodes || [];
     if (codes.length === 0) return null;
-    // Get the most recent one
-    const latest = codes[codes.length - 1];
-    return latest.oobLink || latest.signInLink || null;
+    // The emulator keeps one code per request for the whole project, so
+    // parallel sessions (tests, two tabs) must pick their own email's newest
+    // code; grabbing the newest overall signs in as the wrong address.
+    const normalized = email?.trim().toLowerCase();
+    const match = normalized
+      ? [...codes].reverse().find(c => (c.email || '').trim().toLowerCase() === normalized)
+      : codes[codes.length - 1];
+    return match?.oobLink || match?.signInLink || null;
   } catch {
     return null;
   }
