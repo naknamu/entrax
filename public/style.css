@@ -1740,11 +1740,58 @@ pre code {
 /* Submission screen navigation */
 .submission-actions {
   display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  width: 100%;
+}
+
+.submission-actions-primary,
+.submission-actions-secondary {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  width: 100%;
+}
+
+.submission-actions-primary {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.submission-actions-secondary {
+  padding-top: var(--space-2);
+}
+
+.submission-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.submission-actions .btn .btn-text {
+  display: inline-block;
+}
+
+@media (min-width: 480px) {
+  .submission-actions {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .submission-actions-primary,
+  .submission-actions-secondary {
+    width: auto;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 /* Top navigation on the results screen: the student should be able to leave
@@ -1757,16 +1804,13 @@ pre code {
   margin-bottom: var(--space-4);
 }
 
-/* Make the back button more visible on the results screen */
+/* Primary back button on results screen */
 .results-back-btn {
-  color: var(--color-primary);
-  border-color: var(--color-primary-border);
+  /* Inherit primary button styles but keep smaller size */
 }
 
 .results-back-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
+  /* Primary button hover handled by base .btn-primary */
 }
 
 /* Timer Bar */
