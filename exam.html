@@ -274,9 +274,14 @@
         </div>
 
         <!-- Category Breakdown (weak-area analysis) -->
-        <div class="card category-breakdown-card" id="category-breakdown-card" hidden>
-          <div class="card-body">
-            <h3 class="results-title">Performance by Category</h3>
+        <div class="card category-breakdown-card accordion-section open" id="category-breakdown-card" hidden>
+          <header class="card-header accordion-header" id="category-breakdown-header">
+            <div class="accordion-toggle" data-accordion="category-breakdown" role="button" tabindex="0" aria-expanded="true" aria-controls="category-breakdown-content">
+              <h3 class="results-title accordion-title">Performance by Category</h3>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </header>
+          <div class="card-body accordion-body" id="category-breakdown-content">
             <p class="text-sm text-muted mb-4">See which topics you need to focus on. Weakest areas are shown first.</p>
             <div id="category-breakdown" class="category-breakdown"></div>
           </div>
@@ -1373,6 +1378,38 @@
       autoSaveAnswers();
       renderQuestion();
     });
+
+    // Category breakdown accordion
+    const categoryBreakdownToggle = document.querySelector('#category-breakdown-header .accordion-toggle');
+    const categoryBreakdownSection = document.getElementById('category-breakdown-card');
+    const categoryBreakdownBody = document.getElementById('category-breakdown-content');
+    if (categoryBreakdownToggle && categoryBreakdownSection && categoryBreakdownBody) {
+      categoryBreakdownToggle.addEventListener('click', () => {
+        const willOpen = !categoryBreakdownSection.classList.contains('open');
+        categoryBreakdownSection.classList.toggle('open', willOpen);
+        categoryBreakdownToggle.setAttribute('aria-expanded', String(willOpen));
+        categoryBreakdownBody.classList.toggle('open', willOpen);
+        if (willOpen) {
+          categoryBreakdownBody.style.maxHeight = 'none';
+          const h = categoryBreakdownBody.scrollHeight;
+          categoryBreakdownBody.style.maxHeight = '0px';
+          void categoryBreakdownBody.offsetHeight;
+          categoryBreakdownBody.style.maxHeight = h + 'px';
+          const done = () => { categoryBreakdownBody.style.maxHeight = 'none'; categoryBreakdownBody.removeEventListener('transitionend', done); };
+          categoryBreakdownBody.addEventListener('transitionend', done);
+        } else {
+          categoryBreakdownBody.style.maxHeight = categoryBreakdownBody.scrollHeight + 'px';
+          void categoryBreakdownBody.offsetHeight;
+          categoryBreakdownBody.style.maxHeight = '0px';
+        }
+      });
+      categoryBreakdownToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          categoryBreakdownToggle.click();
+        }
+      });
+    }
 
     // Question navigation sidebar
     function updateQuestionNav() {
