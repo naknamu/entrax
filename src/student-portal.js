@@ -96,6 +96,16 @@ const $confirmOk       = document.getElementById('confirm-modal-ok');
 const $confirmCancel   = document.getElementById('confirm-modal-cancel');
 const $confirmClose    = document.getElementById('confirm-modal-close');
 
+const $examModal       = document.getElementById('exam-detail-modal');
+const $examModalTitle  = document.getElementById('exam-detail-title');
+const $examModalDesc   = document.getElementById('exam-detail-desc');
+const $examModalFacts  = document.getElementById('exam-detail-facts');
+const $examModalScore  = document.getElementById('exam-detail-score');
+const $examModalAction = document.getElementById('exam-detail-action');
+const $examModalRetake = document.getElementById('exam-detail-retake');
+const $examModalClose  = document.getElementById('exam-detail-close');
+const $examModalCancel = document.getElementById('exam-detail-cancel');
+
 // ─── State ──────────────────────────────────────────────────────────────────
 
 const EXAM_DENSITY_KEY = 'nightingale.examDensity';
@@ -108,6 +118,8 @@ let currentFilter = 'all';
 let examPage = 1;
 let examPageSize = 10;
 let examDensity = readExamDensity();
+let examSubmissionMap = {};
+let examModalTrigger = null;
 let confirmResolve = null;
 let drillCategory = null;
 
@@ -691,6 +703,9 @@ function applyExamFilter(submissionMap) {
 
   const search = ($examSearch.value || '').trim().toLowerCase();
 
+  // The card modal reads the same map that decides each card's status.
+  examSubmissionMap = submissionMap;
+
   let filtered = allExams.filter(exam => {
     // Search filter
     if (search && !exam.title?.toLowerCase().includes(search)) return false;
@@ -811,7 +826,7 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
         <div class="student-exam-card-header">
           <div class="student-exam-card-info">
             <h3 class="student-exam-card-title">
-              <a class="student-exam-card-link" href="${detailHref}">${escapeHtml(exam.title || 'Untitled Exam')}</a>
+              <a class="student-exam-card-link" href="${detailHref}" aria-haspopup="dialog">${escapeHtml(exam.title || 'Untitled Exam')}</a>
             </h3>
             ${desc ? `<p class="student-exam-card-desc">${escapeHtml(desc)}</p>` : ''}
           </div>
@@ -951,16 +966,111 @@ $densityToggle?.addEventListener('click', (e) => {
 
 applyExamDensity();
 
+// ─── Exam detail modal ──────────────────────────────────────────────────────
+
+function examDeadlineLabel(exam) {
+  if (!exam.endDate) return '';
+  const end = toDate(exam.endDate);
+  if (!end) return '';
+  const daysLeft = Math.ceil((end - new Date()) / 86400000);
+  if (daysLeft <= 0) return 'Closed';
+  return `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+}
+
+function openExamModal(examId, trigger) {
+  const exam = allExams.find(e => e.id === examId);
+  if (!exam) return;
+  const sub = examSubmissionMap[examId];
+
+  $examModalTitle.textContent = exam.title || 'Untitled Exam';
+  $examModalDesc.textContent = exam.description || 'No description provided for this exam.';
+
+  const qCount = exam.questions?.length || exam.questionCount || 0;
+  const facts = [
+    ['Questions', `${qCount}`],
+    ['Time limit', exam.timeLimitMinutes ? `${exam.timeLimitMinutes} min` : 'No limit'],
+    ['Passing score', exam.passingPercent != null ? `${exam.passingPercent}%` : '—'],
+  ];
+  const deadline = examDeadlineLabel(exam);
+  if (deadline) facts.push(['Availability', deadline]);
+
+  $examModalFacts.innerHTML = facts
+    .map(([label, value]) =>
+      `<div class="student-exam-modal-fact"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+    .join('');
+
+  if (sub) {
+    $examModalScore.hidden = false;
+    $examModalScore.innerHTML = `
+      <span class="student-exam-modal-score-value">${sub.percentage != null ? `${sub.percentage}%` : '—'}</span>
+      <span class="student-exam-modal-score-label">your last score</span>
+      <span class="badge ${sub.passed ? 'badge-success' : 'badge-danger'}">${sub.passed ? 'Passed' : 'Failed'}</span>`;
+    $examModalAction.textContent = 'View Results';
+    $examModalAction.href = `exam.html?examId=${exam.id}&review=true`;
+    $examModalRetake.hidden = false;
+    $examModalRetake.href = `exam.html?examId=${exam.id}&retake=true`;
+  } else {
+    $examModalScore.hidden = true;
+    $examModalScore.innerHTML = '';
+    $examModalAction.textContent = 'Start Exam';
+    $examModalAction.href = `exam.html?examId=${exam.id}`;
+    $examModalRetake.hidden = true;
+    $examModalRetake.removeAttribute('href');
+  }
+
+  // Remember where focus came from so closing puts it back.
+  examModalTrigger = trigger || document.activeElement;
+  $examModal.hidden = false;
+  $examModal.classList.add('open');
+  $examModalClose.focus();
+}
+
+function closeExamModal() {
+  if ($examModal.hidden) return;
+  $examModal.classList.remove('open');
+  $examModal.hidden = true;
+  if (examModalTrigger && examModalTrigger.isConnected) {
+    examModalTrigger.focus();
+  }
+  examModalTrigger = null;
+}
+
+$examModalClose.addEventListener('click', closeExamModal);
+$examModalCancel.addEventListener('click', closeExamModal);
+$examModal.addEventListener('click', (e) => {
+  if (e.target === $examModal) closeExamModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeExamModal();
+});
+// Keep Tab inside the dialog while it is open.
+$examModal.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  const focusable = Array.from(
+    $examModal.querySelectorAll('a[href], button:not([disabled])')
+  ).filter(el => el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+});
+
 // Clickable exam cards: the card is a mouse convenience, the title link is the
-// keyboard/semantic path. Buttons inside the card keep their own behaviour.
+// keyboard/semantic path. Both open the detail modal; the explicit actions
+// inside the card (Start Exam, Retake, View Results) keep navigating directly.
 $examList.addEventListener('click', (e) => {
   const card = e.target.closest('.student-exam-card');
   if (!card) return;
-  if (e.target.closest('a, button')) return;
-  const href = card.dataset.href;
-  if (href) {
-    window.location.href = href;
-  }
+  const link = e.target.closest('a');
+  if (link && !link.classList.contains('student-exam-card-link')) return;
+  if (link) e.preventDefault();
+  openExamModal(card.dataset.examId, link || card);
 });
 
 // ─── Settings ───────────────────────────────────────────────────────────────

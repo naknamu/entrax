@@ -416,6 +416,27 @@
     </div>
   </div>
 
+  <!-- Exam detail modal: a card opens this instead of navigating, so the
+       student can read the details before starting. -->
+  <div id="exam-detail-modal" class="modal-overlay" hidden>
+    <div class="modal student-exam-modal" role="dialog" aria-modal="true" aria-labelledby="exam-detail-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="exam-detail-title">Exam details</h2>
+        <button class="modal-close" id="exam-detail-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="student-exam-modal-desc" id="exam-detail-desc"></p>
+        <dl class="student-exam-modal-facts" id="exam-detail-facts"></dl>
+        <div class="student-exam-modal-score" id="exam-detail-score" hidden></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="exam-detail-cancel" type="button">Cancel</button>
+        <a class="btn student-retake-btn" id="exam-detail-retake" href="#" hidden>Retake</a>
+        <a class="btn btn-primary" id="exam-detail-action" href="#">Start Exam</a>
+      </div>
+    </div>
+  </div>
+
   <!-- Alert container -->
   <div id="student-alert-container" class="student-alert-container"></div>
 

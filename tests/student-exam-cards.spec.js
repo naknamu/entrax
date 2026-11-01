@@ -78,8 +78,13 @@ test.describe('Student portal exam cards', () => {
       expect(retakeStyle.background).not.toBe('rgba(0, 0, 0, 0)');
       expect(retakeStyle.weight).toBe('600');
 
-      // A click on the card body (not a button) follows the same target.
+      // A click on the card body opens the detail modal (not the exam).
       await completed.locator('.student-exam-card-meta').click();
+      const modal = page.locator('#exam-detail-modal');
+      await expect(modal).toBeVisible();
+      await expect(page.locator('#exam-detail-action')).toHaveText('View Results');
+      await expect(page.locator('#exam-detail-action')).toHaveAttribute('href', /review=true/);
+      await page.click('#exam-detail-action');
       await expect(page).toHaveURL(/exam\.html\?examId=[^&]+&review=true/);
 
       // Back to the list: the fresh exam opens the start screen.
@@ -108,6 +113,13 @@ test.describe('Student portal exam cards', () => {
       expect(badgeStyle.color).toBe('rgb(255, 255, 255)');
 
       await fresh.locator('.student-exam-card-meta').click();
+      await expect(page.locator('#exam-detail-modal')).toBeVisible();
+      await expect(page.locator('#exam-detail-action')).toHaveText('Start Exam');
+      await expect(page.locator('#exam-detail-action')).toHaveAttribute(
+        'href',
+        /exam\.html\?examId=[^&]+$/
+      );
+      await page.click('#exam-detail-action');
       await expect(page).toHaveURL(/exam\.html\?examId=[^&]+$/);
     } finally {
       for (const path of created) await deleteFirestoreDoc(request, path);
