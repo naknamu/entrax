@@ -1546,6 +1546,12 @@
       if (isSubmitted) return;
       isSubmitted = true;
       isAutoSubmitting = autoSubmitted;
+      
+      // Reset auto-submit failure counter on manual submit so it can retry
+      if (!autoSubmitted) {
+        autoSubmitFailures = 0;
+        autoSubmitRetryAt = 0;
+      }
 
       clearInterval(timerInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -1639,13 +1645,23 @@
           clearInterval(timerInterval);
           showAlert(
             examAlertContainer,
-            'Automatic submission failed repeatedly. Please click "Submit Exam" to save your answers, or reload the page to resume.',
-            'error'
+            'Auto-save failed. Your answers are saved locally. Please click "Submit Exam" to complete your attempt.',
+            'warning'
           );
+          // IMPORTANT: Do NOT return here - allow manual submit to work!
+          // The user can still click "Submit Exam" which will call submitExam(false)
+          // and reset the failure counter.
           return;
         }
         const backoffMs = Math.min(30000, 2000 * (2 ** (autoSubmitFailures - 1)));
         autoSubmitRetryAt = Date.now() + backoffMs;
+        
+        // Schedule retry
+        setTimeout(() => {
+          if (!isSubmitted && isAutoSubmitting) {
+            submitExam(true);
+          }
+        }, backoffMs);
       } else {
         showAlert(examAlertContainer, 'Failed to submit exam. Please try again.', 'error');
       }
