@@ -327,7 +327,7 @@
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <h1 id="already-title" class="submission-title">Already Submitted</h1>
-        <p class="submission-message" id="already-submitted-message">You have already submitted this exam.</p>
+        <p class="submission-message" id="already-submitted-message"><span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>You have already submitted this exam</span></p>
         <div class="card mt-6">
           <div class="card-body">
             <dl class="grid grid-2 gap-4">
@@ -624,9 +624,9 @@
               { review: true }
             );
             submissionTitle.textContent = 'Exam Results';
-            submissionMessage.textContent = previous.submittedAt
-              ? `Your submitted attempt from ${formatDateTime(previous.submittedAt)}.`
-              : 'Your submitted attempt.';
+            submissionMessage.innerHTML = previous.submittedAt
+              ? `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Your submitted attempt from ${formatDateTime(previous.submittedAt)}</span>`
+              : `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Your submitted attempt</span>`;
             return;
           }
           // Nothing to review: don't auto-start an exam the student only
@@ -1758,17 +1758,24 @@
       showScreen('submission-screen');
       
       if (review) {
-        submissionMessage.textContent = 'Here is a review of your submitted attempt.';
+        submissionMessage.innerHTML = `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Here is a review of your submitted attempt</span>`;
       } else if (autoSubmitted) {
-        submissionMessage.textContent = 'Time ran out. Your exam has been auto-submitted.';
+        submissionMessage.innerHTML = `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Time ran out. Your exam has been auto-submitted</span>`;
         submissionIcon.className = 'submission-icon warning';
         submissionIcon.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
       } else {
-        submissionMessage.textContent = 'Your exam has been submitted successfully.';
+        submissionMessage.innerHTML = `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>Your exam has been submitted successfully</span>`;
       }
 
       if (showResultsToStudent || review) {
         resultsDisplay.hidden = false;
+        if (review) {
+          submissionScreen.classList.add('review');
+          submissionScreen.setAttribute('review', '');
+        } else {
+          submissionScreen.classList.remove('review');
+          submissionScreen.removeAttribute('review');
+        }
         scorePercent.textContent = `${percentage.toFixed(1)}%`;
         scoreCorrect.textContent = score;
         scoreIncorrect.textContent = totalQuestions - score;

@@ -2519,16 +2519,29 @@ pre code {
   height: 96px;
   border-radius: var(--radius-full);
   margin-bottom: var(--space-6);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .submission-icon.success {
   background-color: var(--color-success-light);
   color: var(--color-success);
+  box-shadow: 0 0 0 4px var(--color-success-100);
+  animation: submission-pulse 2s ease-in-out infinite;
 }
 
 .submission-icon.warning {
   background-color: var(--color-warning-light);
   color: var(--color-warning);
+  box-shadow: 0 0 0 4px var(--color-warning-100);
+}
+
+@keyframes submission-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px var(--color-success-100);
+  }
+  50% {
+    box-shadow: 0 0 0 12px var(--color-success-50);
+  }
 }
 
 .submission-icon svg {
@@ -2543,10 +2556,34 @@ pre code {
   margin-bottom: var(--space-2);
 }
 
+/* Review mode: make "Exam Results" more prominent */
+#submission-screen[review] .submission-title,
+#submission-screen.review .submission-title {
+  font-size: var(--text-4xl);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-700) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .submission-message {
   font-size: var(--text-lg);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-8);
+}
+
+.submission-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.submission-meta svg {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .results-display {
