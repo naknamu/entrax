@@ -100,11 +100,14 @@ const $examModal       = document.getElementById('exam-detail-modal');
 const $examModalTitle  = document.getElementById('exam-detail-title');
 const $examModalDesc   = document.getElementById('exam-detail-desc');
 const $examModalFacts  = document.getElementById('exam-detail-facts');
+const $examModalSections = document.getElementById('exam-detail-sections');
+const $examModalProgress = document.getElementById('exam-detail-progress');
 const $examModalScore  = document.getElementById('exam-detail-score');
 const $examModalAction = document.getElementById('exam-detail-action');
 const $examModalRetake = document.getElementById('exam-detail-retake');
 const $examModalClose  = document.getElementById('exam-detail-close');
 const $examModalCancel = document.getElementById('exam-detail-cancel');
+const $examModalCategory = document.getElementById('exam-detail-category');
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -968,6 +971,76 @@ applyExamDensity();
 
 // ─── Exam detail modal ──────────────────────────────────────────────────────
 
+// Category icon mapping for visual identification
+function getCategoryIcon(category) {
+  const icons = {
+    math: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+    reading: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    writing: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+    science: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>',
+    biology: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="10" ry="7"/><path d="M12 5v14M5 12h14"/></svg>',
+    chemistry: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="15.5" r="3.5"/><circle cx="15.5" cy="8.5" r="3.5"/><line x1="8.5" y1="12" x2="15.5" y2="12"/><line x1="12" y1="8.5" x2="12" y2="15.5"/></svg>',
+    physics: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    general: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    kaplan: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><path d="M12 22V12"/><path d="M12 12l-5-3.5"/><path d="M12 12l5-3.5"/></svg>',
+  };
+  const key = (category || 'general').toLowerCase();
+  return icons[key] || icons.general;
+}
+
+function getCategoryLabel(category) {
+  const labels = {
+    math: 'Math',
+    reading: 'Reading',
+    writing: 'Writing',
+    science: 'Science',
+    biology: 'Biology',
+    chemistry: 'Chemistry',
+    physics: 'Physics',
+    general: 'General',
+    kaplan: 'Kaplan',
+  };
+  const key = (category || 'general').toLowerCase();
+  return labels[key] || category || 'General';
+}
+
+// Render exam sections preview
+function renderExamSections(exam) {
+  const sections = exam.sections || [];
+  if (!sections.length) return '';
+
+  return `
+    <div class="student-exam-modal-sections-header">
+      <h3 class="student-exam-modal-sections-title">Sections</h3>
+    </div>
+    <ul class="student-exam-modal-sections-list">
+      ${sections.map(s => `
+        <li class="student-exam-modal-section">
+          <span class="student-exam-modal-section-name">${escapeHtml(s.title || s.name || 'Section')}</span>
+          <span class="student-exam-modal-section-questions">${s.questionCount || s.questions?.length || 0} questions</span>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+}
+
+// Check for in-progress draft
+function checkExamProgress(examId) {
+  // Check localStorage for draft data
+  const draftKey = `nightingale.examDraft.${examId}`;
+  try {
+    const draft = JSON.parse(localStorage.getItem(draftKey));
+    if (draft && draft.answers && Object.keys(draft.answers).length > 0) {
+      const answered = Object.values(draft.answers).filter(v => v !== null && v !== '').length;
+      const total = draft.totalQuestions || 0;
+      return { answered, total, lastSaved: draft.lastSavedAt };
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
+
 function examDeadlineLabel(exam) {
   if (!exam.endDate) return '';
   const end = toDate(exam.endDate);
@@ -982,22 +1055,75 @@ function openExamModal(examId, trigger) {
   if (!exam) return;
   const sub = examSubmissionMap[examId];
 
+  // Category badge
+  const category = exam.category || exam.type || 'general';
+  $examModalCategory.innerHTML = `${getCategoryIcon(category)} ${getCategoryLabel(category)}`;
+  $examModalCategory.hidden = false;
+
   $examModalTitle.textContent = exam.title || 'Untitled Exam';
   $examModalDesc.textContent = exam.description || 'No description provided for this exam.';
 
   const qCount = exam.questions?.length || exam.questionCount || 0;
   const facts = [
-    ['Questions', `${qCount}`],
-    ['Time limit', exam.timeLimitMinutes ? `${exam.timeLimitMinutes} min` : 'No limit'],
-    ['Passing score', exam.passingPercent != null ? `${exam.passingPercent}%` : '—'],
+    ['Questions', `${qCount}`, 'questions'],
+    ['Time limit', exam.timeLimitMinutes ? `${exam.timeLimitMinutes} min` : 'No limit', 'clock'],
+    ['Passing score', exam.passingPercent != null ? `${exam.passingPercent}%` : '—', 'target'],
   ];
   const deadline = examDeadlineLabel(exam);
-  if (deadline) facts.push(['Availability', deadline]);
+  if (deadline) facts.push(['Availability', deadline, 'calendar']);
 
+  // Render facts with icons
   $examModalFacts.innerHTML = facts
-    .map(([label, value]) =>
-      `<div class="student-exam-modal-fact"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+    .map(([label, value, iconKey]) => {
+      const icons = {
+        questions: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+        clock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        target: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+        calendar: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      };
+      const icon = icons[iconKey] || icons.questions;
+      return `
+        <div class="student-exam-modal-fact">
+          <dt><span class="student-exam-modal-fact-icon">${icon}</span>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(value)}</dd>
+        </div>
+      `;
+    })
     .join('');
+
+  // Sections preview
+  const sectionsHtml = renderExamSections(exam);
+  if (sectionsHtml) {
+    $examModalSections.innerHTML = sectionsHtml;
+    $examModalSections.hidden = false;
+  } else {
+    $examModalSections.hidden = true;
+    $examModalSections.innerHTML = '';
+  }
+
+  // Progress indicator (draft in localStorage)
+  const progress = checkExamProgress(examId);
+  if (progress && progress.total > 0) {
+    const percent = Math.round((progress.answered / progress.total) * 100);
+    $examModalProgress.innerHTML = `
+      <div class="student-exam-modal-progress-header">
+        <span class="student-exam-modal-progress-label">In Progress</span>
+        <span class="student-exam-modal-progress-value">${progress.answered}/${progress.total} answered</span>
+      </div>
+      <div class="student-exam-modal-progress-bar">
+        <div class="student-exam-modal-progress-fill" style="width: ${percent}%"></div>
+      </div>
+      <p class="student-exam-modal-progress-saved">Last saved: ${progress.lastSaved ? new Date(progress.lastSaved).toLocaleString() : 'recently'}</p>
+    `;
+    $examModalProgress.hidden = false;
+    
+    // Update action button for resuming
+    $examModalAction.textContent = 'Resume Exam';
+    $examModalAction.href = `exam.html?examId=${exam.id}`;
+  } else {
+    $examModalProgress.hidden = true;
+    $examModalProgress.innerHTML = '';
+  }
 
   if (sub) {
     $examModalScore.hidden = false;
@@ -1012,8 +1138,10 @@ function openExamModal(examId, trigger) {
   } else {
     $examModalScore.hidden = true;
     $examModalScore.innerHTML = '';
-    $examModalAction.textContent = 'Start Exam';
-    $examModalAction.href = `exam.html?examId=${exam.id}`;
+    if (!progress) {
+      $examModalAction.textContent = 'Start Exam';
+      $examModalAction.href = `exam.html?examId=${exam.id}`;
+    }
     $examModalRetake.hidden = true;
     $examModalRetake.removeAttribute('href');
   }
