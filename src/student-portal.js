@@ -972,6 +972,28 @@ applyExamDensity();
 // ─── Exam detail modal ──────────────────────────────────────────────────────
 
 // Category icon mapping for visual identification
+// Derive exam category from questions (most common category) or use exam.type
+function getExamCategory(exam) {
+  // If exam has explicit type/category, use it
+  if (exam.type) return exam.type.toLowerCase();
+  if (exam.category) return exam.category.toLowerCase();
+
+  // Otherwise derive from questions
+  const questions = exam.questions || [];
+  if (questions.length === 0) return null;
+
+  const categoryCounts = {};
+  questions.forEach(q => {
+    const cat = (q.category || '').toLowerCase().trim();
+    if (cat) categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+  });
+
+  const topCategory = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  return topCategory ? topCategory[0] : null;
+}
+
 function getCategoryIcon(category) {
   const icons = {
     math: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
@@ -981,6 +1003,7 @@ function getCategoryIcon(category) {
     biology: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="10" ry="7"/><path d="M12 5v14M5 12h14"/></svg>',
     chemistry: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="15.5" r="3.5"/><circle cx="15.5" cy="8.5" r="3.5"/><line x1="8.5" y1="12" x2="15.5" y2="12"/><line x1="12" y1="8.5" x2="12" y2="15.5"/></svg>',
     physics: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    geography: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
     general: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
     kaplan: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><path d="M12 22V12"/><path d="M12 12l-5-3.5"/><path d="M12 12l5-3.5"/></svg>',
   };
@@ -997,6 +1020,7 @@ function getCategoryLabel(category) {
     biology: 'Biology',
     chemistry: 'Chemistry',
     physics: 'Physics',
+    geography: 'Geography',
     general: 'General',
     kaplan: 'Kaplan',
   };
@@ -1009,6 +1033,15 @@ function renderExamSections(exam) {
   const sections = exam.sections || [];
   if (!sections.length) return '';
 
+  const questions = exam.questions || [];
+  // Build a map of sectionId -> question count
+  const questionCounts = {};
+  questions.forEach(q => {
+    if (q.sectionId) {
+      questionCounts[q.sectionId] = (questionCounts[q.sectionId] || 0) + 1;
+    }
+  });
+
   return `
     <div class="student-exam-modal-sections-header">
       <h3 class="student-exam-modal-sections-title">Sections</h3>
@@ -1017,7 +1050,7 @@ function renderExamSections(exam) {
       ${sections.map(s => `
         <li class="student-exam-modal-section">
           <span class="student-exam-modal-section-name">${escapeHtml(s.title || s.name || 'Section')}</span>
-          <span class="student-exam-modal-section-questions">${s.questionCount || s.questions?.length || 0} questions</span>
+          <span class="student-exam-modal-section-questions">${questionCounts[s.id] || 0} questions</span>
         </li>
       `).join('')}
     </ul>
@@ -1055,10 +1088,15 @@ function openExamModal(examId, trigger) {
   if (!exam) return;
   const sub = examSubmissionMap[examId];
 
-  // Category badge
-  const category = exam.category || exam.type || 'general';
-  $examModalCategory.innerHTML = `${getCategoryIcon(category)} ${getCategoryLabel(category)}`;
-  $examModalCategory.hidden = false;
+  // Category badge - derive from exam.type, exam.category, or most common question category
+  const category = getExamCategory(exam);
+  if (category) {
+    $examModalCategory.innerHTML = `${getCategoryIcon(category)} ${getCategoryLabel(category)}`;
+    $examModalCategory.hidden = false;
+  } else {
+    $examModalCategory.hidden = true;
+    $examModalCategory.innerHTML = '';
+  }
 
   $examModalTitle.textContent = exam.title || 'Untitled Exam';
   $examModalDesc.textContent = exam.description || 'No description provided for this exam.';
