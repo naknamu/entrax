@@ -616,12 +616,16 @@ function renderFocusAreas(weakAreas) {
 
 function startDrill(category) {
   drillCategory = category;
-  currentFilter = 'available';
+  // Drilling is about the category, not about what is left to take. The exam
+  // that exposed the weak area has usually been attempted already, so forcing
+  // the "Available" (unattempted) filter hid every match and the student saw
+  // "No available exams" — especially with a single published exam.
+  currentFilter = 'all';
   examPage = 1;
 
   // Update filter tabs
   $filterTabs.querySelectorAll('.student-filter-tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.filter === 'available')
+    t.classList.toggle('active', t.dataset.filter === 'all')
   );
 
   // Show drill badge
@@ -718,6 +722,11 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
     $examList.innerHTML = '';
     $examListEmpty.hidden = false;
     $examPagBar.hidden = true;
+    if (drillCategory) {
+      $examEmptyTitle.textContent = `No ${drillCategory} exams`;
+      $examEmptyText.textContent = `No published exam covers ${drillCategory} yet. Clear the drill to see every exam.`;
+      return;
+    }
     switch (currentFilter) {
       case 'available':
         $examEmptyTitle.textContent = 'No available exams';
@@ -756,7 +765,7 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
         statusClass = 'failed';
       }
       actionBtn = `
-        <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-outline btn-sm student-retake-btn">Retake</a>
+        <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-sm student-retake-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Retake</a>
         <a href="exam.html?examId=${exam.id}&review=true" class="btn btn-primary btn-sm">View Results</a>`;
     } else {
       statusBadge = '<span class="badge badge-primary student-new-badge">New</span>';
@@ -787,11 +796,19 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
       ? `<div class="student-exam-score"><span class="student-exam-score-value">${sub.percentage}%</span><span class="student-exam-score-label">Score</span></div>`
       : '';
 
+    // The whole card opens the same place its primary action does: the review
+    // screen for a finished exam, the start screen for a new one.
+    const detailHref = sub
+      ? `exam.html?examId=${exam.id}&review=true`
+      : `exam.html?examId=${exam.id}`;
+
     return `
-      <article class="card student-exam-card ${statusClass}" data-exam-id="${exam.id}">
+      <article class="card student-exam-card ${statusClass}" data-exam-id="${exam.id}" data-href="${detailHref}">
         <div class="student-exam-card-header">
           <div class="student-exam-card-info">
-            <h3 class="student-exam-card-title">${escapeHtml(exam.title || 'Untitled Exam')}</h3>
+            <h3 class="student-exam-card-title">
+              <a class="student-exam-card-link" href="${detailHref}">${escapeHtml(exam.title || 'Untitled Exam')}</a>
+            </h3>
             ${desc ? `<p class="student-exam-card-desc">${escapeHtml(desc)}</p>` : ''}
           </div>
           ${scoreDisplay}
@@ -897,14 +914,15 @@ $examPageSize.addEventListener('change', () => {
   applyExamFilter();
 });
 
-// Clickable exam cards
+// Clickable exam cards: the card is a mouse convenience, the title link is the
+// keyboard/semantic path. Buttons inside the card keep their own behaviour.
 $examList.addEventListener('click', (e) => {
   const card = e.target.closest('.student-exam-card');
   if (!card) return;
   if (e.target.closest('a, button')) return;
-  const examId = card.dataset.examId;
-  if (examId) {
-    window.location.href = `exam.html?examId=${examId}`;
+  const href = card.dataset.href;
+  if (href) {
+    window.location.href = href;
   }
 });
 

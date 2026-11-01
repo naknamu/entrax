@@ -76,6 +76,13 @@ test.describe('Student dashboard focus areas', () => {
       await expect(page.locator('#view-exams')).toBeVisible();
       await expect(page.locator('#drill-badge')).toBeVisible();
       await expect(page.locator('#drill-category-name')).toHaveText('Science');
+
+      // The category match must stay visible even though this student already
+      // attempted it (the drill used to force the "available" filter, so the
+      // only exam with Science was filtered out and the list looked empty).
+      await expect(page.locator('.student-exam-card-title', { hasText: 'Sample Exam' })).toBeVisible();
+      await expect(page.locator('#exam-list-empty')).toBeHidden();
+      await expect(page.locator('.student-filter-tab.active')).toHaveAttribute('data-filter', 'all');
     } finally {
       for (const path of created) await deleteFirestoreDoc(request, path);
     }

@@ -225,7 +225,7 @@ test.describe('Exam retake and review', () => {
       const card = page.locator(`.student-exam-card[data-exam-id="${examId}"]`);
       await expect(card).toBeVisible({ timeout: 20000 });
 
-      const retakeLink = card.locator('a', { hasText: 'Retake' });
+      const retakeLink = card.locator('.student-retake-btn');
       await expect(retakeLink).toHaveAttribute('href', /retake=true/);
       await retakeLink.click();
 
