@@ -79,7 +79,7 @@ test.describe('Student portal exam cards', () => {
       expect(retakeStyle.weight).toBe('600');
 
       // A click on the card body (not a button) follows the same target.
-      await completed.locator('.student-exam-card-desc').click();
+      await completed.locator('.student-exam-card-meta').click();
       await expect(page).toHaveURL(/exam\.html\?examId=[^&]+&review=true/);
 
       // Back to the list: the fresh exam opens the start screen.
@@ -107,7 +107,7 @@ test.describe('Student portal exam cards', () => {
       expect(badgeStyle.background).not.toBe('rgba(0, 0, 0, 0)');
       expect(badgeStyle.color).toBe('rgb(255, 255, 255)');
 
-      await fresh.locator('.student-exam-card-desc').click();
+      await fresh.locator('.student-exam-card-meta').click();
       await expect(page).toHaveURL(/exam\.html\?examId=[^&]+$/);
     } finally {
       for (const path of created) await deleteFirestoreDoc(request, path);

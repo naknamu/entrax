@@ -300,6 +300,16 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" id="exam-search" class="student-search-input" placeholder="Search exams...">
             </div>
+            <div class="student-density-toggle" id="exam-density-toggle" role="group" aria-label="Exam list layout">
+              <button class="student-density-btn" type="button" data-density="comfortable" aria-pressed="false" title="Card view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span class="sr-only">Card view</span>
+              </button>
+              <button class="student-density-btn" type="button" data-density="compact" aria-pressed="true" title="Compact list">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span class="sr-only">Compact list</span>
+              </button>
+            </div>
             <div id="drill-badge" class="student-drill-badge" hidden>
               <span class="student-drill-label">Drill: <strong id="drill-category-name"></strong></span>
               <button class="student-drill-clear" id="drill-clear" type="button">&times;</button>

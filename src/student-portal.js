@@ -78,6 +78,7 @@ const $examPagBar      = document.getElementById('exam-pagination-bar');
 const $examPagInfo     = document.getElementById('exam-pagination-info');
 const $examPagNav      = document.getElementById('exam-pagination-nav');
 const $examPageSize    = document.getElementById('exam-page-size');
+const $densityToggle   = document.getElementById('exam-density-toggle');
 
 const $settingsForm    = document.getElementById('settings-profile-form');
 const $settingsName    = document.getElementById('settings-name');
@@ -97,6 +98,8 @@ const $confirmClose    = document.getElementById('confirm-modal-close');
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
+const EXAM_DENSITY_KEY = 'nightingale.examDensity';
+
 let currentUser = null;
 let dashboardStats = null;
 let allExams = [];
@@ -104,6 +107,7 @@ let studentSubmissions = [];
 let currentFilter = 'all';
 let examPage = 1;
 let examPageSize = 10;
+let examDensity = readExamDensity();
 let confirmResolve = null;
 let drillCategory = null;
 
@@ -913,6 +917,39 @@ $examPageSize.addEventListener('change', () => {
   examPage = 1;
   applyExamFilter();
 });
+
+// List density: "compact" is one row per exam, so a full page fits on screen
+// without scrolling; "comfortable" keeps the full cards. Remembered per device.
+function readExamDensity() {
+  try {
+    const saved = localStorage.getItem(EXAM_DENSITY_KEY);
+    if (saved === 'comfortable' || saved === 'compact') return saved;
+  } catch {
+    // Storage blocked (private mode): fall through to the default.
+  }
+  return 'compact';
+}
+
+function applyExamDensity() {
+  $examList.dataset.density = examDensity;
+  $densityToggle?.querySelectorAll('.student-density-btn').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.density === examDensity));
+  });
+}
+
+$densityToggle?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.student-density-btn');
+  if (!btn || btn.dataset.density === examDensity) return;
+  examDensity = btn.dataset.density;
+  try {
+    localStorage.setItem(EXAM_DENSITY_KEY, examDensity);
+  } catch {
+    // Not fatal: the choice just won't survive a reload.
+  }
+  applyExamDensity();
+});
+
+applyExamDensity();
 
 // Clickable exam cards: the card is a mouse convenience, the title link is the
 // keyboard/semantic path. Buttons inside the card keep their own behaviour.
