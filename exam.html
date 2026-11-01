@@ -1341,8 +1341,21 @@
       }
       if (!submissionId) return;
       try {
+        // Build answers array defensively: only include entries where we have a valid questionId
+        const answersToSave = [];
+        for (let i = 0; i < answers.length; i++) {
+          const question = questions[i];
+          const questionId = question?.id;
+          const selectedIndex = answers[i]?.selectedIndex ?? -1;
+          
+          // Skip if no questionId (prevents "undefined" field value error)
+          if (!questionId) continue;
+          
+          answersToSave.push({ questionId, selectedIndex });
+        }
+        
         await updateDoc(doc(db, 'submissions', submissionId), {
-          answers: answers.map((a, i) => ({ questionId: questions[i].id, selectedIndex: a?.selectedIndex ?? -1 })),
+          answers: answersToSave,
           flaggedQuestions: [...flaggedQuestions],
           lastSavedAt: serverTimestamp()
         });
