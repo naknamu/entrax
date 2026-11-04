@@ -1,7 +1,7 @@
 {
-  "name": "nightingale-exam-platform",
+  "name": "examello",
   "version": "1.0.0",
-  "description": "Nightingale — nursing entrance exam practice built with Vite, Firebase (Firestore + Auth), and vanilla JavaScript.",
+  "description": "Examello — nursing entrance exam practice built with Vite, Firebase (Firestore + Auth), and vanilla JavaScript.",
   "type": "module",
   "scripts": {
     "dev": "vite",

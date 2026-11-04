@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightingale-v2';
+const CACHE_NAME = 'examello-v1';
 
 // Resolve every path against the service worker's scope so the app also works
 // from a subpath — GitHub Pages serves it at /entrax/, not the domain root.

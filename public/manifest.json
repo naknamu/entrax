@@ -1,6 +1,6 @@
 {
-  "name": "Nightingale",
-  "short_name": "Nightingale",
+  "name": "Examello",
+  "short_name": "Examello",
   "description": "Independent practice for the Kaplan Nursing Entrance Exam",
   "start_url": "student.html",
   "display": "standalone",

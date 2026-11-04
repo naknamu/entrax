@@ -9,4 +9,4 @@ Disallow: /exam-results.html
 Disallow: /exam.html
 Disallow: /student.html
 
-Sitemap: https://nightingaleexam.com/sitemap.xml
+Sitemap: https://examello.com/sitemap.xml

@@ -1,6 +1,6 @@
-# Nightingale — Online Exam Platform
+# Examello — Online Exam Platform
 
-A modern, full-featured exam-prep platform built with **Vite**, **Firebase (Auth + Firestore)**, and vanilla JavaScript. It powers **Nightingale**, a B2C practice product for the Kaplan Nursing Entrance Exam, and keeps the original multi-page admin/student exam tooling underneath.
+A modern, full-featured exam-prep platform built with **Vite**, **Firebase (Auth + Firestore)**, and vanilla JavaScript. It powers **Examello**, a B2C practice product for the Kaplan Nursing Entrance Exam, and keeps the original multi-page admin/student exam tooling underneath.
 
 ## ✨ Features
 
@@ -24,11 +24,20 @@ A modern, full-featured exam-prep platform built with **Vite**, **Firebase (Auth
 
 ## 🌐 Brand and launch surfaces
 
-The product name used in the UI is **Nightingale**, with the proposed domain
-**nightingaleexam.com** (verified unregistered via Verisign RDAP on 2026-10-27;
-it still needs to be purchased and connected). The brand is intentionally
-independent: Kaplan is referenced only descriptively, and every public surface
-carries a non-affiliation disclaimer.
+The product name used in the UI is **Examello**, with the proposed domain
+**examello.com** (verified unregistered via Verisign RDAP on 2026-11-04;
+it still needs to be purchased and connected). `.com` was chosen over the
+cheaper `.cc`: the saving is ~$6 in year one, while `.com` avoids typo traffic
+leaking to a squatter, is not a ccTLD that Google geo-targets to the Cocos
+Islands, and carries no spam-neighbourhood reputation risk for magic-link
+email. The brand is intentionally independent: Kaplan is referenced only
+descriptively, and every public surface carries a non-affiliation disclaimer.
+
+Some internal identifiers still say "nightingale" on purpose — the
+`nightingale-staging` Firebase project, the `nightingale_*` localStorage keys,
+and the `nightingale.examDraft.*` autosave keys. Renaming them would orphan
+existing drafts and stored analytics consent, so they are left alone; only the
+user-facing brand changed.
 
 | Surface | Path | Indexed? |
 |---------|------|----------|
@@ -39,7 +48,7 @@ carries a non-affiliation disclaimer.
 | Admin sign-in | `/admin-login.html` | No (`noindex` + `robots.txt`) |
 | Student portal / exams | `/student.html`, `/exam.html` | No |
 
-Support email placeholder: `support@nightingaleexam.com` — set up forwarding (or
+Support email placeholder: `support@examello.com` — set up forwarding (or
 change the address in `index.html`, `terms.html`, `privacy.html`, `contact.html`)
 before launch.
 
@@ -54,7 +63,7 @@ events are sent (never email, name, or answers): `cta_click`, `pricing_viewed`,
 `sample_question_answered`, `magic_link_requested`, `signup_completed`,
 `login_completed`, `exam_started`, `exam_completed`, `first_mock_completed`.
 
-If the brand or domain changes, update the wordmark and `nightingaleexam.com`
+If the brand or domain changes, update the wordmark and `examello.com`
 strings across the HTML pages, `public/robots.txt`, and `public/sitemap.xml`.
 
 ## 🚀 Quick Start

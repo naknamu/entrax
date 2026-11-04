@@ -23,8 +23,11 @@ removes most of the compliance and sales surface.
 
 ### Positioning & legal (read before writing copy)
 
-- **Brand decision (2026-10-27):** **Nightingale**, with the proposed domain
-  `nightingaleexam.com` (verified unregistered; purchase pending). Stage 1 —
+- **Brand decision (2026-11-04):** **Examello**, with the proposed domain
+  `examello.com` (verified unregistered; purchase pending). `.com` beats the
+  cheaper `.cc` ($9.48 vs $3.11 year one, ~$1.70/yr after) because users type
+  `.com`, an unregistered `.com` is a squatting target, and `.cc` is a ccTLD
+  with a poor reputation for magic-link email deliverability. Stage 1 —
   landing page, admin login split, legal pages, disclaimer, and env-gated
   analytics — is implemented in this repo.
 - **Do not imply affiliation with Kaplan.** "Kaplan" is a registered trademark.
@@ -310,20 +313,21 @@ functional without them, but it is not launch-ready: the custom domain is not
 live, sign-in email is unbranded and may be filtered, analytics stays off, and
 support mail has no destination.
 
-1. **Buy and connect `nightingaleexam.com`**
+1. **Buy and connect `examello.com`**
    - Register the domain (verified unregistered via Verisign RDAP on
-     2026-10-27).
-   - GitHub repo → Settings → Pages → Custom domain: `nightingaleexam.com`
+     2026-11-04). Optionally also register `examello.cc` (~$3.11) and
+     301-redirect it, but do not rely on it as the primary domain.
+   - GitHub repo → Settings → Pages → Custom domain: `examello.com`
      (writes `CNAME`), then enable **Enforce HTTPS** after the certificate is
      issued.
    - DNS: apex `A` records to GitHub Pages (`185.199.108.153`,
      `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and
      `CNAME www -> naknamu.github.io`.
-   - Verify: `https://nightingaleexam.com/` serves the landing page and
-     `https://nightingaleexam.com/terms.html` returns 200.
+   - Verify: `https://examello.com/` serves the landing page and
+     `https://examello.com/terms.html` returns 200.
 2. **Add the domain to Firebase Auth authorized domains**
    - Firebase Console → Authentication → Settings → Authorized domains → add
-     `nightingaleexam.com` (and `www.nightingaleexam.com` if used).
+     `examello.com` (and `www.examello.com` if used).
    - Why: magic-link sign-in fails with `auth/unauthorized-continue-uri` on any
      unlisted domain; the app surfaces that error by name.
    - Verify: request a magic link on the live domain and complete sign-in.
@@ -333,7 +337,7 @@ support mail has no destination.
    - Publish SPF, DKIM, and DMARC for the sending domain. Keep DMARC at
      `p=none` until reports are clean, then move to `quarantine`.
    - Verify: a magic link lands in the Gmail/Outlook inbox (not spam) with the
-     Nightingale sender name and a link on `nightingaleexam.com`.
+     Examello sender name and a link on `examello.com`.
 4. **Create the GA4 property and enable analytics**
    - analytics.google.com → create a property + web stream for the domain, copy
      the `G-…` measurement ID.
@@ -343,7 +347,7 @@ support mail has no destination.
      `sample_question_answered`, `magic_link_requested`, `signup_completed`,
      `login_completed`, `exam_started`, `exam_completed`,
      `first_mock_completed`. With DNT on, nothing must load.
-5. **Set up `support@nightingaleexam.com` forwarding**
+5. **Set up `support@examello.com` forwarding**
    - Create the mailbox/alias at the registrar or in Google Workspace and
      forward it to the operator inbox.
    - The address appears in `index.html`, `terms.html`, `privacy.html`, and
@@ -351,11 +355,11 @@ support mail has no destination.
    - Verify: send a test message, confirm delivery, and reply from the alias.
 6. **Rename the GitHub repository (optional, URL only)**
    - The current fallback URL is `https://naknamu.github.io/entrax/`. If you want
-     `.../nightingale/` before the custom domain is live, rename the repo under
+     `.../examello/` before the custom domain is live, rename the repo under
      Settings → General → Repository name. GitHub redirects the old repo URL,
      but Pages URLs can be inconsistent after a rename, so treat this as a
      one-way change.
-   - Once `nightingaleexam.com` is connected (item 1) the repo name is no longer
+   - Once `examello.com` is connected (item 1) the repo name is no longer
      user-visible, so skipping this is fine.
    - The Firebase project ID stays `entrax-878a1`: Google project IDs are
      immutable and every script/CI job references it.
@@ -442,9 +446,9 @@ entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
 
 ## Decisions needed
 
-1. **Brand & domain** — **decided:** Nightingale, with the proposed domain
-   `nightingaleexam.com` (verified unregistered via Verisign RDAP on
-   2026-10-27; purchase and DNS/Auth-domain setup still pending). Kaplan appears
+1. **Brand & domain** — **decided:** Examello, with the proposed domain
+   `examello.com` (verified unregistered via Verisign RDAP on
+   2026-11-04; purchase and DNS/Auth-domain setup still pending). Kaplan appears
    only in descriptive copy, with a non-affiliation disclaimer.
 2. **Content rights** — **decided:** the question bank is programmatically
    generated, so no Kaplan material is reproduced. Keep the generator version
