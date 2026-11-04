@@ -30,6 +30,13 @@ import {
   toDate,
 } from '@js/firestore-helpers.js';
 import { initAnalytics, track } from '@js/analytics.js';
+import {
+  PLANS,
+  getEntitlement,
+  describeEntitlement,
+  entitlementSummary,
+} from '@js/entitlements.js';
+import { isPlanPurchasable, startCheckout } from '@js/checkout.js';
 
 initAnalytics();
 
@@ -88,6 +95,10 @@ const $settingsTotalEx = document.getElementById('settings-total-exams');
 const $settingsTotalTm = document.getElementById('settings-total-time');
 const $settingsPassRt  = document.getElementById('settings-overall-pass');
 const $settingsDelete  = document.getElementById('settings-delete-btn');
+const $planBadge       = document.getElementById('settings-plan-badge');
+const $planDetail      = document.getElementById('settings-plan-detail');
+const $planActions     = document.getElementById('settings-plan-actions');
+const $planHint        = document.getElementById('settings-plan-hint');
 
 const $alertContainer  = document.getElementById('student-alert-container');
 const $confirmModal    = document.getElementById('confirm-modal');
@@ -1241,6 +1252,102 @@ $examList.addEventListener('click', (e) => {
 
 // ─── Settings ───────────────────────────────────────────────────────────────
 
+// ─── Plan / billing ─────────────────────────────────────────────────────────
+
+let planPollTimer = null;
+
+/**
+ * Buy buttons, built from PLANS so the labels and prices have one source.
+ * Nothing renders until a Paddle price id exists, so shipping this before the
+ * provider account is approved leaves the portal unchanged.
+ */
+function renderPlanActions(status) {
+  if (!$planActions || !$planHint) return;
+  const purchasable = Object.values(PLANS).filter((plan) => isPlanPurchasable(plan.id));
+
+  if (!purchasable.length) {
+    $planActions.hidden = true;
+    $planActions.innerHTML = '';
+    // Don't tell someone who already paid that their free account stays free.
+    $planHint.hidden = Boolean(status?.active);
+    $planHint.textContent = status?.active
+      ? ''
+      : 'Checkout opens soon. Your free account stays free.';
+    return;
+  }
+
+  $planActions.hidden = false;
+  $planHint.hidden = true;
+  $planActions.innerHTML = purchasable
+    .map((plan) => {
+      const variant = plan.id === 'pass' ? 'btn-primary' : 'btn-outline';
+      return `<button type="button" class="btn ${variant}" data-plan="${plan.id}">` +
+        `${escapeHtml(plan.label)} — ${escapeHtml(plan.priceLabel)}</button>`;
+    })
+    .join('');
+}
+
+async function renderPlan() {
+  if (!currentUser) return;
+
+  const status = describeEntitlement(await getEntitlement(currentUser.uid));
+
+  if ($planBadge) {
+    $planBadge.textContent = status.active ? status.label : 'Free';
+    $planBadge.className = `badge ${status.active ? 'badge-success' : 'badge-secondary'}`;
+  }
+  if ($planDetail) {
+    $planDetail.textContent = entitlementSummary(status);
+  }
+  renderPlanActions(status);
+}
+
+if ($planActions) {
+  $planActions.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-plan]');
+    if (!btn) return;
+
+    btn.disabled = true;
+    try {
+      track('checkout_started', { plan: btn.dataset.plan });
+      await startCheckout({
+        plan: btn.dataset.plan,
+        uid: currentUser?.uid,
+        email: currentUser?.email || '',
+        successUrl: `${location.origin}${location.pathname}#settings`,
+      });
+    } catch (err) {
+      console.error('Could not open checkout:', err);
+      showAlert(err.message || 'Could not open checkout. Please try again.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// The overlay event is only a hint: access is granted by the signed webhook.
+// Poll for a short while so the badge updates without a manual reload.
+window.addEventListener('examello:checkout', (e) => {
+  if (e.detail?.name !== 'checkout.completed') return;
+  showAlert('Payment received. Activating your plan…', 'success');
+  pollForEntitlement();
+});
+
+async function pollForEntitlement(attempts = 8, delayMs = 2500) {
+  clearTimeout(planPollTimer);
+  for (let i = 0; i < attempts; i++) {
+    const status = describeEntitlement(await getEntitlement(currentUser?.uid));
+    if (status.active) {
+      await renderPlan();
+      showAlert(`Your ${status.label} is active.`, 'success');
+      return;
+    }
+    await new Promise((resolve) => {
+      planPollTimer = setTimeout(resolve, delayMs);
+    });
+  }
+}
+
 async function renderSettings() {
   if (!currentUser) return;
 
@@ -1261,6 +1368,9 @@ async function renderSettings() {
     $settingsTotalTm.textContent = formatDuration(dashboardStats.totalTimeMs);
     $settingsPassRt.textContent = `${dashboardStats.passRate}%`;
   }
+
+  // Paid plan (free tier is the default when there is no entitlement doc)
+  await renderPlan();
 }
 
 $settingsForm.addEventListener('submit', async (e) => {

@@ -392,6 +392,20 @@ export async function deleteFirestoreDoc(request, path) {
 }
 
 /**
+ * Create or overwrite a document at an explicit path, e.g.
+ * `setFirestoreDoc(request, 'entitlements/<uid>', { plan: 'pass' })`.
+ * Admin-style write (bypasses rules), like the payment webhook would.
+ */
+export async function setFirestoreDoc(request, path, data) {
+  const response = await request.patch(`${FIRESTORE_DOCS_URL}/${path}`, {
+    headers: FIRESTORE_OWNER_AUTH,
+    data: { fields: toFirestoreFields(data) },
+  });
+  expect(response.ok()).toBeTruthy();
+  return path;
+}
+
+/**
  * Seed a graded submission for a student so dashboard widgets (score trend,
  * focus areas, recent activity) have data to render.
  */

@@ -207,6 +207,20 @@ npm run dev
 | `VITE_SENTRY_DSN` | Sentry browser DSN; monitoring is a no-op when empty | No |
 | `VITE_SENTRY_ENVIRONMENT` | Sentry environment label (defaults to the Vite mode) | No |
 | `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (`G-…`); analytics loads nothing when empty | No |
+| `VITE_PADDLE_ENV` | `sandbox` or `production` (default: `sandbox`) | No |
+| `VITE_PADDLE_CLIENT_TOKEN` | Paddle client-side token; checkout stays dark when empty | No |
+| `VITE_PADDLE_PRICE_PASS` | Paddle price id for the $19 Exam Pass | No |
+| `VITE_PADDLE_PRICE_EXTENSION` | Paddle price id for the $9 Extension | No |
+| `VITE_PADDLE_PRICE_LIFETIME` | Paddle price id for the $49 Lifetime | No |
+
+Checkout is **off until the Paddle variables are set**: the plan card in
+`student.html` shows the free tier and hides the buy buttons. Paddle.js is only
+loaded when someone clicks buy, so no third-party script runs on page load.
+
+**Do not take money before server grading is on.** With
+`config/features.serverGrading` off, `correctIndex` is still in the exam
+documents the client downloads, so a paying customer could read every answer.
+`firestore.rules` says the same thing at the top of the file.
 
 Create `.env.development` for local development and `.env.production` for production builds. **Never commit real secrets to git.** `.env.staging` is gitignored too — start from `.env.staging.example`.
 

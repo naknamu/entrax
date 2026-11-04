@@ -291,7 +291,7 @@ money.
 - [x] Pricing ladder: free diagnostic + sample sets; **$19 Exam Pass (90 days)**;
       **$9 Extension (+90 days, stacks on the later of now or current expiry)**;
       **$49 Lifetime** (access while the Service operates). One-time purchases,
-      no auto-renew. CTAs route to the free account until Stripe exists.
+      no auto-renew. CTAs route to the free account until checkout is live.
 - [x] `public/robots.txt` + `public/sitemap.xml`; app/admin pages are `noindex`.
 - [x] Tests updated for the new front door (`admin-login.html`); full suite green.
 - [x] Rename the exam titles that still contained "Kaplan" so the student-facing
@@ -305,6 +305,34 @@ money.
       the landing page and disclaimer); no Kaplan-authored material.
 - [ ] Owner-only launch steps are tracked in
       [External launch checklist](#external-launch-checklist-owner-only) below.
+
+### Payments (Paddle)
+
+Stripe does not support merchant accounts registered in the Philippines, so the
+product uses **Paddle** as merchant of record: 5% + $0.50 per transaction, PH
+sellers accepted, payouts monthly by wire or Payoneer ($100 minimum), and
+Paddle registers/remits US sales tax and EU/UK VAT. Lemon Squeezy was rejected
+because Stripe is migrating it to Stripe Managed Payments, which excludes PH
+sellers; PayMongo is cheaper (~3.1% + ₱13.39) but leaves the merchant of record
+role — and the tax and chargeback burden — with us.
+
+Access model:
+
+- `entitlements/{uid}` holds `{ plan, source, productId, transactionId,
+  accessUntil, purchasedAt, updatedAt }`. `accessUntil: null` means no fixed end
+  (Lifetime or an admin grant).
+- Only the webhook (Admin SDK) or an admin writes it. Students may read their
+  own document; `firestore.rules` denies every client write, so nobody can grant
+  themselves a plan.
+- The client passes its Firebase uid as Paddle `customData`; the webhook reads
+  it back off the transaction. `checkout.completed` in the overlay is treated as
+  a hint only — it triggers a short poll of `entitlements/{uid}`.
+- Webhook host is undecided. `functions/` already exists for server grading, so
+  a `paddleWebhook` function is the natural home (needs Blaze); the zero-cost
+  alternative is a Cloudflare Worker writing to Firestore over REST.
+- **Prerequisite: server grading must be on before the first sale.** With the
+  feature switch off, `correctIndex` ships inside the exam documents, so a
+  paying customer could read every answer.
 
 ### External launch checklist (owner only)
 
@@ -365,7 +393,7 @@ support mail has no destination.
      immutable and every script/CI job references it.
 
 **Launch gate:** all five mandatory items above, plus the Phase 1
-entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
+entitlement work (free tier boundary, `entitlements/{uid}`, refund flow).
 
 ### Onboarding & accounts
 
@@ -374,8 +402,9 @@ entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
 - [ ] Free tier: one full mock + a limited drill set. Paid tier unlocks the
       bank, analytics, and full-length mocks. (The landing page now advertises
       this boundary; the entitlement gate still needs to be built.)
-- [ ] Stripe Checkout + customer portal; webhook writes
-      `entitlements/{uid}`; rules gate premium exams/content.
+- [ ] Paddle checkout (hosted overlay) + signed webhook writes
+      `entitlements/{uid}`; rules gate premium exams/content. Client side is
+      built and env-gated; the webhook still needs a host (see *Payments*).
 - [ ] Account settings: export data, delete account, manage subscription.
 
 ### Exam experience (student-facing)
@@ -407,7 +436,8 @@ entitlement/Stripe work (free tier boundary, `entitlements/{uid}`, refund flow).
 - [x] Analytics (GA4): signup → diagnostic → paid funnel events.
 - [ ] Referral or share-your-score loop.
 - [x] Support: FAQ and contact page.
-- [ ] Refund flow (needs Stripe).
+- [ ] Refund flow (Paddle issues refunds; we mirror the revocation in
+      `entitlements/{uid}` from the `adjustment.updated` webhook).
 
 ### Trust
 

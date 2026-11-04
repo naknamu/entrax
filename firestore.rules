@@ -216,6 +216,18 @@ service cloud.firestore {
     }
 
     // ==========================================================================
+    // ENTITLEMENTS (paid access)
+    // ==========================================================================
+    // Written only by the payment webhook (Admin SDK bypasses rules) or by an
+    // admin. A student may read their own document so the portal can show what
+    // they own, but no client write is ever allowed — that is what stops
+    // anyone granting themselves a paid plan.
+    match /entitlements/{uid} {
+      allow read: if (isAdmin()) || (isRealUser() && request.auth.uid == uid);
+      allow write: if false;
+    }
+
+    // ==========================================================================
     // AUDIT LOG (append-only)
     // ==========================================================================
     match /auditLogs/{logId} {
