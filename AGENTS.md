@@ -12,6 +12,7 @@
 - Seed mock data: `npm run seed:mock`
 - E2E: `npm run test` (Playwright), `npm run test:ui`, `npm run test:headed`, `npm run test:debug`, `npm run test:report`
 - Server-grading spec (own config, single worker): `npm run test:server-grading`
+- Free-tier spec (own config, single worker): `npm run test:free-tier`
 - Grading unit tests: `node --test functions/test/grading.test.cjs`
 - All-in-one (starts emulators/dev and runs tests): `npm run test:all`
 
@@ -36,7 +37,7 @@
 - `tests/global-setup.cjs` uses firebase-admin against emulators (sets `FIRESTORE_EMULATOR_HOST=localhost:8081`, `FIREBASE_AUTH_EMULATOR_HOST=localhost:9099`, project `demo-test`). Creates admin `admin@test.com`/`password123` (uid `test-admin-uid`) if missing and a fixed sample exam `sample-exam-test-fixed-id` with 5 questions (sets `process.env.TEST_EXAM_ID`).
 - `tests/utils.js` provides `injectEmulatorConfig`/`waitForFirebase` and helpers like `signInAsAdmin` (navigates to `admin-login.html?test=true`, waits for redirect to admin dashboard) and `signInAsStudent` (magic-link sign-in through the emulator's dev link). Many tests expect emulators + the global setup state. `index.html` is now the marketing page, so specs must use `admin-login.html` for the admin form.
 - Exams now require a real student identity: specs call `signInAsStudent(page)` and open `exam.html?examId=…&manualStart=true` so the name/email form stays visible. `manualStart` is preserved on retake links.
-- `tests/server-grading.spec.js` flips the global `config/features.serverGrading` switch, so it is excluded from `playwright.config.cjs` and runs alone via `playwright.server-grading.config.cjs` (`npm run test:server-grading`). `npm run test:ci` (`scripts/run-ci-tests.cjs`) runs the main suite, then that spec, and needs the Functions emulator.
+- `tests/server-grading.spec.js` flips the global `config/features.serverGrading` switch, so it is excluded from `playwright.config.cjs` and runs alone via `playwright.server-grading.config.cjs` (`npm run test:server-grading`). `tests/free-tier.spec.js` does the same with `config/freeTier` (which locks every exam outside its list) and runs alone via `playwright.free-tier.config.cjs` (`npm run test:free-tier`). `npm run test:ci` (`scripts/run-ci-tests.cjs`) runs the main suite, then both of those, and needs the Functions emulator.
 - `create-exam.html` accordions are **exclusive-open**: opening one collapses the rest. Specs must call `expandAccordion(page, name)` before touching anything inside a section body (question blocks live in the Questions body), and `waitForExamBuilder(page)` before clicking "Load Kaplan Template" — the default question is added only after the admin auth check, and the replace-content confirmation is skipped when no content exists yet.
 - The student results screen (`exam.html#submission-screen`) renders the answer review as one `<details class="review-section">` per exam section, **collapsed by default**, with a questions/correct/incorrect summary in each `<summary>`. Specs must expand the section before clicking a `.solution-toggle` inside it; `.answer-item` counts still work while collapsed.
 - If running tests against running services, ensure emulators are up or use `npm run test:all`. Opening HTML files directly won't work (Vite modules/env).

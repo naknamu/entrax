@@ -113,6 +113,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // The free/paid boundary: which exams a free account may open. Readable so
+    // the portal and the exam page can decide access without a round trip
+    // through a function; writable only by an admin (or the Admin SDK).
+    match /config/freeTier {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ==========================================================================
     // EXAM ANSWER KEYS (server grading only)
     // ==========================================================================

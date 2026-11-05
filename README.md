@@ -222,6 +222,38 @@ loaded when someone clicks buy, so no third-party script runs on page load.
 documents the client downloads, so a paying customer could read every answer.
 `firestore.rules` says the same thing at the top of the file.
 
+### Free tier
+
+The free/paid boundary lives in one document, `config/freeTier`:
+
+```
+{ enabled: true, examIds: ['exam-id-1', 'exam-id-2'] }
+```
+
+A missing document, `enabled: false`, or an empty `examIds` means **no gate** —
+the whole catalogue stays open. That is deliberate: a config mistake can never
+lock students out, and turning the boundary on is an explicit action.
+
+```bash
+# Preview the default picks (first mock + first set per section)
+node scripts/mark-free-exams.cjs
+
+# Turn the gate on (emulator by default; --prod uses ADC)
+node scripts/mark-free-exams.cjs --apply
+node scripts/mark-free-exams.cjs --add <examId> --apply
+node scripts/mark-free-exams.cjs --remove <examId> --apply
+node scripts/mark-free-exams.cjs --off --apply     # reopen the catalogue
+
+# Show what is currently free
+node scripts/mark-free-exams.cjs --show
+```
+
+Locked exams stay visible in the student portal with an **Unlock** action, and
+a direct link to one shows a paywall instead of the start screen. Past results
+and in-progress drafts are always readable — only a *new* attempt needs a plan.
+This is an honour-system gate, not a security boundary (see the note above about
+server grading).
+
 Create `.env.development` for local development and `.env.production` for production builds. **Never commit real secrets to git.** `.env.staging` is gitignored too — start from `.env.staging.example`.
 
 ### Firebase Emulators
@@ -241,6 +273,9 @@ npm run test
 
 # Phase 0.3 server-grading spec (single worker; Functions emulator required)
 npm run test:server-grading
+
+# Free-tier spec (single worker; toggles the global config/freeTier gate)
+npm run test:free-tier
 
 # Pure grading unit tests (no emulator)
 node --test functions/test/grading.test.cjs

@@ -6091,6 +6091,31 @@ th[aria-sort="descending"] .sort-icon::after {
   animation: student-pulse-badge 2s ease-in-out infinite;
 }
 
+/* Exams behind the paywall: visible as a catalogue, not startable. */
+.student-exam-card.locked {
+  background: var(--color-gray-50, #f9fafb);
+}
+
+.student-exam-card.locked .student-exam-card-title,
+.student-exam-card.locked .student-exam-card-desc,
+.student-exam-card.locked .student-exam-card-meta {
+  opacity: 0.7;
+}
+
+.student-locked-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.exam-closed-action {
+  margin-top: var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
 @keyframes student-pulse-badge {
   0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
   50% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }

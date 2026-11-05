@@ -12,9 +12,11 @@ export default defineConfig({
   // Test directory
   testDir: './tests',
 
-  // The server-grading spec flips a global feature switch, so it runs on its
-  // own config/worker (npm run test:server-grading) instead of this suite.
-  testIgnore: ['**/server-grading.spec.js'],
+  // Two specs flip a global Firestore switch, so they run on their own
+  // config/worker instead of this suite:
+  //   server-grading.spec.js → npm run test:server-grading
+  //   free-tier.spec.js      → npm run test:free-tier
+  testIgnore: ['**/server-grading.spec.js', '**/free-tier.spec.js'],
   
   // Global setup/teardown
   globalSetup: require.resolve('./tests/global-setup.cjs'),

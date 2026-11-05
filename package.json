@@ -11,6 +11,7 @@
     "test": "npx playwright test",
     "test:ci": "firebase emulators:exec --only auth,firestore,functions --project demo-test \"node scripts/run-ci-tests.cjs\"",
     "test:server-grading": "npx playwright test --config=playwright.server-grading.config.cjs",
+    "test:free-tier": "npx playwright test --config=playwright.free-tier.config.cjs",
     "functions:install": "npm --prefix functions install",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",

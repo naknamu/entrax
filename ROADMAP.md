@@ -393,15 +393,19 @@ support mail has no destination.
      immutable and every script/CI job references it.
 
 **Launch gate:** all five mandatory items above, plus the Phase 1
-entitlement work (free tier boundary, `entitlements/{uid}`, refund flow).
+entitlement work (`entitlements/{uid}` webhook and refund flow — the free-tier
+boundary itself is built).
 
 ### Onboarding & accounts
 
 - [ ] Sign-up with magic link **and** Google; display name; exam date + target
       score; timezone.
-- [ ] Free tier: one full mock + a limited drill set. Paid tier unlocks the
-      bank, analytics, and full-length mocks. (The landing page now advertises
-      this boundary; the entitlement gate still needs to be built.)
+- [x] Free tier: the diagnostic plus sample practice sets. Paid tier unlocks the
+      rest of the bank and the full-length mocks. Boundary lives in
+      `config/freeTier { enabled, examIds }` and is seeded with
+      `node scripts/mark-free-exams.cjs --apply`; a missing/empty config leaves
+      the catalogue open. Locked exams show an Unlock action in the portal and a
+      paywall on direct links; past results and drafts stay readable.
 - [ ] Paddle checkout (hosted overlay) + signed webhook writes
       `entitlements/{uid}`; rules gate premium exams/content. Client side is
       built and env-gated; the webhook still needs a host (see *Payments*).

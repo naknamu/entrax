@@ -37,6 +37,7 @@ import {
   entitlementSummary,
 } from '@js/entitlements.js';
 import { isPlanPurchasable, startCheckout } from '@js/checkout.js';
+import { loadFreeTier, canAccessExam } from '@js/free-tier.js';
 
 initAnalytics();
 
@@ -136,6 +137,26 @@ let examSubmissionMap = {};
 let examModalTrigger = null;
 let confirmResolve = null;
 let drillCategory = null;
+
+// Access state: the paid entitlement plus the free-tier boundary. Loaded once
+// per portal visit and reused by the exam list, the detail modal, and settings.
+let accessStatus = null;
+let freeTier = { enabled: false, examIds: new Set() };
+
+/** True when this exam needs a plan the student does not have. */
+function isExamLocked(examId) {
+  return !canAccessExam(examId, { freeTier, hasFullAccess: Boolean(accessStatus?.active) });
+}
+
+async function refreshAccess() {
+  if (!currentUser) return;
+  const [entitlement, tier] = await Promise.all([
+    getEntitlement(currentUser.uid),
+    loadFreeTier(db),
+  ]);
+  accessStatus = describeEntitlement(entitlement);
+  freeTier = tier;
+}
 
 const MOTIVATIONAL_QUOTES = [
   '"The secret of getting ahead is getting started." — Mark Twain',
@@ -675,10 +696,11 @@ async function renderExamList() {
   if (!currentUser) return;
 
   try {
-    // Load exams and submissions in parallel
+    // Load exams, submissions, and access state in parallel
     const [exams, submissions] = await Promise.all([
       getAvailableExams(db),
       getSubmissionsByStudent(db, currentUser.uid),
+      refreshAccess(),
     ]);
 
     allExams = exams;
@@ -788,6 +810,7 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
     const passing = exam.passingPercent != null ? `${exam.passingPercent}%` : '—';
 
     let statusBadge, actionBtn, statusClass;
+    const locked = isExamLocked(exam.id);
 
     if (sub) {
       if (sub.passed) {
@@ -797,9 +820,17 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
         statusBadge = '<span class="badge badge-danger">Failed</span>';
         statusClass = 'failed';
       }
-      actionBtn = `
+      // Past results stay readable even if the exam is now behind the paywall;
+      // only a new attempt needs access.
+      actionBtn = locked
+        ? `<a href="exam.html?examId=${exam.id}&review=true" class="btn btn-primary btn-sm">View Results</a>`
+        : `
         <a href="exam.html?examId=${exam.id}&retake=true" class="btn btn-sm student-retake-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Retake</a>
         <a href="exam.html?examId=${exam.id}&review=true" class="btn btn-primary btn-sm">View Results</a>`;
+    } else if (locked) {
+      statusBadge = '<span class="badge badge-outline student-locked-badge">Exam Pass</span>';
+      statusClass = 'locked';
+      actionBtn = `<a href="#settings" class="btn btn-outline btn-sm">Unlock</a>`;
     } else {
       statusBadge = '<span class="badge badge-primary student-new-badge">New</span>';
       statusClass = 'new';
@@ -1098,6 +1129,7 @@ function openExamModal(examId, trigger) {
   const exam = allExams.find(e => e.id === examId);
   if (!exam) return;
   const sub = examSubmissionMap[examId];
+  const locked = isExamLocked(examId);
 
   // Category badge - derive from exam.type, exam.category, or most common question category
   const category = getExamCategory(exam);
@@ -1182,12 +1214,20 @@ function openExamModal(examId, trigger) {
       <span class="badge ${sub.passed ? 'badge-success' : 'badge-danger'}">${sub.passed ? 'Passed' : 'Failed'}</span>`;
     $examModalAction.textContent = 'View Results';
     $examModalAction.href = `exam.html?examId=${exam.id}&review=true`;
-    $examModalRetake.hidden = false;
-    $examModalRetake.href = `exam.html?examId=${exam.id}&retake=true`;
+    $examModalRetake.hidden = locked;
+    if (locked) {
+      $examModalRetake.removeAttribute('href');
+    } else {
+      $examModalRetake.href = `exam.html?examId=${exam.id}&retake=true`;
+    }
   } else {
     $examModalScore.hidden = true;
     $examModalScore.innerHTML = '';
-    if (!progress) {
+    if (!progress && locked) {
+      // The free tier is the diagnostic and sample sets; this one needs a plan.
+      $examModalAction.textContent = 'Unlock full access';
+      $examModalAction.href = '#settings';
+    } else if (!progress) {
       $examModalAction.textContent = 'Start Exam';
       $examModalAction.href = `exam.html?examId=${exam.id}`;
     }
@@ -1216,6 +1256,11 @@ $examModalClose.addEventListener('click', closeExamModal);
 $examModalCancel.addEventListener('click', closeExamModal);
 $examModal.addEventListener('click', (e) => {
   if (e.target === $examModal) closeExamModal();
+});
+// "Unlock full access" moves to settings; close the dialog first so the
+// student does not land on a page behind a still-open modal.
+$examModalAction.addEventListener('click', () => {
+  if ($examModalAction.getAttribute('href') === '#settings') closeExamModal();
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeExamModal();
@@ -1290,14 +1335,19 @@ function renderPlanActions(status) {
 async function renderPlan() {
   if (!currentUser) return;
 
-  const status = describeEntitlement(await getEntitlement(currentUser.uid));
+  await refreshAccess();
+  const status = accessStatus;
 
   if ($planBadge) {
     $planBadge.textContent = status.active ? status.label : 'Free';
     $planBadge.className = `badge ${status.active ? 'badge-success' : 'badge-secondary'}`;
   }
   if ($planDetail) {
-    $planDetail.textContent = entitlementSummary(status);
+    // A lapsed pass still has something to say ("ended on …"); only someone
+    // who never bought anything sees the free-tier description.
+    $planDetail.textContent = status.plan === 'free'
+      ? 'Free tier: the full-length diagnostic and sample practice sets.'
+      : entitlementSummary(status);
   }
   renderPlanActions(status);
 }

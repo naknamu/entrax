@@ -395,6 +395,10 @@
         </div>
         <h1 id="closed-title" class="submission-title">Exam Not Available</h1>
         <p class="submission-message" id="exam-closed-message">This exam is not currently available.</p>
+        <div id="exam-closed-action" class="exam-closed-action" hidden>
+          <a class="btn btn-primary" href="student.html#settings">See plans</a>
+          <a class="btn btn-outline" href="student.html#exams">My exams</a>
+        </div>
       </article>
     </div>
   </section>
@@ -407,6 +411,8 @@
     import { gradeExam, getCategoryStatistics } from '/js/grading.js';
     import { formatDuration, formatDateTime, escapeHtml, showAlert, generateId } from '/js/exam.js';
     import { initAnalytics, track, trackOnce } from '/js/analytics.js';
+    import { getEntitlement, describeEntitlement } from '/js/entitlements.js';
+    import { loadFreeTier, canAccessExam, PAYWALL_COPY } from '/js/free-tier.js';
 
     initAnalytics();
 
@@ -520,6 +526,35 @@
     let serverGradingEnabled = false; // config/features.serverGrading
     let serverGradingResult = null; // last graded result returned by the callable
 
+    /**
+     * Paid access: an active entitlement (or an admin) opens everything; a free
+     * account opens only the exams listed in `config/freeTier`.
+     */
+    async function resolveAccess() {
+      const user = auth.currentUser;
+      let hasFullAccess = false;
+
+      try {
+        const token = await user.getIdTokenResult();
+        hasFullAccess = token?.claims?.role === 'admin';
+      } catch (error) {
+        console.warn('Could not read auth claims:', error);
+      }
+
+      if (!hasFullAccess) {
+        hasFullAccess = describeEntitlement(await getEntitlement(user.uid)).active;
+      }
+
+      return { hasFullAccess, freeTier: await loadFreeTier(db) };
+    }
+
+    function showPaywallScreen() {
+      document.getElementById('closed-title').textContent = PAYWALL_COPY.title;
+      document.getElementById('exam-closed-message').textContent = PAYWALL_COPY.body;
+      document.getElementById('exam-closed-action').hidden = false;
+      showScreen('exam-closed-screen');
+    }
+
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
     examId = urlParams.get('examId');
@@ -604,6 +639,11 @@
         passingPercent = exam.passingPercent || 70;
         randomizeQuestions = exam.randomizeQuestions === true;
 
+        // Paid access gate. Reviewing a past attempt and resuming a draft are
+        // always allowed; only starting a new attempt needs the plan.
+        const access = await resolveAccess();
+        const locked = !canAccessExam(exam.id, access);
+
         // Point the "Retake Exam" links at a fresh attempt for this exam.
         document.querySelectorAll('.retake-exam-link').forEach(link => {
           // Preserve manualStart so a confirmation form stays visible when the
@@ -662,6 +702,10 @@
             document.getElementById('exam-closed-message').textContent = examUnavailableMessage;
             return;
           }
+          if (locked) {
+            showPaywallScreen();
+            return;
+          }
           renderStartScreen();
           startExamBtn.disabled = false;
           showScreen('start-screen');
@@ -692,6 +736,11 @@
         if (examUnavailableMessage) {
           showScreen('exam-closed-screen');
           document.getElementById('exam-closed-message').textContent = examUnavailableMessage;
+          return;
+        }
+
+        if (locked) {
+          showPaywallScreen();
           return;
         }
 

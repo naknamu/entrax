@@ -2,9 +2,11 @@
 /**
  * CI test runner.
  *
- * The server-grading spec toggles the global `config/features.serverGrading`
- * switch, so it must not overlap the rest of the suite. Run the main suite
- * with that file excluded, then run it alone with one worker.
+ * Two specs flip a global Firestore switch, so neither may overlap the rest of
+ * the suite: the server-grading spec toggles `config/features.serverGrading`,
+ * and the free-tier spec toggles `config/freeTier` (which locks every exam
+ * outside its list). Run the main suite with both excluded, then each one
+ * alone with a single worker.
  *
  * Invoked by `npm run test:ci` inside `firebase emulators:exec`.
  */
@@ -18,3 +20,4 @@ const run = (command) => {
 
 run('npx playwright test');
 run('npx playwright test --config=playwright.server-grading.config.cjs');
+run('npx playwright test --config=playwright.free-tier.config.cjs');
