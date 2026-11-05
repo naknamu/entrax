@@ -28,8 +28,9 @@
  * so a forgotten flag can never touch production.
  *
  * The default picks are derived from the exam titles the catalogue already
- * uses: the lowest-numbered "Mock Exam" plus the lowest-numbered
- * "<Section> Practice Set" for Reading, Math, Writing, and Science.
+ * uses: the full-length "Mock Exam" (the unnumbered one, else the
+ * lowest-numbered mock) plus the lowest-numbered "<Section> Practice Set" for
+ * Reading, Math, Writing, and Science.
  */
 
 const admin = require('firebase-admin');
@@ -101,9 +102,17 @@ async function defaultPicks(db) {
 
   const picks = [];
 
+  // The full-length diagnostic is the unnumbered "Mock Exam" (the catalogue
+  // numbers the rest 90-104). Prefer it so the free mock is the real one, not
+  // just the lowest-numbered set.
   const mocks = exams
     .filter((exam) => /^mock exam\b/i.test(exam.title))
-    .sort((a, b) => trailingNumber(a.title) - trailingNumber(b.title));
+    .sort((a, b) => {
+      const aUnnumbered = !/(\d+)\s*$/.test(a.title);
+      const bUnnumbered = !/(\d+)\s*$/.test(b.title);
+      if (aUnnumbered !== bUnnumbered) return aUnnumbered ? -1 : 1;
+      return trailingNumber(a.title) - trailingNumber(b.title);
+    });
   if (mocks.length) picks.push(mocks[0]);
 
   for (const section of SECTIONS) {

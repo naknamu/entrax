@@ -19,6 +19,9 @@ const paidExam = {
   title: 'Science Practice Set 99',
   description: 'A practice set behind the paywall',
   status: 'published',
+  // Newer than the sample exam, so without the accessible-first sort this card
+  // would come first in the newest-first catalogue.
+  createdAt: new Date(),
   timeLimitMinutes: 20,
   passingPercent: 70,
   showResultsToStudent: true,
@@ -41,9 +44,11 @@ async function openExams(page) {
   await expect(page.locator('#portal-view')).toBeVisible({ timeout: 20000 });
   await page.click('.student-nav-item[data-view="exams"]');
   await expect(page.locator('#exam-list .student-exam-card').first()).toBeVisible({ timeout: 20000 });
-  // The emulator accumulates exams from other specs, so the card under test can
-  // otherwise land on a later page. Show the whole catalogue.
-  await page.selectOption('#exam-page-size', '100');
+  // With more exams than fit on a page, show the whole catalogue so the card
+  // under test cannot land on a later page. On a fresh emulator there is only
+  // one page and the pagination bar (which holds this select) stays hidden.
+  const pageSize = page.locator('#exam-page-size');
+  if (await pageSize.isVisible()) await pageSize.selectOption('100');
 }
 
 function card(page, examId) {
@@ -90,6 +95,10 @@ test.describe('Free tier', () => {
     const lockedCard = card(page, PAID);
     await expect(lockedCard).toHaveClass(/locked/);
     await expect(lockedCard.getByRole('link', { name: 'Unlock' })).toBeVisible();
+
+    // Accessible exams sort first, so the free set is not buried under the
+    // locked catalogue (it is ordered newest-first).
+    await expect(page.locator('#exam-list .student-exam-card').first()).toHaveAttribute('data-exam-id', SAMPLE);
   });
 
   test('the detail modal offers an upgrade instead of a start button', async ({ page, request }) => {

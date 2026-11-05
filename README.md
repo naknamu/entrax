@@ -235,7 +235,7 @@ the whole catalogue stays open. That is deliberate: a config mistake can never
 lock students out, and turning the boundary on is an explicit action.
 
 ```bash
-# Preview the default picks (first mock + first set per section)
+# Preview the default picks (full-length mock + one set per section)
 node scripts/mark-free-exams.cjs
 
 # Turn the gate on (emulator by default; --prod uses ADC)

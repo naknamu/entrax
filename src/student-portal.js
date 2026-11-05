@@ -142,20 +142,28 @@ let drillCategory = null;
 // per portal visit and reused by the exam list, the detail modal, and settings.
 let accessStatus = null;
 let freeTier = { enabled: false, examIds: new Set() };
+let isAdminUser = false;
 
 /** True when this exam needs a plan the student does not have. */
 function isExamLocked(examId) {
-  return !canAccessExam(examId, { freeTier, hasFullAccess: Boolean(accessStatus?.active) });
+  return !canAccessExam(examId, {
+    freeTier,
+    // Admins can always open anything, so they can preview a locked exam the
+    // same way the exam page lets them.
+    hasFullAccess: isAdminUser || Boolean(accessStatus?.active),
+  });
 }
 
 async function refreshAccess() {
   if (!currentUser) return;
-  const [entitlement, tier] = await Promise.all([
+  const [entitlement, tier, token] = await Promise.all([
     getEntitlement(currentUser.uid),
     loadFreeTier(db),
+    currentUser.getIdTokenResult().catch(() => null),
   ]);
   accessStatus = describeEntitlement(entitlement);
   freeTier = tier;
+  isAdminUser = token?.claims?.role === 'admin';
 }
 
 const MOTIVATIONAL_QUOTES = [
@@ -761,6 +769,13 @@ function applyExamFilter(submissionMap) {
       default:          return true;
     }
   });
+
+  // With the gate on, what the student can actually open comes first. The
+  // catalogue is ordered newest-first, so the free diagnostic and sample sets
+  // would otherwise sit behind every locked set.
+  if (freeTier.enabled && freeTier.examIds.size) {
+    filtered = filtered.slice().sort((a, b) => Number(isExamLocked(a.id)) - Number(isExamLocked(b.id)));
+  }
 
   // Paginate
   const total = filtered.length;
