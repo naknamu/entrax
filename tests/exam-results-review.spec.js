@@ -163,6 +163,25 @@ test.describe('Student results screen', () => {
       const titleBox = await page.locator('#submission-title').boundingBox();
       expect(topbarBox.y).toBeLessThan(titleBox.y);
 
+      // --- Results icon: small, and no looping "growing" pulse ---
+      const icon = page.locator('#submission-icon');
+      const iconBox = await icon.boundingBox();
+      expect(iconBox.width).toBeLessThanOrEqual(60);
+      expect(iconBox.height).toBeLessThanOrEqual(60);
+      const iconAnimation = await icon.evaluate((el) => getComputedStyle(el).animationName);
+      expect(iconAnimation).toBe('none');
+
+      // --- Performance by Category: helper copy lives in the header and the
+      //     breakdown starts collapsed. ---
+      const categoryCard = page.locator('#category-breakdown-card');
+      const categoryToggle = categoryCard.locator('#category-breakdown-header .accordion-toggle');
+      await expect(categoryCard).toBeVisible();
+      await expect(categoryToggle.locator('.accordion-subtitle')).toHaveText(
+        'See which topics you need to focus on. Weakest areas are shown first.'
+      );
+      await expect(categoryToggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('#category-breakdown-content')).toBeHidden();
+
       // --- Answer review: one collapsed section per exam section ---
       const sections = page.locator('#submission-screen .review-section');
       await expect(sections).toHaveCount(2);
@@ -196,6 +215,13 @@ test.describe('Student results screen', () => {
       const gapBelow = await gapBetween('#category-breakdown-card', '#results-review');
       expect(gapAbove).toBeGreaterThan(0);
       expect(Math.abs(gapBelow - gapAbove)).toBeLessThanOrEqual(1);
+
+      // --- Expanding the category accordion reveals the breakdown ---
+      await categoryToggle.click();
+      await expect(categoryToggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(categoryCard).toHaveClass(/open/);
+      await expect(page.locator('#category-breakdown-content')).toBeVisible();
+      await expect(page.locator('#category-breakdown .category-row').first()).toBeVisible();
 
       // --- Expanding a section reveals its questions ---
       await math.locator('summary').click();

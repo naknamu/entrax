@@ -229,7 +229,7 @@
       </nav>
       <article class="submission-confirmation">
         <div class="submission-icon success" id="submission-icon" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
         <h1 id="submission-title" class="submission-title">Exam Submitted</h1>
         <p class="submission-message" id="submission-message">Your exam has been submitted successfully.</p>
@@ -274,15 +274,17 @@
         </div>
 
         <!-- Category Breakdown (weak-area analysis) -->
-        <div class="card category-breakdown-card accordion-section open" id="category-breakdown-card" hidden>
+        <div class="card category-breakdown-card accordion-section" id="category-breakdown-card" hidden>
           <header class="card-header accordion-header" id="category-breakdown-header">
-            <div class="accordion-toggle" data-accordion="category-breakdown" role="button" tabindex="0" aria-expanded="true" aria-controls="category-breakdown-content">
-              <h3 class="results-title accordion-title">Performance by Category</h3>
+            <div class="accordion-toggle" data-accordion="category-breakdown" role="button" tabindex="0" aria-expanded="false" aria-controls="category-breakdown-content">
+              <div class="accordion-heading">
+                <h3 class="results-title accordion-title">Performance by Category</h3>
+                <p class="accordion-subtitle">See which topics you need to focus on. Weakest areas are shown first.</p>
+              </div>
               <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </header>
           <div class="card-body accordion-body" id="category-breakdown-content">
-            <p class="text-sm text-muted mb-4">See which topics you need to focus on. Weakest areas are shown first.</p>
             <div id="category-breakdown" class="category-breakdown"></div>
           </div>
         </div>
@@ -337,7 +339,7 @@
       </nav>
       <article class="submission-confirmation">
         <div class="submission-icon warning" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <h1 id="already-title" class="submission-title">Already Submitted</h1>
         <p class="submission-message" id="already-submitted-message"><span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>You have already submitted this exam</span></p>
@@ -391,7 +393,7 @@
     <div class="exam-container exam-container--results">
       <article class="submission-confirmation">
         <div class="submission-icon warning" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <h1 id="closed-title" class="submission-title">Exam Not Available</h1>
         <p class="submission-message" id="exam-closed-message">This exam is not currently available.</p>
@@ -1870,7 +1872,7 @@
       } else if (autoSubmitted) {
         submissionMessage.innerHTML = `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Time ran out. Your exam has been auto-submitted</span>`;
         submissionIcon.className = 'submission-icon warning';
-        submissionIcon.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        submissionIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
       } else {
         submissionMessage.innerHTML = `<span class="submission-meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>Your exam has been submitted successfully</span>`;
       }

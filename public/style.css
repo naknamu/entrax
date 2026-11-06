@@ -2522,17 +2522,6 @@ pre code {
     padding-top: var(--space-8);
   }
 
-  .submission-icon {
-    width: 72px;
-    height: 72px;
-    margin-bottom: var(--space-4);
-  }
-
-  .submission-icon svg {
-    width: 32px;
-    height: 32px;
-  }
-
   .submission-title {
     font-size: var(--text-2xl);
   }
@@ -2559,18 +2548,16 @@ pre code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 96px;
-  height: 96px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-full);
-  margin-bottom: var(--space-6);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: var(--space-4);
 }
 
 .submission-icon.success {
   background-color: var(--color-success-light);
   color: var(--color-success);
   box-shadow: 0 0 0 4px var(--color-success-100);
-  animation: submission-pulse 2s ease-in-out infinite;
 }
 
 .submission-icon.warning {
@@ -2579,18 +2566,9 @@ pre code {
   box-shadow: 0 0 0 4px var(--color-warning-100);
 }
 
-@keyframes submission-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 4px var(--color-success-100);
-  }
-  50% {
-    box-shadow: 0 0 0 12px var(--color-success-50);
-  }
-}
-
 .submission-icon svg {
-  width: 48px;
-  height: 48px;
+  width: 28px;
+  height: 28px;
 }
 
 .submission-title {
@@ -3165,6 +3143,7 @@ pre code {
 }
 
 .category-breakdown-card .accordion-header {
+  padding: 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -3172,6 +3151,7 @@ pre code {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
   width: 100%;
   padding: var(--space-4) var(--space-5);
   background: transparent;
@@ -3180,6 +3160,18 @@ pre code {
   text-align: left;
   color: var(--color-text);
   font: inherit;
+}
+
+.category-breakdown-card .accordion-heading {
+  min-width: 0;
+}
+
+.category-breakdown-card .accordion-subtitle {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }
 
 .category-breakdown-card .accordion-toggle:hover {
