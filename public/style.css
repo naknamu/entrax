@@ -106,7 +106,8 @@
      saturated versions read as an alarm. Muted, desaturated tones keep the
      meaning without the glare. Dark-mode values are redefined below. */
   --color-result-success: #427a5d;
-  --color-result-danger: #9f5f5f;
+  --color-result-danger: #875757;
+  --color-result-danger-light: #ede7e7;
   --color-result-warning: #8c6e3b;
 
   /* Focus Ring */
@@ -210,6 +211,7 @@
     /* Results accents need to glow a little on dark surfaces to stay readable. */
     --color-result-success: #86c5a6;
     --color-result-danger: #e2a09a;
+    --color-result-danger-light: #3c2a2a;
     --color-result-warning: #d8b578;
     --focus-ring: 0 0 0 3px var(--color-primary-900);
     --focus-ring-offset: 0 0 0 2px var(--color-gray-900);
@@ -2595,6 +2597,7 @@ pre code {
   --color-success-700: var(--color-result-success);
   --color-danger: var(--color-result-danger);
   --color-danger-700: var(--color-result-danger);
+  --color-danger-light: var(--color-result-danger-light);
   --color-warning: var(--color-result-warning);
   --color-warning-700: var(--color-result-warning);
 }
