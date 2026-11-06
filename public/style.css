@@ -5790,6 +5790,23 @@ th[aria-sort="descending"] .sort-icon::after {
   color: var(--color-text-muted);
 }
 
+/* Review button on Recent Activity rows: a plain ghost button disappears
+   into the row background, so give it a gentle, visible shape that reads as
+   clickable. Kept muted (no strong red/green) to match the results palette. */
+.student-activity-item .btn-ghost {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.student-activity-item .btn-ghost:hover:not(:disabled) {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary-border);
+  text-decoration: none;
+}
+
 /* ── Exam List ────────────────────────────────────────────────────────── */
 
 .student-exam-toolbar {
