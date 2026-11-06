@@ -6091,9 +6091,19 @@ th[aria-sort="descending"] .sort-icon::after {
   animation: student-pulse-badge 2s ease-in-out infinite;
 }
 
-/* Exams behind the paywall: visible as a catalogue, not startable. */
+/* Exams behind the paywall: visible as a catalogue, not startable. Tinted and
+   dashed so they read as unavailable at a glance, in both light and dark mode
+   (--color-gray-50 is near-white in both). */
 .student-exam-card.locked {
-  background: var(--color-gray-50, #f9fafb);
+  background: var(--color-bg-subtle);
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  box-shadow: none;
+}
+
+.student-exam-card.locked:hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .student-exam-card.locked .student-exam-card-title,
