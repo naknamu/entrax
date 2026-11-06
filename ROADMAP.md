@@ -292,6 +292,9 @@ money.
       **$9 Extension (+90 days, stacks on the later of now or current expiry)**;
       **$49 Lifetime** (access while the Service operates). One-time purchases,
       no auto-renew. CTAs route to the free account until checkout is live.
+      The landing page shows only the Free/Pass/Lifetime cards; the Extension is
+      an expiry win-back offered on the portal plan card to a lapsed pass, not a
+      fourth price on the marketing grid (`cc3543e`).
 - [x] `public/robots.txt` + `public/sitemap.xml`; app/admin pages are `noindex`.
 - [x] Tests updated for the new front door (`admin-login.html`); full suite green.
 - [x] Rename the exam titles that still contained "Kaplan" so the student-facing
@@ -442,6 +445,40 @@ boundary itself is built).
 - [x] Support: FAQ and contact page.
 - [ ] Refund flow (Paddle issues refunds; we mirror the revocation in
       `entitlements/{uid}` from the `adjustment.updated` webhook).
+
+### Social proof (waiting on owner input)
+
+The only real user so far passed the exam, so one honest testimonial is
+available. One is fine — better than none or an invented one — but it has to be
+built from her actual words and consent, not marketing copy. Do not ship a
+placeholder or a fabricated quote while waiting.
+
+**Collect from the owner before writing any markup:**
+
+- [ ] The quote in her own words (light trim only; no rewriting).
+- [ ] Name format she consents to: full name, first name + last initial, or
+      initials.
+- [ ] The result exactly as she states it, including whether it was the Kaplan
+      Nursing Entrance Exam.
+- [ ] Month/year to display, e.g. "Passed, June 2026".
+- [ ] Whether she is personally connected to the operator (friend/family). If
+      so, FTC endorsement rules require a disclosure line ("early tester and
+      friend of the founder").
+- [ ] Written permission on file (a DM or email screenshot is enough), covering
+      the quote, name format, result, and photo if offered.
+- [ ] Optional photo she offers. Never a stock face next to a real person.
+
+**Implementation notes (when the details arrive):**
+
+- Placement: one pull-quote between "What's inside" and Pricing — proof
+  immediately before the ask. Not a testimonial grid; a grid with one item
+  looks emptier than a single well-set quote.
+- No star ratings, "4.9/5", carousels, or "trusted by hundreds" copy: the volume
+  does not exist, and implying it is a misleading endorsement.
+- Keep "Individual results vary" if the quote implies the product produced the
+  pass, and keep the Kaplan non-affiliation disclaimer.
+- Add a `privacy.html` line: testimonials are published only with consent and
+  can be removed on request.
 
 ### Trust
 
