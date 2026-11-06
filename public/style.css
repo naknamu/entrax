@@ -7499,40 +7499,6 @@ th[aria-sort="descending"] .sort-icon::after {
   text-align: center;
 }
 
-/* Extension strip under the three plans */
-
-.mk-price-extension {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-6);
-  max-width: 1080px;
-  margin: var(--space-6) auto 0;
-  padding: 22px 26px;
-  border: 1px dashed var(--color-primary-200);
-  border-radius: var(--radius-xl);
-  background: var(--color-primary-50);
-}
-
-.mk-price-extension strong {
-  display: block;
-  color: var(--color-gray-900);
-  font-size: var(--text-base);
-  font-weight: 700;
-}
-
-.mk-price-extension p {
-  margin: 6px 0 0;
-  color: var(--color-gray-600);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-}
-
-.mk-price-extension .btn {
-  flex-shrink: 0;
-  background: var(--color-white);
-}
-
 /* ── FAQ ────────────────────────────────────────────────────────────────── */
 
 .mk-faq-layout {
@@ -7884,14 +7850,6 @@ th[aria-sort="descending"] .sort-icon::after {
   .mk-price-grid {
     grid-template-columns: 1fr;
     max-width: 520px;
-  }
-
-  .mk-price-extension {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-4);
-    max-width: 520px;
-    padding: 20px;
   }
 
   .mk-footer-inner {

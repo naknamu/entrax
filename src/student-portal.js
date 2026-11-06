@@ -1323,7 +1323,14 @@ let planPollTimer = null;
  */
 function renderPlanActions(status) {
   if (!$planActions || !$planHint) return;
-  const purchasable = Object.values(PLANS).filter((plan) => isPlanPurchasable(plan.id));
+
+  // The Extension tops up a lapsed 90-day pass. Someone who never bought one,
+  // or still has time left, has nothing to extend, so the button would just be
+  // a fourth price to decode.
+  const canExtend = Boolean(status && status.plan !== 'free' && !status.active);
+  const purchasable = Object.values(PLANS).filter(
+    (plan) => isPlanPurchasable(plan.id) && (plan.id !== 'extension' || canExtend)
+  );
 
   if (!purchasable.length) {
     $planActions.hidden = true;
@@ -1332,7 +1339,9 @@ function renderPlanActions(status) {
     $planHint.hidden = Boolean(status?.active);
     $planHint.textContent = status?.active
       ? ''
-      : 'Checkout opens soon. Your free account stays free.';
+      : status?.plan && status.plan !== 'free'
+        ? 'Checkout opens soon. Extensions will be available then.'
+        : 'Checkout opens soon. Your free account stays free.';
     return;
   }
 
