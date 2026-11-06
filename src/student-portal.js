@@ -604,6 +604,10 @@ function renderRecentActivity(submissions, availableExams) {
     const badgeClass = sub.passed ? 'badge-success' : 'badge-danger';
     const badgeText = sub.passed ? 'Passed' : 'Failed';
     const time = formatRelativeTime(sub.submittedAt);
+    // Review a specific attempt, not "whatever is newest for this exam": after
+    // a retake every Recent Activity row would otherwise open the same result.
+    const reviewHref = `exam.html?examId=${encodeURIComponent(sub.examId)}&review=true` +
+      `&submissionId=${encodeURIComponent(sub.id)}`;
 
     return `
       <div class="student-activity-item">
@@ -617,7 +621,7 @@ function renderRecentActivity(submissions, availableExams) {
           <span class="student-activity-meta">Score: ${score} · ${time}</span>
         </div>
         <span class="badge ${badgeClass}">${badgeText}</span>
-        <a href="exam.html?examId=${sub.examId}&review=true" class="btn btn-ghost btn-sm" title="View results">Review</a>
+        <a href="${reviewHref}" class="btn btn-ghost btn-sm" title="View results">Review</a>
       </div>`;
   }).join('');
 }

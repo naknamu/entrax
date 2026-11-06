@@ -564,6 +564,9 @@
     const isRetake = urlParams.get('retake') === 'true';
     // Review: show a previous submitted attempt instead of starting the exam.
     const isReview = urlParams.get('review') === 'true';
+    // Which submitted attempt to review. Recent Activity links one explicitly;
+    // a bare review link falls back to the newest submitted attempt.
+    const reviewSubmissionId = urlParams.get('submissionId');
     // Keep the start form visible even when a student session exists (used by
     // tests and by anyone who wants to confirm the name/email on the attempt).
     const isManualStart = urlParams.get('manualStart') === 'true';
@@ -680,7 +683,7 @@
         // Review mode: show a previous submitted attempt instead of starting a
         // new one. This works even after the exam window has closed.
         if (isReview) {
-          const previous = await findLatestSubmission();
+          const previous = await findReviewSubmission();
           if (previous) {
             restoreSubmissionState(previous);
             showSubmissionResults(
@@ -829,10 +832,21 @@
     }
 
     /**
-     * Find the signed-in student's most recent submitted attempt for this exam.
+     * Find the attempt to review.
+     *
+     * Recent Activity links the exact submission, so clicking an older row must
+     * show that attempt — not the newest retake for the same exam. A bare
+     * `review=true` link (old bookmarks, the post-submit screen) still reviews
+     * the most recent submitted attempt.
      */
-    async function findLatestSubmission() {
+    async function findReviewSubmission() {
       const byId = await fetchOwnSubmissions();
+      if (reviewSubmissionId) {
+        const chosen = byId.get(reviewSubmissionId);
+        if (chosen && chosen.examId === examId && chosen.submittedAt != null) {
+          return chosen;
+        }
+      }
       return [...byId.values()]
         .filter(sub => sub.submittedAt != null && sub.examId === examId)
         .sort((a, b) => submissionMillis(b) - submissionMillis(a))[0] || null;

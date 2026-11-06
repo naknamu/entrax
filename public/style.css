@@ -100,6 +100,15 @@
   --color-danger-light: var(--color-danger-50);
   --color-danger-border: var(--color-danger-100);
 
+  /* Results screen accents. Full-strength red/green is right for an alert or a
+     destructive button; on the results page these colours cover the verdict,
+     the score breakdown, every category bar and every answer row, where the
+     saturated versions read as an alarm. Muted, desaturated tones keep the
+     meaning without the glare. Dark-mode values are redefined below. */
+  --color-result-success: #427a5d;
+  --color-result-danger: #9f5f5f;
+  --color-result-warning: #8c6e3b;
+
   /* Focus Ring */
   --focus-ring: 0 0 0 3px var(--color-primary-100);
   --focus-ring-offset: 0 0 0 2px var(--color-white);
@@ -198,6 +207,10 @@
     --color-warning-light: var(--color-warning-900);
     --color-danger-light: var(--color-danger-900);
     --color-info-light: var(--color-info-900);
+    /* Results accents need to glow a little on dark surfaces to stay readable. */
+    --color-result-success: #86c5a6;
+    --color-result-danger: #e2a09a;
+    --color-result-warning: #d8b578;
     --focus-ring: 0 0 0 3px var(--color-primary-900);
     --focus-ring-offset: 0 0 0 2px var(--color-gray-900);
   }
@@ -2571,6 +2584,21 @@ pre code {
   height: 28px;
 }
 
+/* Results screens: route the semantic colours through the muted result accents.
+   Everything inside #submission-screen and #already-submitted-screen (score
+   values, verdict text, category bars, badges, review chips, answer rows)
+   picks these up, while admin pages and the portal keep the full-strength
+   palette. */
+#submission-screen,
+#already-submitted-screen {
+  --color-success: var(--color-result-success);
+  --color-success-700: var(--color-result-success);
+  --color-danger: var(--color-result-danger);
+  --color-danger-700: var(--color-result-danger);
+  --color-warning: var(--color-result-warning);
+  --color-warning-700: var(--color-result-warning);
+}
+
 .submission-title {
   font-size: var(--text-3xl);
   font-weight: var(--font-bold);
@@ -3501,6 +3529,27 @@ pre code {
 .answer-choice.selected:not(.correct) .answer-choice-letter {
   background-color: var(--color-warning);
   color: var(--color-white);
+}
+
+/* Results review: a solid red/green dot on every answer row is what made the
+   page feel loud. On the results screen only, swap the filled circles for a
+   quiet chip with a tinted letter. */
+#submission-screen .answer-choice.correct .answer-choice-letter {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-result-success);
+  box-shadow: inset 0 0 0 1px var(--color-success-border);
+}
+
+#submission-screen .answer-choice.incorrect .answer-choice-letter {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-result-danger);
+  box-shadow: inset 0 0 0 1px var(--color-danger-border);
+}
+
+#submission-screen .answer-choice.selected:not(.correct) .answer-choice-letter {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-result-warning);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
 }
 
 .answer-choice-text {
@@ -4556,15 +4605,16 @@ th[aria-sort="descending"] .sort-icon::after {
     box-shadow: 0 0 0 2px var(--color-primary-700);
   }
 
-  /* Review summary chips use the same tints. */
+  /* Review summary chips use the same tints; the results accents are already
+     lightened for dark surfaces. */
   .review-section-stat--correct {
-    color: var(--color-success-500);
+    color: var(--color-result-success);
   }
   .review-section-stat--incorrect {
-    color: var(--color-danger-500);
+    color: var(--color-result-danger);
   }
   .review-section-stat--unanswered {
-    color: var(--color-warning-500);
+    color: var(--color-result-warning);
   }
 
   /* Tooltip: the light-mode surface is a dark chip; on a dark page it would

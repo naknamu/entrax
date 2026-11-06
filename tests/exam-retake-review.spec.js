@@ -1,14 +1,21 @@
 /**
- * Regression test for the portal's "Retake" and "View Results" actions.
+ * Regression test for the portal's "Retake" and "Review" actions.
  *
  * - "Retake" used to open exam.html without any flag, so the already-submitted
  *   check blocked the student instead of starting a new attempt.
- * - "View Results" passes &review=true, but exam.html ignored it and fell back
+ * - "Review" passes &review=true, but exam.html ignored it and fell back
  *   to the start/already-submitted flow.
+ * - "Review" in Recent Activity only carried the examId, so every row for an
+ *   exam opened the newest attempt. Each row now links its own submission.
  */
 
 import { test, expect } from '@playwright/test';
-import { signInAsAdmin, signInAsStudent } from './utils.js';
+import {
+  signInAsAdmin,
+  signInAsStudent,
+  setFirestoreDoc,
+  deleteFirestoreDoc,
+} from './utils.js';
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 const PROJECT_ID = 'demo-test';
@@ -240,6 +247,120 @@ test.describe('Exam retake and review', () => {
           headers: OWNER_AUTH
         });
       }
+      await request.delete(`${DOCS_URL}/exams/${examId}`, { headers: OWNER_AUTH });
+    }
+  });
+
+  test('Recent Activity reviews the attempt that was clicked, not the newest', async ({ page, request }) => {
+    const stamp = Date.now();
+    const examId = `test-activity-review-${stamp}`;
+    const email = `activity-${stamp}@test.com`;
+    const olderId = `activity-older-${stamp}`;
+    const newerId = `activity-newer-${stamp}`;
+
+    const created = await request.patch(`${DOCS_URL}/exams/${examId}`, {
+      headers: OWNER_AUTH,
+      data: {
+        fields: {
+          title: { stringValue: 'Recent activity review exam' },
+          status: { stringValue: 'published' },
+          createdBy: { stringValue: 'test-admin-uid' },
+          timeLimitMinutes: { integerValue: '60' },
+          passingPercent: { integerValue: '50' },
+          showResultsToStudent: { booleanValue: true },
+          startDate: { timestampValue: '2020-01-01T00:00:00Z' },
+          endDate: { timestampValue: '2999-01-01T00:00:00Z' },
+          questions: {
+            arrayValue: {
+              values: [
+                question('q1', 'Pick A', ['A', 'B'], 0, 'Alpha'),
+                question('q2', 'Pick B', ['A', 'B'], 1, 'Beta')
+              ]
+            }
+          }
+        }
+      }
+    });
+    expect(created.ok()).toBeTruthy();
+
+    const seeded = [];
+    try {
+      await signInAsStudent(page, email);
+      const uid = await page.evaluate(() => window.__FIREBASE_AUTH__?.currentUser?.uid);
+      expect(uid).toBeTruthy();
+
+      const submission = (answers, correctCount, submittedAt) => ({
+        examId,
+        examTitle: 'Recent activity review exam',
+        studentUid: uid,
+        studentName: 'Activity Tester',
+        studentEmail: email,
+        startedAt: submittedAt,
+        submittedAt,
+        answers,
+        questionOrder: [0, 1],
+        flaggedQuestions: [],
+        score: correctCount,
+        totalQuestions: 2,
+        percentage: correctCount * 50,
+        passed: correctCount * 50 >= 50,
+        autoSubmitted: false,
+      });
+
+      // Older attempt: both answers wrong. Newer attempt: both correct.
+      seeded.push(await setFirestoreDoc(request, `submissions/${olderId}`, submission(
+        [
+          { questionId: 'q1', selectedIndex: 1 },
+          { questionId: 'q2', selectedIndex: 0 }
+        ],
+        0,
+        new Date(Date.now() - 24 * 60 * 60 * 1000)
+      )));
+      seeded.push(await setFirestoreDoc(request, `submissions/${newerId}`, submission(
+        [
+          { questionId: 'q1', selectedIndex: 0 },
+          { questionId: 'q2', selectedIndex: 1 }
+        ],
+        2,
+        new Date()
+      )));
+
+      await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#portal-view')).toBeVisible({ timeout: 20000 });
+
+      const rows = page.locator('#recent-activity-list .student-activity-item');
+      await expect(rows).toHaveCount(2, { timeout: 20000 });
+
+      const olderRow = rows.filter({ hasText: 'Score: 0%' });
+      const newerRow = rows.filter({ hasText: 'Score: 100%' });
+      await expect(olderRow).toHaveCount(1);
+      await expect(newerRow).toHaveCount(1);
+
+      // Each row carries its own submission id instead of only the exam id.
+      const olderReview = olderRow.locator('a', { hasText: 'Review' });
+      await expect(olderReview).toHaveAttribute('href', new RegExp(`submissionId=${olderId}`));
+      await expect(newerRow.locator('a', { hasText: 'Review' }))
+        .toHaveAttribute('href', new RegExp(`submissionId=${newerId}`));
+
+      // Clicking the older row must open the older (failed) attempt.
+      await olderReview.click();
+      await page.waitForSelector('#submission-screen:not([hidden])', { timeout: 20000 });
+      await expect(page.locator('#submission-title')).toHaveText('Exam Results');
+      await expect(page.locator('#score-percent')).toHaveText('0.0%');
+
+      await page.goto('/student.html', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#portal-view')).toBeVisible({ timeout: 20000 });
+      await page.locator('#recent-activity-list .student-activity-item')
+        .filter({ hasText: 'Score: 100%' })
+        .locator('a', { hasText: 'Review' })
+        .click();
+      await page.waitForSelector('#submission-screen:not([hidden])', { timeout: 20000 });
+      await expect(page.locator('#score-percent')).toHaveText('100.0%');
+
+      // Reviewing never creates another attempt.
+      expect((await countSubmissions(request, examId)).length).toBe(2);
+    } finally {
+      for (const path of seeded) await deleteFirestoreDoc(request, path);
       await request.delete(`${DOCS_URL}/exams/${examId}`, { headers: OWNER_AUTH });
     }
   });
