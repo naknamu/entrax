@@ -106,8 +106,8 @@
      saturated versions read as an alarm. Muted, desaturated tones keep the
      meaning without the glare. Dark-mode values are redefined below. */
   --color-result-success: #427a5d;
-  --color-result-danger: #875757;
-  --color-result-danger-light: #ede7e7;
+  --color-result-danger: #a33333;
+  --color-result-danger-light: #fbe7e7;
   --color-result-warning: #8c6e3b;
 
   /* Focus Ring */
