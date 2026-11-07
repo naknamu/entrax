@@ -4435,6 +4435,36 @@ th[aria-sort="descending"] .sort-icon::after {
   scrollbar-color: var(--color-gray-300) var(--color-gray-100);
 }
 
+/* Desktop: make scrollbars clearly visible against the page background */
+@media (min-width: 1025px) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-gray-200);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-gray-400);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-500);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--color-gray-200);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-gray-400) var(--color-gray-200);
+  }
+}
+
 /* ==========================================================================
    Reduced Motion
    ========================================================================== */
