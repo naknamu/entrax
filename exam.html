@@ -18,8 +18,6 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <!-- Loading Screen (shown until the exam is loaded so the start form never flashes) -->
-<body class="exam-page">
-  <!-- Loading Screen (shown until the exam is loaded so the start form never flashes) -->
   <section id="loading-screen" class="exam-screen active" aria-busy="true" aria-live="polite">
     <div class="exam-container exam-container--start">
       <div class="exam-loading">
@@ -108,7 +106,7 @@
       </div>
     </header>
 
-    <main class="exam-main">
+    <main class="exam-main" id="main-content" tabindex="-1">
       <!-- Progress Sidebar -->
       <aside class="exam-sidebar no-print" id="exam-sidebar" aria-label="Question navigation">
         <div class="sidebar-header">

@@ -368,6 +368,40 @@ pre code {
   border: 0;
 }
 
+/* Skip link: the first focusable element, hidden until a keyboard user tabs to
+   it. App pages used to render the bare anchor, which sat above the header and
+   pushed the whole page down by a line. Fixed positioning keeps it out of the
+   layout (and out of the viewport) until :focus. */
+.skip-link {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: var(--z-tooltip);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transform: translateY(calc(-100% - var(--space-6)));
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* The skip target is focused programmatically; don't draw a ring around the
+   whole page area. */
+#main-content:focus {
+  outline: none;
+}
+
 /* ==========================================================================
    Spacing Utilities
    ========================================================================== */
