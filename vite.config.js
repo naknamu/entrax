@@ -19,6 +19,7 @@ export default defineConfig({
         exam: resolve(__dirname, 'exam.html'),
         'exam-results': resolve(__dirname, 'exam-results.html'),
         student: resolve(__dirname, 'student.html'),
+        'student-results': resolve(__dirname, 'student-results.html'),
         terms: resolve(__dirname, 'terms.html'),
         privacy: resolve(__dirname, 'privacy.html'),
         contact: resolve(__dirname, 'contact.html'),

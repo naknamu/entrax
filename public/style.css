@@ -6372,6 +6372,18 @@ th[aria-sort="descending"] .sort-icon::after {
   color: var(--color-text-muted);
 }
 
+/* Secondary link to the standalone printable results page; kept quiet so it
+   doesn't compete with the modal's primary action. */
+.student-exam-modal-print {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.student-exam-modal-print:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .student-exam-modal-facts {
     grid-template-columns: minmax(0, 1fr);

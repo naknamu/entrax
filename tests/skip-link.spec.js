@@ -11,7 +11,31 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { signInAsStudent } from './utils.js';
+import { signInAsAdmin, signInAsStudent } from './utils.js';
+
+/**
+ * Shared assertions for any page that ships a skip link: it must point at a
+ * real target, reserve no space while idle, and slide into the viewport when
+ * focused (the reveal is a transform transition, so measure once it lands).
+ */
+async function expectSkipLinkShape(page) {
+  const skip = page.locator('.skip-link');
+  await expect(skip).toHaveAttribute('href', '#main-content');
+  expect(await skip.evaluate((el) => getComputedStyle(el).position)).toBe('fixed');
+
+  // Idle means fully off-screen. The reveal/hide is a transform transition, so
+  // wait until it has actually left the viewport before measuring.
+  await expect(skip).not.toBeInViewport();
+  const hiddenBox = await skip.boundingBox();
+  expect(hiddenBox.y + hiddenBox.height).toBeLessThanOrEqual(0);
+
+  await expect(page.locator('main#main-content')).toHaveCount(1);
+  await expect(page.locator('main#main-content')).toHaveAttribute('tabindex', '-1');
+
+  await skip.focus();
+  await expect(skip).toBeInViewport({ ratio: 1 });
+  return skip;
+}
 
 test.describe('Skip to main content', () => {
   test('stays out of the dashboard layout until keyboard focus', async ({ page }) => {
@@ -57,5 +81,31 @@ test.describe('Skip to main content', () => {
     await expect(page.locator('.skip-link')).toHaveAttribute('href', '#main-content');
     await expect(page.locator('main#main-content')).toHaveCount(1);
     await expect(page.locator('main#main-content')).toHaveAttribute('tabindex', '-1');
+  });
+
+  test('admin sign-in page has an off-layout skip link', async ({ page }) => {
+    await page.goto('/admin-login.html', { waitUntil: 'domcontentloaded' });
+    await expectSkipLinkShape(page);
+  });
+
+  test('admin pages have an off-layout skip link and a real target', async ({ page }) => {
+    await signInAsAdmin(page);
+
+    for (const path of ['/admin-dashboard.html', '/create-exam.html', '/exam-results.html']) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+
+      // Nothing on the page sits above the link, so the first Tab reveals it
+      // and Enter hands focus to the main region. Keyboard checks come first:
+      // they need focus to start at the document, before anything is focused.
+      const skip = page.locator('.skip-link');
+      await page.keyboard.press('Tab');
+      await expect(skip).toBeFocused();
+      await expect(skip).toBeInViewport({ ratio: 1 });
+      await page.keyboard.press('Enter');
+      expect(await page.evaluate(() => document.activeElement?.id)).toBe('main-content');
+
+      // Then the shape: off the layout while idle, real target, focus reveal.
+      await expectSkipLinkShape(page);
+    }
   });
 });

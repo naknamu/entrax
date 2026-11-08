@@ -8,5 +8,6 @@ Disallow: /create-exam.html
 Disallow: /exam-results.html
 Disallow: /exam.html
 Disallow: /student.html
+Disallow: /student-results.html
 
 Sitemap: https://examello.com/sitemap.xml

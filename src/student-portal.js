@@ -1227,10 +1227,16 @@ function openExamModal(examId, trigger) {
 
   if (sub) {
     $examModalScore.hidden = false;
+    // Standalone, print-friendly copy of this attempt (student-results.html),
+    // so a past score can be reopened without walking through the exam page.
+    const printableHref = sub.id
+      ? `student-results.html?submissionId=${encodeURIComponent(sub.id)}`
+      : `exam.html?examId=${encodeURIComponent(exam.id)}&review=true`;
     $examModalScore.innerHTML = `
       <span class="student-exam-modal-score-value">${sub.percentage != null ? `${sub.percentage}%` : '—'}</span>
       <span class="student-exam-modal-score-label">your last score</span>
-      <span class="badge ${sub.passed ? 'badge-success' : 'badge-danger'}">${sub.passed ? 'Passed' : 'Failed'}</span>`;
+      <span class="badge ${sub.passed ? 'badge-success' : 'badge-danger'}">${sub.passed ? 'Passed' : 'Failed'}</span>
+      <a class="student-exam-modal-print" href="${printableHref}">Printable results</a>`;
     $examModalAction.textContent = 'View Results';
     $examModalAction.href = `exam.html?examId=${exam.id}&review=true`;
     $examModalRetake.hidden = locked;

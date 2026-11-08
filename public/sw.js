@@ -1,4 +1,4 @@
-const CACHE_NAME = 'examello-v1';
+const CACHE_NAME = 'examello-v2';
 
 // Resolve every path against the service worker's scope so the app also works
 // from a subpath — GitHub Pages serves it at /entrax/, not the domain root.
@@ -7,6 +7,7 @@ const assetUrl = (path) => new URL(path, self.registration.scope).href;
 const STATIC_ASSETS = [
   '',
   'student.html',
+  'student-results.html',
   'exam.html',
   'exam-results.html',
   'index.html',
