@@ -2405,11 +2405,13 @@
         item.hidden = shouldHide;
       });
 
-      // Hide empty sections
+      // Hide empty sections. Only force sections open while actively filtering
+      // to incorrect answers; on reset the default collapsed state must stay
+      // intact (the review renders as collapsed <details> per section).
       answerBreakdown.querySelectorAll('details.review-section').forEach(section => {
         const visibleItems = section.querySelectorAll('.answer-item:not([hidden])');
         section.hidden = visibleItems.length === 0;
-        if (!section.hidden) section.open = true;
+        if (onlyIncorrect && !section.hidden) section.open = true;
       });
     }
 

@@ -5425,15 +5425,15 @@ th[aria-sort="descending"] .sort-icon::after {
 
 .student-stat-skeleton,
 .student-streak-skeleton {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-left: auto;
   width: 120px;
 }
 
-.student-stat-skeleton.hidden,
-.student-streak-skeleton.hidden {
+.student-stat-skeleton[hidden],
+.student-streak-skeleton[hidden] {
   display: none !important;
 }
 
@@ -6913,39 +6913,8 @@ th[aria-sort="descending"] .sort-icon::after {
 
 /* ── Mobile & Touch Improvements ───────────────────────────────────────── */
 
-/* Prevent iOS Safari from zooming on input focus (font-size >= 16px) */
-input, select, textarea {
-  font-size: 16px;
-}
-
-/* Minimum touch target size for all interactive elements */
-button, [role="button"], a.btn, .choice-btn, .nav-btn, .solution-toggle,
-.student-drill-btn, .student-density-btn, .student-filter-tab,
-.student-exam-bookmark, .student-sidebar-toggle, .sidebar-toggle,
-.flag-question-btn, .sidebar-close {
-  min-height: 44px;
-  min-width: 44px;
-  touch-action: manipulation;
-}
-
-/* Safe area insets for notched devices */
-.student-mobile-nav {
-  padding-bottom: calc(var(--space-2) + var(--safe-area-inset-bottom));
-}
-
-.student-sidebar {
-  padding-top: calc(var(--space-5) + var(--safe-area-inset-top));
-}
-
-.exam-sidebar {
-  padding-top: calc(var(--exam-timer-height) + var(--space-6) + var(--safe-area-inset-top));
-}
-
-.student-main {
-  padding-bottom: calc(var(--space-12) + var(--safe-area-inset-bottom));
-}
-
-/* Swipe navigation hint on exam question nav */
+/* Swipe navigation hint on the exam question area (hidden by default; only
+   shown on touch devices below). Sits out of the way on desktop. */
 .swipe-hint {
   display: none;
   position: absolute;
@@ -6970,7 +6939,42 @@ button, [role="button"], a.btn, .choice-btn, .nav-btn, .solution-toggle,
   right: var(--space-4);
 }
 
-@media (max-width: 768px) {
+/* Touch-only refinements. Scoped to coarse pointers so the desktop layouts
+   (which the E2E suite exercises at fine-pointer viewports) are untouched. */
+@media (pointer: coarse) {
+  /* Prevent iOS Safari from zooming on input focus (font-size >= 16px). */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  /* Minimum touch target size for interactive elements. */
+  button, [role="button"], a.btn, .choice-btn, .nav-btn, .solution-toggle,
+  .student-drill-btn, .student-density-btn, .student-filter-tab,
+  .student-exam-bookmark, .student-sidebar-toggle, .sidebar-toggle,
+  .flag-question-btn, .sidebar-close {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Safe area insets for notched devices. */
+  .student-mobile-nav {
+    padding-bottom: calc(var(--space-2) + var(--safe-area-inset-bottom));
+  }
+
+  .student-sidebar {
+    padding-top: calc(var(--space-5) + var(--safe-area-inset-top));
+  }
+
+  .exam-sidebar {
+    padding-top: calc(var(--exam-timer-height) + var(--space-6) + var(--safe-area-inset-top));
+  }
+
+  .student-main {
+    padding-bottom: calc(var(--space-12) + var(--safe-area-inset-bottom));
+  }
+
+  /* Swipe hint is meaningful only where swiping works. */
   .swipe-hint {
     display: block;
   }
