@@ -55,11 +55,23 @@ jobs:
       - name: Install Cloud Functions dependencies
         run: npm ci --prefix functions --no-audit --no-fund
 
+      - name: Install Firebase CLI globally
+        run: npm install -g firebase-tools
+
       - name: Grading unit tests
         run: node --test functions/test/grading.test.cjs
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Pre-download Firebase emulator binaries
+        run: |
+          # Start emulators briefly to download/cache emulator binaries,
+          # then shut them down so the real test run starts warm.
+          timeout 25 firebase emulators:start --only auth,firestore,functions --project demo-test || true
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
       - name: Run Playwright under Firebase emulators
         run: npm run test:ci
