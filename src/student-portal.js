@@ -74,6 +74,10 @@ const $scoreTrendChart = document.getElementById('score-trend-chart');
 const $recentActivity  = document.getElementById('recent-activity-list');
 const $focusAreasCard  = document.getElementById('focus-areas-card');
 const $focusAreasList  = document.getElementById('focus-areas-list');
+const $recommendCard   = document.getElementById('recommend-card');
+const $recommendMessage= document.getElementById('recommend-message');
+const $recommendAction = document.getElementById('recommend-action');
+const $recommendBrowse = document.getElementById('recommend-browse');
 const $navExamBadge    = document.getElementById('nav-exam-badge');
 
 const $examList        = document.getElementById('exam-list');
@@ -137,6 +141,7 @@ let examSubmissionMap = {};
 let examModalTrigger = null;
 let confirmResolve = null;
 let drillCategory = null;
+let bookmarkedExams = new Set();
 
 // Access state: the paid entitlement plus the free-tier boundary. Loaded once
 // per portal visit and reused by the exam list, the detail modal, and settings.
@@ -533,6 +538,10 @@ function renderDashboard() {
 
   // Focus areas (weak-area analysis)
   renderFocusAreas(s.weakAreas);
+
+  // Recommended next step: drill the weakest category, or retake the last
+  // failed exam, or just browse the exam list.
+  renderRecommendation(s);
 }
 
 function renderScoreChart(trend, passingPercent = 70) {
@@ -677,6 +686,41 @@ function renderFocusAreas(weakAreas) {
   });
 }
 
+/**
+ * Render the "Recommended Next Step" card on the dashboard.
+ * Priority: weakest category drill > retake last failed > browse all exams.
+ */
+function renderRecommendation(stats) {
+  if (!$recommendCard) return;
+
+  const weakest = stats?.weakAreas?.[0];
+  const lastFailed = stats?.recentSubmissions?.find(s => s.passed === false);
+
+  $recommendCard.hidden = false;
+
+  if (weakest && weakest.percentage < 70) {
+    $recommendMessage.textContent = `You're strongest elsewhere — your ${weakest.category} score is ${weakest.percentage}%. Drill that category to bring it up.`;
+    $recommendAction.textContent = `Drill ${weakest.category}`;
+    $recommendAction.onclick = (e) => {
+      e.preventDefault();
+      startDrill(weakest.category);
+    };
+    $recommendAction.hidden = false;
+    $recommendBrowse.hidden = true;
+  } else if (lastFailed) {
+    $recommendMessage.textContent = `Your last attempt on "${escapeHtml(lastFailed.examId || 'this exam')}" scored ${lastFailed.percentage}%. Retake it to improve.`;
+    $recommendAction.textContent = 'Retake Exam';
+    $recommendAction.href = `exam.html?examId=${encodeURIComponent(lastFailed.examId)}&retake=true`;
+    $recommendAction.onclick = null;
+    $recommendAction.hidden = false;
+    $recommendBrowse.hidden = true;
+  } else {
+    $recommendMessage.textContent = 'Keep the momentum going — pick your next exam.';
+    $recommendAction.hidden = true;
+    $recommendBrowse.hidden = false;
+  }
+}
+
 function startDrill(category) {
   drillCategory = category;
   // Drilling is about the category, not about what is left to take. The exam
@@ -770,6 +814,7 @@ function applyExamFilter(submissionMap) {
       case 'available': return !sub;
       case 'completed': return !!sub;
       case 'passed':    return sub?.passed;
+      case 'bookmarked': return bookmarkedExams.has(exam.id);
       default:          return true;
     }
   });
@@ -891,6 +936,9 @@ function renderExamCards(exams, submissionMap, total, pages, start) {
           <div class="student-exam-card-info">
             <h3 class="student-exam-card-title">
               <a class="student-exam-card-link" href="${detailHref}" aria-haspopup="dialog">${escapeHtml(exam.title || 'Untitled Exam')}</a>
+              <button type="button" class="student-exam-bookmark" data-exam-id="${exam.id}" aria-label="${bookmarkedExams.has(exam.id) ? 'Remove bookmark' : 'Bookmark'}" title="${bookmarkedExams.has(exam.id) ? 'Bookmarked' : 'Bookmark'}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true${bookmarkedExams.has(exam.id) ? ' style="fill:var(--color-warning);stroke:var(--color-warning)"' : ''}"><polyline points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </button>
             </h3>
             ${desc ? `<p class="student-exam-card-desc">${escapeHtml(desc)}</p>` : ''}
           </div>
@@ -1029,6 +1077,38 @@ $densityToggle?.addEventListener('click', (e) => {
 });
 
 applyExamDensity();
+
+// ─── Bookmarks (favorite exams) ─────────────────────────────────────────────
+const BOOKMARK_KEY = 'nightingale.bookmarkedExams';
+
+function loadBookmarks() {
+  try {
+    const raw = localStorage.getItem(BOOKMARK_KEY);
+    if (raw) {
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) bookmarkedExams = new Set(ids);
+    }
+  } catch {
+    // Storage blocked: bookmarks won't persist, but the session still works.
+  }
+}
+
+function saveBookmarks() {
+  try {
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify([...bookmarkedExams]));
+  } catch {
+    // Not fatal.
+  }
+}
+
+function toggleBookmark(examId) {
+  if (bookmarkedExams.has(examId)) bookmarkedExams.delete(examId);
+  else bookmarkedExams.add(examId);
+  saveBookmarks();
+  applyExamFilter();
+}
+
+loadBookmarks();
 
 // ─── Exam detail modal ──────────────────────────────────────────────────────
 
@@ -1312,6 +1392,15 @@ $examModal.addEventListener('keydown', (e) => {
 // keyboard/semantic path. Both open the detail modal; the explicit actions
 // inside the card (Start Exam, Retake, View Results) keep navigating directly.
 $examList.addEventListener('click', (e) => {
+  // Bookmark star: toggle without opening the modal.
+  const bookmarkBtn = e.target.closest('.student-exam-bookmark');
+  if (bookmarkBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleBookmark(bookmarkBtn.dataset.examId);
+    return;
+  }
+
   const card = e.target.closest('.student-exam-card');
   if (!card) return;
   const link = e.target.closest('a');

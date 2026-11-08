@@ -300,6 +300,12 @@
               <button type="button" class="btn btn-outline btn-sm" id="show-all-solutions-btn">Show All Solutions</button>
               <button type="button" class="btn btn-ghost btn-sm" id="hide-all-solutions-btn" hidden>Hide All Solutions</button>
             </div>
+            <div id="review-controls" class="review-controls mb-3" hidden>
+              <button type="button" class="btn btn-outline btn-sm" id="expand-all-sections-btn">Expand All Sections</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="collapse-all-sections-btn">Collapse All Sections</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="show-only-incorrect-btn" aria-pressed="false">Show Only Incorrect</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="show-all-questions-btn" hidden aria-pressed="false">Show All Questions</button>
+            </div>
             <div class="answer-breakdown" id="answer-breakdown"></div>
           </div>
         </div>
@@ -486,6 +492,11 @@
     const resultsReview = document.getElementById('results-review');
     const answerBreakdown = document.getElementById('answer-breakdown');
     const solutionsControls = document.getElementById('solutions-controls');
+    const expandAllSectionsBtn = document.getElementById('expand-all-sections-btn');
+    const collapseAllSectionsBtn = document.getElementById('collapse-all-sections-btn');
+    const showOnlyIncorrectBtn = document.getElementById('show-only-incorrect-btn');
+    const showAllQuestionsBtn = document.getElementById('show-all-questions-btn');
+    const reviewControls = document.getElementById('review-controls');
     const showAllSolutionsBtn = document.getElementById('show-all-solutions-btn');
     const hideAllSolutionsBtn = document.getElementById('hide-all-solutions-btn');
     const resultsVerdict = document.getElementById('results-verdict');
@@ -1174,6 +1185,7 @@
       setupTabVisibilityListener();
       updateNavigation();
       setupMobileSidebar();
+      setupKeyboardShortcuts();
       // A resumed attempt may already be past its time limit / close time.
       checkAutoSubmit();
     }
@@ -1625,6 +1637,67 @@
       sidebarClose.setAttribute('aria-expanded', 'false');
     }
 
+    // ─── Keyboard shortcuts (exam screen only) ──────────────────────────────
+    // 1-4 select a choice, ArrowLeft/Right navigate, F flags, Enter submits.
+    // Shortcuts are ignored while typing in an input or while a modal is open.
+    function setupKeyboardShortcuts() {
+      const handleKeydown = (e) => {
+        if (!examScreen || !examScreen.classList.contains('active')) return;
+        if (isSubmitted || isAutoSubmitting) return;
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+        if (submitConfirmModal && !submitConfirmModal.hidden) return;
+        if (tabWarningModal && !tabWarningModal.hidden) return;
+
+        const key = e.key;
+
+        // Choice selection: 1 = A, 2 = B, 3 = C, 4 = D
+        if (key >= '1' && key <= '4') {
+          e.preventDefault();
+          const cIndex = parseInt(key, 10) - 1;
+          const qIndex = questionOrder[currentQuestionIndex];
+          selectChoice(cIndex, qIndex);
+          return;
+        }
+
+        // Navigation
+        if (key === 'ArrowLeft') {
+          e.preventDefault();
+          if (currentQuestionIndex > 0 && allowPrevious) {
+            currentQuestionIndex--;
+            renderQuestion();
+          }
+          return;
+        }
+        if (key === 'ArrowRight') {
+          e.preventDefault();
+          if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            renderQuestion();
+          } else {
+            showSubmitConfirmation();
+          }
+          return;
+        }
+
+        // Flag current question
+        if (key === 'f' || key === 'F') {
+          e.preventDefault();
+          flagQuestionBtn.click();
+          return;
+        }
+
+        // Submit exam
+        if (key === 'Enter') {
+          e.preventDefault();
+          submitExamBtn.click();
+          return;
+        }
+      };
+      document.addEventListener('keydown', handleKeydown);
+      window.__examKeydownHandler = handleKeydown;
+    }
+
     // Submit Exam
     async function submitExam(autoSubmitted = false) {
       if (isSubmitted) return;
@@ -1951,7 +2024,29 @@
           : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
         verdictTitle.textContent = passed ? 'You Passed!' : 'Better luck next time!';
         verdictDetail.textContent = `Score ${percentage.toFixed(1)}% · Passing threshold ${passingPercent}%`;
+
+        // Compare to the previous attempt on this exam (non-blocking).
+        getPreviousSubmission(examId, submissionId).then(previous => {
+          if (previous && previous.percentage != null) {
+            const delta = Math.round((percentage - previous.percentage) * 10) / 10;
+            const improved = delta > 0;
+            const deltaText = delta > 0 ? `+${delta}%` : delta < 0 ? `${delta}%` : '0%';
+            verdictDetail.textContent += ` · Last attempt: ${previous.percentage.toFixed(1)}% (${deltaText}, ${improved ? 'improved' : delta < 0 ? 'down' : 'same'})`;
+          }
+        });
       }
+    }
+
+    /**
+     * Find the most recent previous submitted attempt for this exam, excluding
+     * the current submission id. Reuses fetchOwnSubmissions() which is scoped
+     * to the current user.
+     */
+    async function getPreviousSubmission(examId, excludeId) {
+      const byId = await fetchOwnSubmissions();
+      return [...byId.values()]
+        .filter(sub => sub.examId === examId && sub.submittedAt != null && sub.id !== excludeId)
+        .sort((a, b) => submissionMillis(b) - submissionMillis(a))[0] || null;
     }
 
     /**
@@ -2120,6 +2215,14 @@
         showAllSolutionsBtn.hidden = false;
         hideAllSolutionsBtn.hidden = true;
       }
+
+      // Review filter controls (only when there are answer items)
+      if (reviewControls) {
+        const hasItems = answerBreakdown.querySelectorAll('.answer-item').length > 0;
+        reviewControls.hidden = !hasItems;
+        // Reset filters on new render
+        toggleReviewOnlyIncorrect(false);
+      }
     }
 
     /**
@@ -2193,6 +2296,54 @@
         });
         hideAllSolutionsBtn.hidden = true;
         showAllSolutionsBtn.hidden = false;
+      });
+    }
+
+    // ─── Review filters ─────────────────────────────────────────────────────
+    let reviewOnlyIncorrect = false;
+
+    function toggleReviewOnlyIncorrect(onlyIncorrect) {
+      reviewOnlyIncorrect = onlyIncorrect;
+      showOnlyIncorrectBtn.setAttribute('aria-pressed', String(onlyIncorrect));
+      showOnlyIncorrectBtn.classList.toggle('active', onlyIncorrect);
+      showOnlyIncorrectBtn.textContent = onlyIncorrect ? 'Show All Questions' : 'Show Only Incorrect';
+      showAllQuestionsBtn.hidden = !onlyIncorrect;
+      showAllQuestionsBtn.setAttribute('aria-pressed', 'false');
+
+      answerBreakdown.querySelectorAll('.answer-item').forEach(item => {
+        const isCorrect = item.classList.contains('correct') || item.querySelector('.badge-success');
+        const isIncorrect = item.classList.contains('incorrect') || item.querySelector('.badge-danger');
+        const isUnanswered = item.querySelector('.badge-warning');
+        const shouldHide = onlyIncorrect && !(isIncorrect || isUnanswered);
+        item.hidden = shouldHide;
+      });
+
+      // Hide empty sections
+      answerBreakdown.querySelectorAll('details.review-section').forEach(section => {
+        const visibleItems = section.querySelectorAll('.answer-item:not([hidden])');
+        section.hidden = visibleItems.length === 0;
+        if (!section.hidden) section.open = true;
+      });
+    }
+
+    if (expandAllSectionsBtn) {
+      expandAllSectionsBtn.addEventListener('click', () => {
+        answerBreakdown.querySelectorAll('details.review-section').forEach(d => { d.open = true; });
+      });
+    }
+    if (collapseAllSectionsBtn) {
+      collapseAllSectionsBtn.addEventListener('click', () => {
+        answerBreakdown.querySelectorAll('details.review-section').forEach(d => { d.open = false; });
+      });
+    }
+    if (showOnlyIncorrectBtn) {
+      showOnlyIncorrectBtn.addEventListener('click', () => {
+        toggleReviewOnlyIncorrect(!reviewOnlyIncorrect);
+      });
+    }
+    if (showAllQuestionsBtn) {
+      showAllQuestionsBtn.addEventListener('click', () => {
+        toggleReviewOnlyIncorrect(false);
       });
     }
 
