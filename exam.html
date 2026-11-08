@@ -2241,7 +2241,7 @@
         const labelClass = pct >= 80 ? 'badge-success' : pct >= 60 ? 'badge-warning' : 'badge-danger';
 
         return `
-          <div class="category-row">
+          <div class="category-row" data-category="${escapeHtml(category)}" role="button" tabindex="0" aria-label="Drill ${escapeHtml(category)}">
             <div class="category-row-header">
               <span class="category-row-name">${escapeHtml(category)}</span>
               <span class="badge ${labelClass}">${label}</span>
@@ -2257,6 +2257,28 @@
         `;
       }).join('');
     }
+
+    // ─── Category drill from results ────────────────────────────────────────
+    // Click a category row to start a weak-area drill in the student portal.
+    function drillCategoryFromResults(category) {
+      const url = new URL('student.html', window.location.origin);
+      url.searchParams.set('drill', category);
+      url.hash = 'exams';
+      window.location.href = url.href;
+    }
+
+    categoryBreakdownEl.addEventListener('click', (e) => {
+      const row = e.target.closest('[data-category]');
+      if (!row) return;
+      drillCategoryFromResults(row.dataset.category);
+    });
+    categoryBreakdownEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const row = e.target.closest('[data-category]');
+      if (!row) return;
+      e.preventDefault();
+      drillCategoryFromResults(row.dataset.category);
+    });
 
     // Solution expand/collapse (event delegation)
     answerBreakdown.addEventListener('click', (e) => {

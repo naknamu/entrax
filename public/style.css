@@ -3290,6 +3290,22 @@ pre code {
   gap: var(--space-2);
 }
 
+.category-row[data-category] {
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+.category-row[data-category]:hover {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-primary);
+}
+.category-row[data-category]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .category-row-header {
   display: flex;
   justify-content: space-between;

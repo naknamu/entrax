@@ -141,6 +141,7 @@ let examSubmissionMap = {};
 let examModalTrigger = null;
 let confirmResolve = null;
 let drillCategory = null;
+let pendingDrill = null;
 let bookmarkedExams = new Set();
 
 // Access state: the paid entitlement plus the free-tier boundary. Loaded once
@@ -395,7 +396,16 @@ onStudentAuthStateChanged(async (user) => {
     }
     showPortalView();
     updateSidebarUser(user);
-    navigateTo(getCurrentHash() || 'dashboard');
+
+    // A category drill link from exam results (e.g. student.html?drill=Math#exams)
+    // starts a weak-area drill on the exams view.
+    const drillParam = new URLSearchParams(window.location.search).get('drill');
+    if (drillParam) {
+      pendingDrill = drillParam;
+      startDrill(drillParam);
+    } else {
+      navigateTo(getCurrentHash() || 'dashboard');
+    }
     loadDashboardData();
   } else if (isMagicLink()) {
     // Handled by handleMagicLinkOnLoad
