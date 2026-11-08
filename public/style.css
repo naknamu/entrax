@@ -189,6 +189,12 @@
   --exam-timer-height: 64px;
   --exam-sidebar-width: 280px;
   --exam-question-max-width: 800px;
+
+  /* Safe area insets for notched devices (iPhone, etc.) */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
+  --safe-area-inset-right: env(safe-area-inset-right);
 }
 
 /* Dark mode support */
@@ -2241,6 +2247,7 @@ pre code {
 }
 
 .question-content {
+  position: relative;
   padding: var(--space-8) var(--space-6);
   max-width: var(--exam-question-max-width);
   margin: 0 auto;
@@ -5416,6 +5423,20 @@ th[aria-sort="descending"] .sort-icon::after {
   margin-top: 2px;
 }
 
+.student-stat-skeleton,
+.student-streak-skeleton {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-left: auto;
+  width: 120px;
+}
+
+.student-stat-skeleton.hidden,
+.student-streak-skeleton.hidden {
+  display: none !important;
+}
+
 /* ── Streak / Best Score Row ───────────────────────────────────────────── */
 
 .student-dashboard-row {
@@ -6887,6 +6908,255 @@ th[aria-sort="descending"] .sort-icon::after {
 
   .student-signin-card {
     padding: var(--space-6);
+  }
+}
+
+/* ── Mobile & Touch Improvements ───────────────────────────────────────── */
+
+/* Prevent iOS Safari from zooming on input focus (font-size >= 16px) */
+input, select, textarea {
+  font-size: 16px;
+}
+
+/* Minimum touch target size for all interactive elements */
+button, [role="button"], a.btn, .choice-btn, .nav-btn, .solution-toggle,
+.student-drill-btn, .student-density-btn, .student-filter-tab,
+.student-exam-bookmark, .student-sidebar-toggle, .sidebar-toggle,
+.flag-question-btn, .sidebar-close {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+/* Safe area insets for notched devices */
+.student-mobile-nav {
+  padding-bottom: calc(var(--space-2) + var(--safe-area-inset-bottom));
+}
+
+.student-sidebar {
+  padding-top: calc(var(--space-5) + var(--safe-area-inset-top));
+}
+
+.exam-sidebar {
+  padding-top: calc(var(--exam-timer-height) + var(--space-6) + var(--safe-area-inset-top));
+}
+
+.student-main {
+  padding-bottom: calc(var(--space-12) + var(--safe-area-inset-bottom));
+}
+
+/* Swipe navigation hint on exam question nav */
+.swipe-hint {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 10;
+  background: var(--color-bg-elevated);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+}
+
+.swipe-hint-left {
+  left: var(--space-4);
+}
+
+.swipe-hint-right {
+  right: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .swipe-hint {
+    display: block;
+  }
+}
+
+/* Skeleton loading states for dashboard */
+.student-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-elevated) 0%,
+    var(--color-bg-subtle) 50%,
+    var(--color-bg-elevated) 100%
+  );
+  background-size: 200% 100%;
+  animation: student-skeleton-pulse 1.5s infinite ease-in-out;
+  border-radius: var(--radius-md);
+  height: 100%;
+}
+
+.student-skeleton-text {
+  height: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.student-skeleton-text:last-child {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+.student-skeleton-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+}
+
+@keyframes student-skeleton-pulse {
+  0% { background-position: 200% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
+/* Mobile timer bar - stack items vertically on very small screens */
+@media (max-width: 480px) {
+  .timer-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .timer-progress-container {
+    order: 2;
+    width: 100%;
+  }
+
+  .timer-progress-text {
+    order: 3;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .timer-display {
+    font-size: var(--text-2xl);
+  }
+}
+
+/* Mobile results screen - score circle and breakdown */
+@media (max-width: 640px) {
+  .score-details {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .score-detail {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-1);
+  }
+
+  .results-verdict {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-3);
+  }
+
+  .results-verdict-icon {
+    margin: 0;
+  }
+}
+
+/* Mobile exam card - ensure bookmark button is accessible */
+@media (max-width: 640px) {
+  .student-exam-card-header {
+    min-height: 64px;
+  }
+
+  .student-exam-bookmark {
+    padding: var(--space-2);
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile exam detail modal - full width on small screens */
+@media (max-width: 640px) {
+  .student-exam-modal .modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .student-exam-modal .modal-body {
+    overflow-y: auto;
+    max-height: 60vh;
+  }
+
+  .student-exam-modal .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-bg);
+    padding: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .student-exam-modal .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Mobile settings form */
+@media (max-width: 640px) {
+  .student-settings-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .form-group {
+    margin-bottom: var(--space-3);
+  }
+
+  .input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* Mobile pagination - horizontal scroll on very small screens */
+@media (max-width: 480px) {
+  .student-pagination-controls {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: var(--space-1);
+  }
+
+  .student-pagination-controls::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Mobile focus areas - horizontal scroll for drill buttons */
+@media (max-width: 640px) {
+  .student-focus-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .student-focus-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .student-drill-btn {
+    align-self: flex-end;
   }
 }
 

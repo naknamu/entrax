@@ -154,7 +154,8 @@
             <div class="passage-text" id="question-passage-text"></div>
           </div>
           <div class="question-text" id="question-text"></div>
-          
+          <div class="swipe-hint swipe-hint-left">← Previous</div>
+          <div class="swipe-hint swipe-hint-right">Next →</div>
           <fieldset class="choices-fieldset" id="choices-fieldset" aria-labelledby="choices-legend">
             <legend class="sr-only" id="choices-legend">Answer Choices</legend>
             <div class="choices-grid" id="choices-grid" role="radiogroup" aria-label="Answer choices">
@@ -1186,6 +1187,7 @@
       updateNavigation();
       setupMobileSidebar();
       setupKeyboardShortcuts();
+      setupSwipeNavigation();
       // A resumed attempt may already be past its time limit / close time.
       checkAutoSubmit();
     }
@@ -1696,6 +1698,69 @@
       };
       document.addEventListener('keydown', handleKeydown);
       window.__examKeydownHandler = handleKeydown;
+    }
+
+    // ─── Swipe navigation (mobile) ──────────────────────────────────────────
+    // Swipe left = next question, swipe right = previous question.
+    // Threshold: 40px horizontal swipe with minimal vertical movement.
+    function setupSwipeNavigation() {
+      let startX = 0;
+      let startY = 0;
+      let isTracking = false;
+
+      const questionArea = document.querySelector('.exam-question-area');
+      if (!questionArea) return;
+
+      const handleStart = (e) => {
+        if (isSubmitted || isAutoSubmitting) return;
+        const touch = e.touches?.[0] || e;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isTracking = true;
+      };
+
+      const handleMove = (e) => {
+        if (!isTracking) return;
+        const touch = e.touches?.[0] || e;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+
+        // Only track if horizontal movement dominates vertical movement
+        if (Math.abs(dx) > Math.abs(dy) * 1.5) {
+          e.preventDefault();
+        }
+      };
+
+      const handleEnd = (e) => {
+        if (!isTracking) return;
+        isTracking = false;
+        const touch = e.changedTouches?.[0] || e;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+
+        // Must be primarily horizontal and meet threshold
+        if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx) * 1.5) return;
+
+        if (dx < -40) {
+          // Swipe left → next question
+          if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            renderQuestion();
+          } else {
+            showSubmitConfirmation();
+          }
+        } else if (dx > 40) {
+          // Swipe right → previous question
+          if (currentQuestionIndex > 0 && allowPrevious) {
+            currentQuestionIndex--;
+            renderQuestion();
+          }
+        }
+      };
+
+      questionArea.addEventListener('touchstart', handleStart, { passive: false });
+      questionArea.addEventListener('touchmove', handleMove, { passive: false });
+      questionArea.addEventListener('touchend', handleEnd);
     }
 
     // Submit Exam

@@ -509,15 +509,32 @@ function renderDashboard() {
   $welcomeQuote.textContent = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
 
   if (!dashboardStats) {
-    // Show loading or zeros
-    $statExamsTaken.textContent = '—';
-    $statAvgScore.textContent = '—';
-    $statPassRate.textContent = '—';
-    $statAvailable.textContent = '—';
-    $statStreak.textContent = '—';
-    $statBest.textContent = '—';
+    // Show skeleton loaders instead of dashes for a better mobile/loading experience
+    const statContainers = [
+      { id: 'stat-exams-taken', skeletonId: 'skeleton-exams-taken' },
+      { id: 'stat-avg-score', skeletonId: 'skeleton-avg-score' },
+      { id: 'stat-pass-rate', skeletonId: 'skeleton-pass-rate' },
+      { id: 'stat-available', skeletonId: 'skeleton-available' },
+      { id: 'stat-streak', skeletonId: 'skeleton-streak' },
+      { id: 'stat-best', skeletonId: 'skeleton-best' },
+    ];
+    statContainers.forEach(({ id, skeletonId }) => {
+      const el = document.getElementById(id);
+      const skel = document.getElementById(skeletonId);
+      if (el) el.textContent = '—';
+      if (skel) skel.hidden = false;
+    });
+    if (document.getElementById('skeleton-chart')) {
+      document.getElementById('skeleton-chart').hidden = false;
+    }
     return;
   }
+
+  // Hide skeletons when data is loaded
+  ['exams-taken', 'avg-score', 'pass-rate', 'available', 'streak', 'best', 'chart'].forEach(key => {
+    const skel = document.getElementById(`skeleton-${key}`);
+    if (skel) skel.hidden = true;
+  });
 
   const s = dashboardStats;
 
