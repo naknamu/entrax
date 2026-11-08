@@ -1,53 +1,42 @@
-name: Firestore backup
+name: Firestore Backup
 
-# Manual-only by default: run it from the Actions tab ("Run workflow").
-#
-# The nightly schedule is intentionally commented out. Enabling it requires:
-#   1. The Firebase project on the Blaze plan (Firestore managed export).
-#   2. A repository secret `GCP_SA_KEY` (least-privilege service account key).
-#   3. A repository variable `FIRESTORE_BACKUP_BUCKET` (bucket name only).
-# See docs/OPERATIONS.md → "Backups / PITR" before enabling.
 on:
   workflow_dispatch:
-  # schedule:
-  #   # Nightly at 03:17 UTC (off the hour to avoid peak quota windows).
-  #   - cron: '17 3 * * *'
+    inputs:
+      bucket:
+        description: 'GCS bucket for backup export'
+        required: true
+        default: ${{ vars.FIRESTORE_BACKUP_BUCKET }}
 
-permissions:
-  contents: read
+env:
+  NODE_VERSION: '20'
 
 jobs:
-  export:
-    name: Export Firestore to Cloud Storage
+  backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify backup configuration
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          BACKUP_BUCKET: ${{ vars.FIRESTORE_BACKUP_BUCKET }}
-        run: |
-          missing=0
-          if [ -z "${GCP_SA_KEY}" ]; then
-            echo "::error::GCP_SA_KEY is not set. Add a least-privilege service account key with datastore import/export permissions and write access to the backup bucket (docs/OPERATIONS.md → Backups / PITR)."
-            missing=1
-          fi
-          if [ -z "${BACKUP_BUCKET}" ]; then
-            echo "::error::FIRESTORE_BACKUP_BUCKET is not set. Add the repository variable with the bucket name only, e.g. nightingale-firestore-backups (no gs:// prefix)."
-            missing=1
-          fi
-          exit "${missing}"
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Export Firestore
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Export Firestore backup to GCS
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          BUCKET: ${{ github.event.inputs.bucket || vars.FIRESTORE_BACKUP_BUCKET }}
         run: |
-          gcloud firestore export "gs://${{ vars.FIRESTORE_BACKUP_BUCKET }}/firestore/$(date -u +%Y%m%dT%H%M%SZ)" --project=entrax-878a1
+          # Authenticate gcloud with the service account for the export destination.
+          echo "${GCP_SA_KEY}" | gcloud auth activate-service-account --key-file=-
+          firebase firestore:export gs://${BUCKET}/$(date +%Y%m%d_%H%M%S) \
+            --project entrax-878a1 --token "${FIREBASE_TOKEN}"
